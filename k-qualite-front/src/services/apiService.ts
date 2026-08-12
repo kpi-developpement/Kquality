@@ -1,34 +1,61 @@
 import { ApiResponse, DashboardPartenaireDTO, ErreurResponseDTO, ContestationResponseDTO, KpiArchiveDTO } from '../types/api';
 
-// 🛡️ L'FIX HWA HNA: Kay-9ra l'URL mn Docker/Vercel
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL 
-  ? `${process.env.NEXT_PUBLIC_API_URL}` 
-  : 'http://localhost:8256/api/v1';
+// 🛡️ L'FIX HWA HNA: Séparation bin SSR (Docker) w Client (Navigateur)
+const isServer = typeof window === 'undefined';
+
+const BASE_URL = isServer 
+  ? 'http://kq_backend:8256/api/v1' // Mli Next.js kay-fetchi mn weste Docker (SSR)
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://10.10.10.25:8256/api/v1'); // Mli l'Navigateur kay-fetchi (Client)
 
 export async function getDashboardData(partenaireId: number = 1): Promise<DashboardPartenaireDTO> {
   const url = `${BASE_URL}/dashboard/partenaire/${partenaireId}?periodeMois=2026-08`;
   const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Erreur Backend HTTP ${res.status}`);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Erreur Backend HTTP ${res.status}: ${errorText}`);
+  }
+  
   const json: ApiResponse<DashboardPartenaireDTO> = await res.json();
   return json.data;
 }
 
 export async function getErreurs(partenaireId: number = 1): Promise<ErreurResponseDTO[]> {
   const res = await fetch(`${BASE_URL}/erreurs/partenaire/${partenaireId}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Erreur Backend HTTP ${res.status}`);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Erreur Backend HTTP ${res.status}: ${errorText}`);
+  }
+  
   const json: ApiResponse<ErreurResponseDTO[]> = await res.json();
   return json.data;
 }
 
 export async function deposerContestation(erreurId: number, motif: string, commentaire: string, pieceJointeUrl: string) {
   const url = `${BASE_URL}/contestations/deposer`;
-  const payload = { erreurId, motif, commentaire, pieceJointeUrl };
+  
+  const payload = {
+    erreurId,
+    motif,
+    commentaire,
+    pieceJointeUrl
+  };
+
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Utilisateur-Id': '1' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Utilisateur-Id': '1' 
+    },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error(`Erreur Backend HTTP ${res.status}`);
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Erreur Backend HTTP ${res.status}: ${errorText}`);
+  }
+
   return await res.json();
 }
 
