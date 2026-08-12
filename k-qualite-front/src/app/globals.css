@@ -1,0 +1,19 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #f4f7f6; /* Rmedy mftou7 y3ti ndra n9iya */
+  color: #333333;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+.main-content {
+  padding-top: 20px;
+}

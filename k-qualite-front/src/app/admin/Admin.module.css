@@ -1,0 +1,118 @@
+.container {
+  padding: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 25px;
+}
+
+.adminBadge {
+  display: inline-block;
+  background-color: #2c3e50;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.header p {
+  color: #7f8c8d;
+}
+
+.tableWrapper {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th, .table td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  color: #34495e;
+  font-weight: 600;
+}
+
+.bold {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.motifBadge {
+  background-color: #e8f4f8;
+  color: #2980b9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.commentCell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #7f8c8d;
+}
+
+.impact {
+  font-weight: bold;
+  color: #e74c3c;
+}
+
+.actionsBox {
+  display: flex;
+  gap: 10px;
+}
+
+.btnAccept {
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btnAccept:hover { background-color: #219653; }
+
+.btnReject {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btnReject:hover { background-color: #c0392b; }
+
+.empty {
+  text-align: center;
+  padding: 40px !important;
+  color: #95a5a6;
+  font-style: italic;
+}

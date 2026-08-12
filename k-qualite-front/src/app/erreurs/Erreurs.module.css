@@ -1,0 +1,75 @@
+.container {
+  padding: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  margin-bottom: 25px;
+}
+
+.tableWrapper {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th, .table td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.reference {
+  color: #3498db;
+  font-weight: bold;
+}
+
+.impact {
+  font-weight: bold;
+  color: #e74c3c;
+}
+
+.badge {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.nouveau { background: #e3f2fd; color: #1976d2; }
+.conteste { background: #fff3e0; color: #f57c00; }
+.confirme { background: #ffebee; color: #d32f2f; }
+.cloture { background: #e0e0e0; color: #616161; }
+
+.empty {
+  text-align: center;
+  color: #888;
+  padding: 30px !important;
+}
+.actionBtn {
+  background-color: #2c3e50;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: bold;
+}
+.actionBtn:hover {
+  background-color: #34495e;
+}

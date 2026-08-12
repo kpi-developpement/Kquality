@@ -1,0 +1,58 @@
+export interface ApiResponse<T> {
+  timestamp: string;
+  status: number;
+  message: string;
+  data: T;
+}
+
+export interface DashboardPartenaireDTO {
+  cqPrevisionnel: number;
+  objectifCq: number;
+  ecartCq: number;
+  totalDossiersControles: number;
+  erreursActives: number;
+  erreursUrgentes: number;
+  penalitesEstimees: number;
+  statutPenalites: string;
+}
+
+export interface ErreurResponseDTO {
+  id: number;
+  dateDetection: string;
+  preuveUrl: string | null;
+  impactEstime: number;
+  echeanceContestation: string;
+  statut: string;
+  dossierReference: string;
+  dossierDateIntervention: string;
+  technicienNomComplet: string;
+  technicienMatricule: string;
+  regleCode: string;
+  regleDescription: string;
+  aContestation: boolean;
+}
+export interface ContestationResponseDTO {
+  id: number;
+  motif: string;
+  commentaire: string;
+  pieceJointeUrl: string;
+  dateDepot: string;
+  erreurId: number;
+  dossierReference: string;
+  partenaireNom: string;
+  impactEstime: number;
+}
+
+// --- JDID ---
+export interface KpiArchiveDTO {
+  id: number;
+  mois: number;
+  annee: number;
+  processus: string;
+  departement: string;
+  num: number;
+  denum: number;
+  resultat: number;
+  partDeMarche: number;
+  bonus: number;
+}
