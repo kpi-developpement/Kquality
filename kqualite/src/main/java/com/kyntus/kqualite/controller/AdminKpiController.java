@@ -9,9 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// 🛡️ L'FIX HWA HNA: originPatterns f blast origins
 @RestController
 @RequestMapping("/api/v1/admin/kpi")
-@CrossOrigin(origins = "*")
+@CrossOrigin(originPatterns = "*", maxAge = 3600)
 @RequiredArgsConstructor
 public class AdminKpiController {
 

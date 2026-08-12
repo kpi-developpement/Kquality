@@ -19,11 +19,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // N-activiw CORS bach Next.js (Port 3000) y9der y-hder m3a Spring Boot
-                .csrf(csrf -> csrf.disable()) // N-désactiviw CSRF hit 3ndna REST API
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // F had l'étape dyal dev, kan-khaliw kolchi maftou7 (PermitAll)
+                        .anyRequest().permitAll()
                 );
 
         return http.build();
@@ -32,9 +32,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // L'URL dyal Next.js
+
+        // 🛡️ L'FIX HWA HNA: N-sme7ou l ay IP/Port y-connecta (b7al 10.10.10.25:8257)
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true); // Mzyana ila zedna JWT mn be3d
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
