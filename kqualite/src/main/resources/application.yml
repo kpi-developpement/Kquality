@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: K-Qualite
+
+  # Configuration de la base de données PostgreSQL
+  datasource:
+    # L'URL par défaut (Ila knti khddam f l'PC dyalk Local)
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/kqualite_db}
+    username: ${SPRING_DATASOURCE_USERNAME:kyntus_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:kyntus_password}
+    driver-class-name: org.postgresql.Driver
+
+  # Configuration JPA & Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: update # Kay-créer w kay-modifier les tables automatiquement
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# Configuration du serveur
+server:
+  port: ${SERVER_PORT:8256}
+
+# Configuration des logs
+logging:
+  level:
+    org.springframework.web: INFO
+    com.kyntus.kqualite: INFO

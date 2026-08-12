@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # 1. BASE DE DONNÉES (PostgreSQL) - K-Qualité
+  kq_db:
+    image: postgres:15-alpine
+    container_name: kq_postgres_prod
+    restart: always
+    environment:
+      # Docker ghay-creer had DB w l'User oumatiquement f l'awel lancement
+      - POSTGRES_DB=kqualite_db
+      - POSTGRES_USER=kyntus_user
+      - POSTGRES_PASSWORD=kyntus_password
+    ports:
+      # L'FIX: Derna 5433 3la beṛṛa bach may-crashich m3a l'DB lwla li chadda 5432
+      - "5433:5432"
+    volumes:
+      # 🛡️ RISK MANAGEMENT: L'coffre-fort dyal K-Qualité
+      - kq_postgres_data:/var/lib/postgresql/data
+    networks:
+      - kq-network
+
+  # 2. BACKEND (Spring Boot) - K-Qualité
+  kq_backend:
+    build:
+      context: ./kqualite
+      dockerfile: Dockerfile
+    container_name: kq_backend_prod
+    restart: always
+    ports:
+      - "8256:8256" 
+    environment:
+      # L'Backend kay-hder m3a l'container 'kq_db' f l'port 5432 (Réseau interne Docker)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://kq_db:5432/kqualite_db
+      - SPRING_DATASOURCE_USERNAME=kyntus_user
+      - SPRING_DATASOURCE_PASSWORD=kyntus_password
+      - SERVER_PORT=8256
+    depends_on:
+      - kq_db
+    deploy:
+      resources:
+        limits:
+          memory: 1G 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - kq-network
+
+  # 3. FRONTEND (Next.js) - K-Qualité
+  kq_frontend:
+    build:
+      context: ./k-qualite-front
+      dockerfile: Dockerfile
+      args:
+        # L'API dyal K-Qualite
+        - NEXT_PUBLIC_API_URL=http://10.10.10.25:8256/api/v1
+    container_name: kq_frontend_prod
+    restart: always
+    ports:
+      - "8257:8257"
+    environment:
+      - PORT=8257
+    depends_on:
+      - kq_backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - kq-network
+
+volumes:
+  kq_postgres_data:
+
+networks:
+  kq-network:
+    driver: bridge
