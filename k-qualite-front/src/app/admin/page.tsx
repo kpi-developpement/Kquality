@@ -1,7 +1,8 @@
 "use client"; 
 
 import { useEffect, useState } from 'react';
-import { getContestationsEnAttente, traiterContestation, ContestationResponseDTO } from '@/services/apiService';
+import { getContestationsEnAttente, traiterContestation } from '@/services/apiService';
+import { ContestationResponseDTO } from '@/types/api'; // 🛡️ L'FIX HWA HNA: Jbnaha mn types/api
 import Link from 'next/link';
 import styles from './Admin.module.css';
 
@@ -47,7 +48,6 @@ export default function AdminContestationsPage() {
           <h1>Gestion des Contestations</h1>
           <p>Traitez les réclamations des partenaires avant la clôture mensuelle.</p>
         </div>
-        {/* L'FIX HWA HNA: Bouton l'Vue Globale */}
         <Link href="/admin/vue-globale" className={styles.btnAccept} style={{ textDecoration: 'none', background: '#3498db' }}>
           📊 Consulter la Vue Globale KPI
         </Link>
