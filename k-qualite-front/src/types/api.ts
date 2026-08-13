@@ -80,3 +80,12 @@ export interface UtilisateurDTO {
   partenaireNom?: string;
   permissions: string[];
 }
+export interface AuthResponseDTO {
+  token: string;
+  id: number;
+  email: string;
+  role: string;
+  permissions: string[];
+  partenaireId: number | null;
+  mustChangePassword?: boolean; // 🛡️ L'FIX HWA HNA
+}

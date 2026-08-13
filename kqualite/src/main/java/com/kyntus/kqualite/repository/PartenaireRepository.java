@@ -9,4 +9,7 @@ import java.util.Optional;
 @Repository
 public interface PartenaireRepository extends JpaRepository<Partenaire, Long> {
     Optional<Partenaire> findByReferenceContrat(String referenceContrat);
+
+    // 🛡️ L'FIX HWA HNA
+    Optional<Partenaire> findByNomEntrepriseIgnoreCase(String nomEntreprise);
 }

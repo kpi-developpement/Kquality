@@ -1,4 +1,3 @@
-// AuthResponseDTO.java
 package com.kyntus.kqualite.dto;
 
 import lombok.AllArgsConstructor;
@@ -18,4 +17,5 @@ public class AuthResponseDTO {
     private String role;
     private List<String> permissions;
     private Long partenaireId;
+    private Boolean mustChangePassword; // 🛡️ L'FIX HWA HNA
 }

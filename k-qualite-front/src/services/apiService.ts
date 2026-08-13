@@ -130,3 +130,17 @@ export async function deleteAdminUser(id: number) {
   });
   if (!res.ok) throw new Error('Erreur suppression utilisateur');
 }
+export async function changePassword(oldPassword: string, newPassword: string) {
+  const res = await fetch(`${BASE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ oldPassword, newPassword })
+  });
+  
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Erreur lors du changement de mot de passe');
+  }
+  
+  return await res.json();
+}

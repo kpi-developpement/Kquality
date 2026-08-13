@@ -22,7 +22,8 @@ export default function Navbar() {
       </div>
 
       <div className={styles.navLinks}>
-        {user?.role === 'PARTENAIRE' && (
+        {/* 🛡️ L'FIX HWA HNA: N-khebbiyou l'menu ila kan f page dyal force-password */}
+        {!user?.mustChangePassword && user?.role === 'PARTENAIRE' && (
           <>
             <Link href="/dashboard" className={`${styles.navItem} ${pathname === '/dashboard' ? styles.active : ''}`}>Vue d'ensemble</Link>
             <Link href="/erreurs" className={`${styles.navItem} ${pathname.startsWith('/erreurs') ? styles.active : ''}`}>Erreurs</Link>
@@ -30,15 +31,14 @@ export default function Navbar() {
           </>
         )}
 
-        {user?.role === 'PILOTE' && (
+        {!user?.mustChangePassword && user?.role === 'PILOTE' && (
           <Link href="/admin" className={`${styles.navItem} ${pathname === '/admin' ? styles.active : ''}`}>Gestion Contestations</Link>
         )}
 
-        {user?.role === 'ADMIN' && (
+        {!user?.mustChangePassword && user?.role === 'ADMIN' && (
           <>
             <Link href="/admin/vue-globale" className={`${styles.navItem} ${pathname === '/admin/vue-globale' ? styles.active : ''}`}>Vue Globale KPI</Link>
             <Link href="/admin" className={`${styles.navItem} ${pathname === '/admin' ? styles.active : ''}`}>Contestations</Link>
-            {/* 🛡️ L'FIX HWA HNA: Zedt l'Lien dyal Utilisateurs */}
             <Link href="/admin/utilisateurs" className={`${styles.navItem} ${pathname === '/admin/utilisateurs' ? styles.active : ''}`}>Utilisateurs & Accès</Link>
           </>
         )}

@@ -4,6 +4,7 @@ import com.kyntus.kqualite.domain.Utilisateur;
 import com.kyntus.kqualite.dto.ApiResponse;
 import com.kyntus.kqualite.dto.AuthRequestDTO;
 import com.kyntus.kqualite.dto.AuthResponseDTO;
+import com.kyntus.kqualite.dto.ChangePasswordRequestDTO;
 import com.kyntus.kqualite.repository.UtilisateurRepository;
 import com.kyntus.kqualite.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -26,36 +27,22 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponseDTO>> login(@RequestBody AuthRequestDTO request) {
 
-        // 1. Nettoyage dyal les inputs (T7iyd les espaces zaydin)
         String email = request.getEmail() != null ? request.getEmail().trim() : "";
         String password = request.getPassword() != null ? request.getPassword().trim() : "";
 
-        log.info("Tentative de connexion pour l'email: '{}'", email);
-
-        // 2. Njbdou l'utilisateur mn DB manuellement
         Utilisateur user = utilisateurRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    log.error("Utilisateur non trouvé f DB: {}", email);
-                    return new RuntimeException("Identifiants incorrects (Email introuvable)");
-                });
+                .orElseThrow(() -> new RuntimeException("Identifiants incorrects (Email introuvable)"));
 
-        // 3. Comparaison manuelle dyal l'Mot de passe b BCrypt
         if (!passwordEncoder.matches(password, user.getMotDePasse())) {
-            log.error("Mot de passe incorrect pour: {}", email);
             throw new RuntimeException("Identifiants incorrects (Mot de passe erroné)");
         }
 
-        // 4. Vérification wach l'compte m-activé
         if (!user.getActif()) {
-            log.error("Compte désactivé pour: {}", email);
             throw new RuntimeException("Ce compte a été désactivé");
         }
 
-        // 5. N-génériw l'Token
         String jwtToken = jwtService.generateToken(user);
-        log.info("Connexion réussie pour: {}", email);
 
-        // 6. N-wjdou l'réponse
         AuthResponseDTO response = AuthResponseDTO.builder()
                 .token(jwtToken)
                 .id(user.getId())
@@ -63,12 +50,35 @@ public class AuthController {
                 .role(user.getRole().name())
                 .permissions(user.getPermissions())
                 .partenaireId(user.getPartenaire() != null ? user.getPartenaire().getId() : null)
+                .mustChangePassword(user.getMustChangePassword()) // 🛡️ Siftnaha l'Frontend
                 .build();
 
         return ResponseEntity.ok(ApiResponse.success(response, "Connexion réussie"));
     }
 
-    // 🛠️ API dyal l'Audit: Bach t-testi wach l'Base de données fiha l'comptes awla la
+    // 🛡️ API JDIDA: Changement de mot de passe
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @RequestHeader("Authorization") String token,
+            @RequestBody ChangePasswordRequestDTO request) {
+
+        String jwt = token.substring(7);
+        String email = jwtService.extractUsername(jwt);
+
+        Utilisateur user = utilisateurRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getMotDePasse())) {
+            throw new RuntimeException("L'ancien mot de passe est incorrect");
+        }
+
+        user.setMotDePasse(passwordEncoder.encode(request.getNewPassword()));
+        user.setMustChangePassword(false); // 🛡️ 7iydna l'obligation
+        utilisateurRepository.save(user);
+
+        return ResponseEntity.ok(ApiResponse.success(null, "Mot de passe modifié avec succès"));
+    }
+
     @GetMapping("/test-db")
     public ResponseEntity<String> testDb() {
         long count = utilisateurRepository.count();
