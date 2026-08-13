@@ -21,50 +21,21 @@ public class DataSeeder implements CommandLineRunner {
     private final RegleQualiteRepository regleQualiteRepository;
     private final ErreurRepository erreurRepository;
     private final ResultatCQRepository resultatCQRepository;
-    private final PasswordEncoder passwordEncoder; // 🛡️ L'FIX HWA HNA
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
-        if (partenaireRepository.count() == 0) {
 
-            Partenaire partenaire = Partenaire.builder()
+        Partenaire partenaire;
+
+        // 1. Création dyal Partenaire w Data l9dima (Ila makantch)
+        if (partenaireRepository.count() == 0) {
+            partenaire = Partenaire.builder()
                     .nomEntreprise("ASTR Telecom")
                     .referenceContrat("CONTRAT-ASTR-001")
                     .build();
             partenaireRepository.save(partenaire);
 
-            // 1. Compte Partenaire
-            Utilisateur userPartenaire = Utilisateur.builder()
-                    .email("partenaire@astr.com")
-                    .motDePasse(passwordEncoder.encode("password123"))
-                    .role(Role.PARTENAIRE)
-                    .actif(true)
-                    .partenaire(partenaire)
-                    .permissions(Arrays.asList("READ_DASHBOARD", "READ_ERREURS", "CREATE_CONTESTATION"))
-                    .build();
-            utilisateurRepository.save(userPartenaire);
-
-            // 2. Compte Admin Kyntus
-            Utilisateur userAdmin = Utilisateur.builder()
-                    .email("admin@kyntus.com")
-                    .motDePasse(passwordEncoder.encode("admin123"))
-                    .role(Role.ADMIN)
-                    .actif(true)
-                    .permissions(Arrays.asList("READ_GLOBAL_KPI", "MANAGE_USERS", "MANAGE_ROLES"))
-                    .build();
-            utilisateurRepository.save(userAdmin);
-
-            // 3. Compte Pilote
-            Utilisateur userPilote = Utilisateur.builder()
-                    .email("pilote@kyntus.com")
-                    .motDePasse(passwordEncoder.encode("pilote123"))
-                    .role(Role.PILOTE)
-                    .actif(true)
-                    .permissions(Arrays.asList("READ_CONTESTATIONS", "TRAITER_CONTESTATION"))
-                    .build();
-            utilisateurRepository.save(userPilote);
-
-            // ... (L'ba9i dyal l'DataSeeder khllih kima hwa) ...
             Technicien technicien = Technicien.builder().matricule("TECH-0482").nomComplet("Mohamed Benali").agence("Oujda Centre").partenaire(partenaire).build();
             technicienRepository.save(technicien);
 
@@ -82,7 +53,47 @@ public class DataSeeder implements CommandLineRunner {
             resultat.setPenalite(penalite);
             resultatCQRepository.save(resultat);
 
-            System.out.println("✅ Data insérée avec succès ! L'Admin w l'Partenaire t-creyaw.");
+            System.out.println("✅ Données de base (Partenaire, Dossiers, Erreurs) insérées avec succès !");
+        } else {
+            // Ila kan l'Partenaire deja kayn, njbdouh bach n-ls9ouh m3a l'Utilisateur
+            partenaire = partenaireRepository.findAll().get(0);
+        }
+
+        // 2. 🛡️ L'FIX HWA HNA: Création dyal les Utilisateurs (Ila makanoch)
+        if (utilisateurRepository.count() == 0) {
+
+            // Compte Partenaire
+            Utilisateur userPartenaire = Utilisateur.builder()
+                    .email("partenaire@astr.com")
+                    .motDePasse(passwordEncoder.encode("password123"))
+                    .role(Role.PARTENAIRE)
+                    .actif(true)
+                    .partenaire(partenaire)
+                    .permissions(Arrays.asList("READ_DASHBOARD", "READ_ERREURS", "CREATE_CONTESTATION"))
+                    .build();
+            utilisateurRepository.save(userPartenaire);
+
+            // Compte Admin Kyntus
+            Utilisateur userAdmin = Utilisateur.builder()
+                    .email("admin@kyntus.com")
+                    .motDePasse(passwordEncoder.encode("admin123"))
+                    .role(Role.ADMIN)
+                    .actif(true)
+                    .permissions(Arrays.asList("READ_GLOBAL_KPI", "MANAGE_USERS", "MANAGE_ROLES"))
+                    .build();
+            utilisateurRepository.save(userAdmin);
+
+            // Compte Pilote
+            Utilisateur userPilote = Utilisateur.builder()
+                    .email("pilote@kyntus.com")
+                    .motDePasse(passwordEncoder.encode("pilote123"))
+                    .role(Role.PILOTE)
+                    .actif(true)
+                    .permissions(Arrays.asList("READ_CONTESTATIONS", "TRAITER_CONTESTATION"))
+                    .build();
+            utilisateurRepository.save(userPilote);
+
+            System.out.println("✅ Comptes Utilisateurs (Admin, Pilote, Partenaire) créés avec succès !");
         }
     }
 }
