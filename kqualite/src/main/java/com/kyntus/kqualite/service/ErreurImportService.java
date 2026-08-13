@@ -59,8 +59,9 @@ public class ErreurImportService {
                 headerMap.put(getCellValue(cell).trim(), cell.getColumnIndex());
             }
 
+            // 🛡️ L'FIX HWA HNA: 7iydna "tech" mn l'recherche. Kay-9leb GHIR 3la KYN.
             Integer colRdv = findColumnIndex(headerMap, "idrdv", "dossier", "rdv");
-            Integer colKyn = findColumnIndex(headerMap, "kyn", "tech");
+            Integer colKyn = findColumnIndex(headerMap, "kyn", "idtecnow");
             Integer colCat = findColumnIndex(headerMap, "categorie", "souscategorie", "regle");
             Integer colImpact = findColumnIndex(headerMap, "impact", "montant");
 
@@ -86,22 +87,15 @@ public class ErreurImportService {
                     impactStr = impactStr.replaceAll("[^\\d.,-]", "").replace(",", ".");
                     double impact = impactStr.isEmpty() ? 0.0 : Double.parseDouble(impactStr);
 
-                    processRow(rdv, kyn, categorie, impact);
-                    success++;
+                    boolean isProcessed = processRow(rdv, kyn, categorie, impact);
+                    if (isProcessed) success++; else rejected++;
                 } catch (Exception e) {
                     log.error("Erreur ligne {} : {}", total, e.getMessage());
                     rejected++;
                 }
             }
         }
-
-        // 🛡️ L'FIX HWA HNA: Utilisation du Builder
-        return ImportSummaryDTO.builder()
-                .totalLignes(total)
-                .lignesInserees(success)
-                .lignesRejetees(rejected)
-                .message("Importation Excel terminée avec succès.")
-                .build();
+        return ImportSummaryDTO.builder().totalLignes(total).lignesInserees(success).lignesRejetees(rejected).message("Importation Excel terminée avec succès.").build();
     }
 
     private ImportSummaryDTO processCsv(MultipartFile file) throws Exception {
@@ -116,21 +110,16 @@ public class ErreurImportService {
         }
         brTest.close();
 
-        CSVFormat format = CSVFormat.Builder.create()
-                .setDelimiter(delimiter)
-                .setHeader()
-                .setSkipHeaderRecord(true)
-                .setIgnoreHeaderCase(true)
-                .setTrim(true)
-                .build();
+        CSVFormat format = CSVFormat.Builder.create().setDelimiter(delimiter).setHeader().setSkipHeaderRecord(true).setIgnoreHeaderCase(true).setTrim(true).build();
 
         try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
              CSVParser parser = new CSVParser(br, format)) {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
 
+            // 🛡️ L'FIX HWA HNA: 7iydna "tech" mn l'recherche.
             String colRdv = findColumnName(headerMap, "idrdv", "dossier", "rdv");
-            String colKyn = findColumnName(headerMap, "kyn", "tech");
+            String colKyn = findColumnName(headerMap, "kyn", "idtecnow");
             String colCat = findColumnName(headerMap, "categorie", "souscategorie", "regle");
             String colImpact = findColumnName(headerMap, "impact", "montant");
 
@@ -153,31 +142,47 @@ public class ErreurImportService {
                     impactStr = impactStr.replaceAll("[^\\d.,-]", "").replace(",", ".");
                     double impact = impactStr.isEmpty() ? 0.0 : Double.parseDouble(impactStr);
 
-                    processRow(rdv.trim(), kyn.trim(), categorie.trim(), impact);
-                    success++;
+                    boolean isProcessed = processRow(rdv.trim(), kyn.trim(), categorie.trim(), impact);
+                    if (isProcessed) success++; else rejected++;
                 } catch (Exception e) {
                     log.error("Erreur ligne {} : {}", total, e.getMessage());
                     rejected++;
                 }
             }
         }
-
-        // 🛡️ L'FIX HWA HNA: Utilisation du Builder
-        return ImportSummaryDTO.builder()
-                .totalLignes(total)
-                .lignesInserees(success)
-                .lignesRejetees(rejected)
-                .message("Importation CSV terminée avec succès.")
-                .build();
+        return ImportSummaryDTO.builder().totalLignes(total).lignesInserees(success).lignesRejetees(rejected).message("Importation CSV terminée avec succès.").build();
     }
 
-    private void processRow(String rdv, String kyn, String categorie, double impact) {
-        Optional<Technicien> techOpt = technicienRepository.findByMatricule(kyn);
-        if (techOpt.isEmpty()) {
-            throw new RuntimeException("Technicien KYN " + kyn + " introuvable dans la base de données.");
+    // ==========================================
+    // ⚙️ LOGIQUE COMMUNE (Recherche KYN w Sauvegarde)
+    // ==========================================
+    private boolean processRow(String rdv, String rawKyn, String categorie, double impact) {
+
+        // 1. Nettoyage intelligent dyal l'KYN
+        String kyn = rawKyn.trim().toUpperCase();
+        if (kyn.endsWith(".0")) {
+            kyn = kyn.substring(0, kyn.length() - 2); // 7iyd .0 dyal Excel
         }
+        if (!kyn.startsWith("KYN")) {
+            kyn = "KYN" + kyn; // Zid KYN ila kant na9ssa (ex: 1374 -> KYN1374)
+        }
+
+        // 2. Chercher le Technicien par son KYN (L'Backend kay-jbed l'Partenaire oumatiquement mn DB)
+        Optional<Technicien> techOpt = technicienRepository.findByMatricule(kyn);
+
+        // Fallback: Njerbou b rawKyn kima ja f l'fichier ila mal9inahch
+        if (techOpt.isEmpty()) {
+            techOpt = technicienRepository.findByMatricule(rawKyn.trim());
+        }
+
+        if (techOpt.isEmpty()) {
+            log.warn("Technicien KYN [{}] introuvable dans la base de données.", kyn);
+            return false; // Rejeté
+        }
+
         Technicien technicien = techOpt.get();
 
+        // 3. Chercher ou Créer le Dossier (M-lyé m3a l'Technicien w l'Partenaire dyalo)
         Dossier dossier = dossierRepository.findByReferenceID(rdv)
                 .orElseGet(() -> dossierRepository.save(Dossier.builder()
                         .referenceID(rdv)
@@ -185,6 +190,7 @@ public class ErreurImportService {
                         .technicien(technicien)
                         .build()));
 
+        // 4. Chercher ou Créer la Règle Qualité
         RegleQualite regle = regleQualiteRepository.findByCodeRegle(categorie)
                 .orElseGet(() -> regleQualiteRepository.save(RegleQualite.builder()
                         .codeRegle(categorie)
@@ -192,6 +198,7 @@ public class ErreurImportService {
                         .penaliteUnitaire(impact)
                         .build()));
 
+        // 5. Créer l'Erreur (Li ghat-mchi l'Partenaire)
         Erreur erreur = Erreur.builder()
                 .dateDetection(LocalDateTime.now())
                 .impactEstime(impact)
@@ -202,8 +209,12 @@ public class ErreurImportService {
                 .build();
 
         erreurRepository.save(erreur);
+        return true; // Succès
     }
 
+    // ==========================================
+    // 🛠️ HELPERS (Nettoyage et Recherche)
+    // ==========================================
     private String getCellValue(Cell cell) {
         if (cell == null) return "";
         switch (cell.getCellType()) {
