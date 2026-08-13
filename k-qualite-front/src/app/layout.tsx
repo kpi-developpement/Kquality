@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar/Navbar";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "K-Qualité | Portail Partenaires",
@@ -15,11 +16,12 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body>
-        <Navbar />
-        {/* Hna fin kayt-injectaw les pages (Dashboard, Erreurs, etc.) */}
-        <main className="main-content">
-          {children}
-        </main>
+        <AuthProvider>
+          <Navbar />
+          <main className="main-content">
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );

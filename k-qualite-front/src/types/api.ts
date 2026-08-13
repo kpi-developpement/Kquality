@@ -56,3 +56,12 @@ export interface KpiArchiveDTO {
   partDeMarche: number;
   bonus: number;
 }
+
+export interface AuthResponseDTO {
+  token: string;
+  id: number;
+  email: string;
+  role: string;
+  permissions: string[];
+  partenaireId: number | null;
+}
