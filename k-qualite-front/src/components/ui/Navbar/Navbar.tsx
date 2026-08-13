@@ -24,10 +24,11 @@ export default function Navbar() {
       <div className={styles.navLinks}>
         {/* 🛡️ L'FIX HWA HNA: N-khebbiyou l'menu ila kan f page dyal force-password */}
         {!user?.mustChangePassword && user?.role === 'PARTENAIRE' && (
-          <>
+            <>
             <Link href="/dashboard" className={`${styles.navItem} ${pathname === '/dashboard' ? styles.active : ''}`}>Vue d'ensemble</Link>
             <Link href="/erreurs" className={`${styles.navItem} ${pathname.startsWith('/erreurs') ? styles.active : ''}`}>Erreurs</Link>
             <Link href="/cq-penalites" className={`${styles.navItem} ${pathname === '/cq-penalites' ? styles.active : ''}`}>CQ & Pénalités</Link>
+            <Link href="/cq-details" className={`${styles.navItem} ${pathname === '/cq-details' ? styles.active : ''}`}>Détails CQ (Excel)</Link>
           </>
         )}
 

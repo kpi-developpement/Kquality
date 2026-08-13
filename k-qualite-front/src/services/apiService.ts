@@ -1,5 +1,6 @@
 import { ApiResponse, DashboardPartenaireDTO, ErreurResponseDTO, ContestationResponseDTO, KpiArchiveDTO, AuthResponseDTO } from '../types/api';
 import { PartenaireDTO, UtilisateurDTO } from '../types/api';
+import { CqDataDTO } from '../types/api';
 
 const isServer = typeof window === 'undefined';
 const BASE_URL = isServer 
@@ -163,4 +164,30 @@ export async function importErreursExcel(file: File) {
   }
 
   return await res.json();
+}
+export async function importMultiCqExcel(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/admin/erreurs/import-multi-cq`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` },
+    body: formData
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Erreur lors de l'importation Multi-feuilles");
+  }
+  return await res.json();
+}
+
+export async function getCqDataByPartenaire(partenaireId: number, typeFeuille: string): Promise<CqDataDTO[]> {
+  const res = await fetch(`${BASE_URL}/cq-data/partenaire/${partenaireId}?type=${encodeURIComponent(typeFeuille)}`, { 
+    headers: getAuthHeaders(), 
+    cache: 'no-store' 
+  });
+  if (!res.ok) throw new Error('Erreur récupération CQ Data');
+  const json = await res.json();
+  return json.data;
 }

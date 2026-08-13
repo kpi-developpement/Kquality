@@ -89,3 +89,13 @@ export interface AuthResponseDTO {
   partenaireId: number | null;
   mustChangePassword?: boolean; // 🛡️ L'FIX HWA HNA
 }
+export interface CqDataDTO {
+  id: number;
+  typeFeuille: string;
+  kyn: string;
+  anMois: string;
+  reference: string;
+  departement: string;
+  montant: number;
+  valeurMetrique: string;
+}
