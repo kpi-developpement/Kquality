@@ -16,4 +16,8 @@ public class ExternalTicDTO {
 
     @JsonProperty("COURRIEL_TECHNICIEN")
     private String courrielTechnicien;
+
+    // 🛡️ L'FIX HWA HNA: Zedt l'Etat
+    @JsonProperty("ETAT")
+    private String etat;
 }

@@ -18,7 +18,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -51,24 +51,38 @@ public class PartnerSyncService {
                 return;
             }
 
-            Set<String> entreprisesUniques = tics.stream()
-                    .map(ExternalTicDTO::getEntreprise)
-                    .filter(e -> e != null && !e.trim().isEmpty())
-                    .map(String::trim)
-                    .collect(Collectors.toSet());
+            // 1. Groupement des techniciens par Entreprise
+            Map<String, List<ExternalTicDTO>> ticsByEntreprise = tics.stream()
+                    .filter(t -> t.getEntreprise() != null && !t.getEntreprise().trim().isEmpty())
+                    .collect(Collectors.groupingBy(t -> t.getEntreprise().trim()));
 
-            log.info("🔍 {} entreprises trouvées dans l'API. Traitement en cours...", entreprisesUniques.size());
+            log.info("🔍 {} entreprises trouvées dans l'API. Filtrage des entreprises ACTIVES...", ticsByEntreprise.size());
 
-            for (String nomEntreprise : entreprisesUniques) {
+            int countActifs = 0;
 
-                // 🛡️ L'FIX HWA HNA: Kan-n9iw l'nom mn ay symbole awla espace bach n-creyiw ID Unique w N9i
+            // 2. Boucler 3la les entreprises
+            for (Map.Entry<String, List<ExternalTicDTO>> entry : ticsByEntreprise.entrySet()) {
+                String nomEntreprise = entry.getKey();
+                List<ExternalTicDTO> techniciens = entry.getValue();
+
+                // 🛡️ L'FIX HWA HNA: Vérifier si au moins un technicien est ACTIF
+                boolean hasActif = techniciens.stream()
+                        .anyMatch(t -> t.getEtat() != null && t.getEtat().trim().equalsIgnoreCase("ACTIF"));
+
+                // Ila makayn 7ta technicien ACTIF, kan-skippiw had l'entreprise
+                if (!hasActif) {
+                    continue;
+                }
+
+                countActifs++;
+
+                // A. Création du Partenaire (Unique b l'Reference Contrat)
                 String cleanName = nomEntreprise.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
                 String refContrat = "AUTO-" + cleanName;
 
-                // Kan-9elbou b l'Reference Contrat machi b l'Nom, bach n-tfadaw les doublons
                 Partenaire partenaire = partenaireRepository.findByReferenceContrat(refContrat)
                         .orElseGet(() -> {
-                            log.info("✨ Nouveau partenaire détecté : {}", nomEntreprise);
+                            log.info("✨ Nouveau partenaire ACTIF détecté : {}", nomEntreprise);
                             Partenaire p = Partenaire.builder()
                                     .nomEntreprise(nomEntreprise)
                                     .referenceContrat(refContrat)
@@ -76,7 +90,7 @@ public class PartnerSyncService {
                             return partenaireRepository.save(p);
                         });
 
-                // Création du Compte Utilisateur
+                // B. Création du Compte Utilisateur
                 String email = "admin@" + cleanName.toLowerCase() + ".kyntus.com";
 
                 if (utilisateurRepository.findByEmail(email).isEmpty()) {
@@ -98,7 +112,7 @@ public class PartnerSyncService {
                 }
             }
 
-            log.info("✅ Synchronisation terminée avec succès !");
+            log.info("✅ Synchronisation terminée avec succès ! {} partenaires ACTIFS traités.", countActifs);
 
         } catch (Exception e) {
             log.error("❌ Erreur lors de la synchronisation : {}", e.getMessage());
