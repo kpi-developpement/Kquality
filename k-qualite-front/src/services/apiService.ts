@@ -144,3 +144,23 @@ export async function changePassword(oldPassword: string, newPassword: string) {
   
   return await res.json();
 }
+export async function importErreursExcel(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/admin/erreurs/import`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}`
+      // Attention: Madirch 'Content-Type': 'multipart/form-data' hna, l'navigateur kaydirha bo7do m3a l'boundary
+    },
+    body: formData
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Erreur lors de l'importation");
+  }
+
+  return await res.json();
+}

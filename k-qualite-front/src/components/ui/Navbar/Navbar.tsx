@@ -36,10 +36,11 @@ export default function Navbar() {
         )}
 
         {!user?.mustChangePassword && user?.role === 'ADMIN' && (
-          <>
+            <>
             <Link href="/admin/vue-globale" className={`${styles.navItem} ${pathname === '/admin/vue-globale' ? styles.active : ''}`}>Vue Globale KPI</Link>
             <Link href="/admin" className={`${styles.navItem} ${pathname === '/admin' ? styles.active : ''}`}>Contestations</Link>
             <Link href="/admin/utilisateurs" className={`${styles.navItem} ${pathname === '/admin/utilisateurs' ? styles.active : ''}`}>Utilisateurs & Accès</Link>
+            <Link href="/admin/import" className={`${styles.navItem} ${pathname === '/admin/import' ? styles.active : ''}`}>Import Erreurs</Link>
           </>
         )}
       </div>

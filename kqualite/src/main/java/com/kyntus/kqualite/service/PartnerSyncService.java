@@ -2,9 +2,11 @@ package com.kyntus.kqualite.service;
 
 import com.kyntus.kqualite.domain.Partenaire;
 import com.kyntus.kqualite.domain.Role;
+import com.kyntus.kqualite.domain.Technicien;
 import com.kyntus.kqualite.domain.Utilisateur;
 import com.kyntus.kqualite.dto.ExternalTicDTO;
 import com.kyntus.kqualite.repository.PartenaireRepository;
+import com.kyntus.kqualite.repository.TechnicienRepository;
 import com.kyntus.kqualite.repository.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,94 +30,66 @@ public class PartnerSyncService {
 
     private final PartenaireRepository partenaireRepository;
     private final UtilisateurRepository utilisateurRepository;
+    private final TechnicienRepository technicienRepository; // 🛡️ JDID
     private final PasswordEncoder passwordEncoder;
 
     private static final String EXTERNAL_API_URL = "https://kyntus.fr/loadListeTICCQ.php";
 
     @Transactional
     public void syncPartnersFromExternalApi() {
-        log.info("🚀 Démarrage de la synchronisation des partenaires depuis l'API externe...");
+        log.info("🚀 Démarrage de la synchronisation des partenaires et techniciens...");
         RestTemplate restTemplate = new RestTemplate();
 
         try {
             ResponseEntity<List<ExternalTicDTO>> response = restTemplate.exchange(
-                    EXTERNAL_API_URL,
-                    HttpMethod.GET,
-                    null,
+                    EXTERNAL_API_URL, HttpMethod.GET, null,
                     new ParameterizedTypeReference<List<ExternalTicDTO>>() {}
             );
 
             List<ExternalTicDTO> tics = response.getBody();
-            if (tics == null || tics.isEmpty()) {
-                log.warn("⚠️ L'API externe n'a retourné aucune donnée.");
-                return;
-            }
+            if (tics == null || tics.isEmpty()) return;
 
-            // 1. Groupement des techniciens par Entreprise
             Map<String, List<ExternalTicDTO>> ticsByEntreprise = tics.stream()
                     .filter(t -> t.getEntreprise() != null && !t.getEntreprise().trim().isEmpty())
                     .collect(Collectors.groupingBy(t -> t.getEntreprise().trim()));
 
-            log.info("🔍 {} entreprises trouvées dans l'API. Filtrage des entreprises ACTIVES...", ticsByEntreprise.size());
-
-            int countActifs = 0;
-
-            // 2. Boucler 3la les entreprises
             for (Map.Entry<String, List<ExternalTicDTO>> entry : ticsByEntreprise.entrySet()) {
                 String nomEntreprise = entry.getKey();
                 List<ExternalTicDTO> techniciens = entry.getValue();
 
-                // 🛡️ L'FIX HWA HNA: Vérifier si au moins un technicien est ACTIF
-                boolean hasActif = techniciens.stream()
-                        .anyMatch(t -> t.getEtat() != null && t.getEtat().trim().equalsIgnoreCase("ACTIF"));
+                boolean hasActif = techniciens.stream().anyMatch(t -> t.getEtat() != null && t.getEtat().trim().equalsIgnoreCase("ACTIF"));
+                if (!hasActif) continue;
 
-                // Ila makayn 7ta technicien ACTIF, kan-skippiw had l'entreprise
-                if (!hasActif) {
-                    continue;
-                }
-
-                countActifs++;
-
-                // A. Création du Partenaire (Unique b l'Reference Contrat)
                 String cleanName = nomEntreprise.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
                 String refContrat = "AUTO-" + cleanName;
 
+                // A. Création Partenaire
                 Partenaire partenaire = partenaireRepository.findByReferenceContrat(refContrat)
-                        .orElseGet(() -> {
-                            log.info("✨ Nouveau partenaire ACTIF détecté : {}", nomEntreprise);
-                            Partenaire p = Partenaire.builder()
-                                    .nomEntreprise(nomEntreprise)
-                                    .referenceContrat(refContrat)
-                                    .build();
-                            return partenaireRepository.save(p);
-                        });
+                        .orElseGet(() -> partenaireRepository.save(Partenaire.builder().nomEntreprise(nomEntreprise).referenceContrat(refContrat).build()));
 
-                // B. Création du Compte Utilisateur
+                // B. Création Utilisateur
                 String email = "admin@" + cleanName.toLowerCase() + ".kyntus.com";
-
                 if (utilisateurRepository.findByEmail(email).isEmpty()) {
-                    log.info("👤 Création du compte pour le partenaire : {}", email);
+                    utilisateurRepository.save(Utilisateur.builder()
+                            .email(email).motDePasse(passwordEncoder.encode(cleanName.toLowerCase() + "2026!")).role(Role.PARTENAIRE)
+                            .actif(true).mustChangePassword(true).partenaire(partenaire)
+                            .permissions(Arrays.asList("READ_DASHBOARD", "READ_ERREURS", "CREATE_CONTESTATION")).build());
+                }
 
-                    String defaultPassword = cleanName.toLowerCase() + "2026!";
-
-                    Utilisateur user = Utilisateur.builder()
-                            .email(email)
-                            .motDePasse(passwordEncoder.encode(defaultPassword))
-                            .role(Role.PARTENAIRE)
-                            .actif(true)
-                            .mustChangePassword(true) // Forcer le changement de mot de passe
-                            .partenaire(partenaire)
-                            .permissions(Arrays.asList("READ_DASHBOARD", "READ_ERREURS", "CREATE_CONTESTATION"))
-                            .build();
-
-                    utilisateurRepository.save(user);
+                // C. 🛡️ L'FIX HWA HNA: Sauvegarde dyal les Techniciens (KYN)
+                for (ExternalTicDTO tic : techniciens) {
+                    if (tic.getIdTecnow() != null && !tic.getIdTecnow().isEmpty()) {
+                        if (technicienRepository.findByMatricule(tic.getIdTecnow()).isEmpty()) {
+                            technicienRepository.save(Technicien.builder()
+                                    .matricule(tic.getIdTecnow())
+                                    .nomComplet(tic.getNomTechnicien() != null ? tic.getNomTechnicien() : "Inconnu")
+                                    .partenaire(partenaire)
+                                    .build());
+                        }
+                    }
                 }
             }
-
-            log.info("✅ Synchronisation terminée avec succès ! {} partenaires ACTIFS traités.", countActifs);
-
-        } catch (Exception e) {
-            log.error("❌ Erreur lors de la synchronisation : {}", e.getMessage());
-        }
+            log.info("✅ Synchronisation terminée avec succès !");
+        } catch (Exception e) { log.error("❌ Erreur lors de la synchronisation : {}", e.getMessage()); }
     }
 }
