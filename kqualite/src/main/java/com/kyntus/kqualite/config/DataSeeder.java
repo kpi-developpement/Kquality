@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -26,16 +27,18 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        Partenaire partenaire;
+        // 1. Gérer le Partenaire (Création ou Récupération)
+        Partenaire partenaire = partenaireRepository.findByReferenceContrat("CONTRAT-ASTR-001")
+                .orElseGet(() -> {
+                    Partenaire p = Partenaire.builder()
+                            .nomEntreprise("ASTR Telecom")
+                            .referenceContrat("CONTRAT-ASTR-001")
+                            .build();
+                    return partenaireRepository.save(p);
+                });
 
-        // 1. Création dyal Partenaire w Data l9dima (Ila makantch)
-        if (partenaireRepository.count() == 0) {
-            partenaire = Partenaire.builder()
-                    .nomEntreprise("ASTR Telecom")
-                    .referenceContrat("CONTRAT-ASTR-001")
-                    .build();
-            partenaireRepository.save(partenaire);
-
+        // 2. Gérer les fausses données (Dossiers, Erreurs...)
+        if (technicienRepository.count() == 0) {
             Technicien technicien = Technicien.builder().matricule("TECH-0482").nomComplet("Mohamed Benali").agence("Oujda Centre").partenaire(partenaire).build();
             technicienRepository.save(technicien);
 
@@ -52,48 +55,28 @@ public class DataSeeder implements CommandLineRunner {
             Penalite penalite = Penalite.builder().periodeMois("2026-08").montantTotal(7316.0).statut(StatutPenalite.ESTIMEE).resultatCQ(resultat).build();
             resultat.setPenalite(penalite);
             resultatCQRepository.save(resultat);
-
-            System.out.println("✅ Données de base (Partenaire, Dossiers, Erreurs) insérées avec succès !");
-        } else {
-            // Ila kan l'Partenaire deja kayn, njbdouh bach n-ls9ouh m3a l'Utilisateur
-            partenaire = partenaireRepository.findAll().get(0);
         }
 
-        // 2. 🛡️ L'FIX HWA HNA: Création dyal les Utilisateurs (Ila makanoch)
-        if (utilisateurRepository.count() == 0) {
+        // 3. 🛡️ THE GRANDMASTER FIX: Forcer la création ou la MISE À JOUR des mots de passe
+        createOrUpdateUser("partenaire@astr.com", "password123", Role.PARTENAIRE, partenaire, Arrays.asList("READ_DASHBOARD", "READ_ERREURS", "CREATE_CONTESTATION"));
+        createOrUpdateUser("admin@kyntus.com", "admin123", Role.ADMIN, null, Arrays.asList("READ_GLOBAL_KPI", "MANAGE_USERS", "MANAGE_ROLES"));
+        createOrUpdateUser("pilote@kyntus.com", "pilote123", Role.PILOTE, null, Arrays.asList("READ_CONTESTATIONS", "TRAITER_CONTESTATION"));
 
-            // Compte Partenaire
-            Utilisateur userPartenaire = Utilisateur.builder()
-                    .email("partenaire@astr.com")
-                    .motDePasse(passwordEncoder.encode("password123"))
-                    .role(Role.PARTENAIRE)
-                    .actif(true)
-                    .partenaire(partenaire)
-                    .permissions(Arrays.asList("READ_DASHBOARD", "READ_ERREURS", "CREATE_CONTESTATION"))
-                    .build();
-            utilisateurRepository.save(userPartenaire);
+        System.out.println("✅ DataSeeder a terminé son exécution. Les comptes sont prêts et les mots de passe sont hachés !");
+    }
 
-            // Compte Admin Kyntus
-            Utilisateur userAdmin = Utilisateur.builder()
-                    .email("admin@kyntus.com")
-                    .motDePasse(passwordEncoder.encode("admin123"))
-                    .role(Role.ADMIN)
-                    .actif(true)
-                    .permissions(Arrays.asList("READ_GLOBAL_KPI", "MANAGE_USERS", "MANAGE_ROLES"))
-                    .build();
-            utilisateurRepository.save(userAdmin);
+    // Fonction d'aide bach t-creyi wla t-mettri à jour l'utilisateur
+    private void createOrUpdateUser(String email, String password, Role role, Partenaire partenaire, List<String> permissions) {
+        Utilisateur user = utilisateurRepository.findByEmail(email).orElse(new Utilisateur());
 
-            // Compte Pilote
-            Utilisateur userPilote = Utilisateur.builder()
-                    .email("pilote@kyntus.com")
-                    .motDePasse(passwordEncoder.encode("pilote123"))
-                    .role(Role.PILOTE)
-                    .actif(true)
-                    .permissions(Arrays.asList("READ_CONTESTATIONS", "TRAITER_CONTESTATION"))
-                    .build();
-            utilisateurRepository.save(userPilote);
+        user.setEmail(email);
+        // Hna kan-forciw l'Hachage dyal l'mot de passe dima!
+        user.setMotDePasse(passwordEncoder.encode(password));
+        user.setRole(role);
+        user.setActif(true);
+        user.setPartenaire(partenaire);
+        user.setPermissions(permissions);
 
-            System.out.println("✅ Comptes Utilisateurs (Admin, Pilote, Partenaire) créés avec succès !");
-        }
+        utilisateurRepository.save(user);
     }
 }
