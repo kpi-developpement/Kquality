@@ -1,4 +1,5 @@
 import { ApiResponse, DashboardPartenaireDTO, ErreurResponseDTO, ContestationResponseDTO, KpiArchiveDTO, AuthResponseDTO } from '../types/api';
+import { PartenaireDTO, UtilisateurDTO } from '../types/api';
 
 const isServer = typeof window === 'undefined';
 const BASE_URL = isServer 
@@ -86,4 +87,46 @@ export async function getKpiGlobalAdmin(month: number, year: number): Promise<Kp
   if (!res.ok) throw new Error('Erreur lors de la récupération de la vue globale');
   const json: ApiResponse<KpiArchiveDTO[]> = await res.json();
   return json.data;
+}
+export async function getAdminUsers(): Promise<UtilisateurDTO[]> {
+  const res = await fetch(`${BASE_URL}/admin/users`, { headers: getAuthHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error('Erreur récupération utilisateurs');
+  const json = await res.json();
+  return json.data;
+}
+
+export async function getAdminPartenaires(): Promise<PartenaireDTO[]> {
+  const res = await fetch(`${BASE_URL}/admin/users/partenaires`, { headers: getAuthHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error('Erreur récupération partenaires');
+  const json = await res.json();
+  return json.data;
+}
+
+export async function createAdminUser(data: UtilisateurDTO) {
+  const res = await fetch(`${BASE_URL}/admin/users`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Erreur création utilisateur');
+  }
+}
+
+export async function updateAdminUser(id: number, data: UtilisateurDTO) {
+  const res = await fetch(`${BASE_URL}/admin/users/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Erreur mise à jour utilisateur');
+}
+
+export async function deleteAdminUser(id: number) {
+  const res = await fetch(`${BASE_URL}/admin/users/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error('Erreur suppression utilisateur');
 }

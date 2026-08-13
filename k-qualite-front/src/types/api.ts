@@ -65,3 +65,18 @@ export interface AuthResponseDTO {
   permissions: string[];
   partenaireId: number | null;
 }
+export interface PartenaireDTO {
+  id: number;
+  nomEntreprise: string;
+}
+
+export interface UtilisateurDTO {
+  id?: number;
+  email: string;
+  motDePasse?: string;
+  role: string;
+  actif: boolean;
+  partenaireId?: number | null;
+  partenaireNom?: string;
+  permissions: string[];
+}

@@ -9,7 +9,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, logoutUser, isAuthenticated } = useAuth();
 
-  // Ila makanch m-connecté awla f page login, man-affichiwch l'Navbar
   if (!isAuthenticated || pathname === '/login') return null;
 
   return (
@@ -23,37 +22,24 @@ export default function Navbar() {
       </div>
 
       <div className={styles.navLinks}>
-        {/* Liens pour PARTENAIRE */}
         {user?.role === 'PARTENAIRE' && (
           <>
-            <Link href="/dashboard" className={`${styles.navItem} ${pathname === '/dashboard' ? styles.active : ''}`}>
-              Vue d'ensemble
-            </Link>
-            <Link href="/erreurs" className={`${styles.navItem} ${pathname.startsWith('/erreurs') ? styles.active : ''}`}>
-              Erreurs
-            </Link>
-            <Link href="/cq-penalites" className={`${styles.navItem} ${pathname === '/cq-penalites' ? styles.active : ''}`}>
-              CQ & Pénalités
-            </Link>
+            <Link href="/dashboard" className={`${styles.navItem} ${pathname === '/dashboard' ? styles.active : ''}`}>Vue d'ensemble</Link>
+            <Link href="/erreurs" className={`${styles.navItem} ${pathname.startsWith('/erreurs') ? styles.active : ''}`}>Erreurs</Link>
+            <Link href="/cq-penalites" className={`${styles.navItem} ${pathname === '/cq-penalites' ? styles.active : ''}`}>CQ & Pénalités</Link>
           </>
         )}
 
-        {/* Liens pour PILOTE */}
         {user?.role === 'PILOTE' && (
-          <Link href="/admin" className={`${styles.navItem} ${pathname === '/admin' ? styles.active : ''}`}>
-            Gestion Contestations
-          </Link>
+          <Link href="/admin" className={`${styles.navItem} ${pathname === '/admin' ? styles.active : ''}`}>Gestion Contestations</Link>
         )}
 
-        {/* Liens pour ADMIN */}
         {user?.role === 'ADMIN' && (
           <>
-            <Link href="/admin/vue-globale" className={`${styles.navItem} ${pathname === '/admin/vue-globale' ? styles.active : ''}`}>
-              Vue Globale KPI
-            </Link>
-            <Link href="/admin" className={`${styles.navItem} ${pathname === '/admin' ? styles.active : ''}`}>
-              Contestations
-            </Link>
+            <Link href="/admin/vue-globale" className={`${styles.navItem} ${pathname === '/admin/vue-globale' ? styles.active : ''}`}>Vue Globale KPI</Link>
+            <Link href="/admin" className={`${styles.navItem} ${pathname === '/admin' ? styles.active : ''}`}>Contestations</Link>
+            {/* 🛡️ L'FIX HWA HNA: Zedt l'Lien dyal Utilisateurs */}
+            <Link href="/admin/utilisateurs" className={`${styles.navItem} ${pathname === '/admin/utilisateurs' ? styles.active : ''}`}>Utilisateurs & Accès</Link>
           </>
         )}
       </div>
@@ -61,12 +47,7 @@ export default function Navbar() {
       <div className={styles.userProfile}>
         <span className={styles.partnerName}>{user?.email.split('@')[0].toUpperCase()}</span>
         <span className={styles.roleBadge}>{user?.role}</span>
-        <button 
-          onClick={logoutUser} 
-          style={{ marginLeft: '15px', background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-        >
-          Déconnexion
-        </button>
+        <button onClick={logoutUser} style={{ marginLeft: '15px', background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Déconnexion</button>
       </div>
     </nav>
   );
