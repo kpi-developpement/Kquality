@@ -94,7 +94,14 @@ public class ErreurImportService {
                 }
             }
         }
-        return new ImportSummaryDTO(total, success, rejected, "Importation Excel terminée avec succès.");
+
+        // 🛡️ L'FIX HWA HNA: Utilisation du Builder
+        return ImportSummaryDTO.builder()
+                .totalLignes(total)
+                .lignesInserees(success)
+                .lignesRejetees(rejected)
+                .message("Importation Excel terminée avec succès.")
+                .build();
     }
 
     private ImportSummaryDTO processCsv(MultipartFile file) throws Exception {
@@ -154,7 +161,14 @@ public class ErreurImportService {
                 }
             }
         }
-        return new ImportSummaryDTO(total, success, rejected, "Importation CSV terminée avec succès.");
+
+        // 🛡️ L'FIX HWA HNA: Utilisation du Builder
+        return ImportSummaryDTO.builder()
+                .totalLignes(total)
+                .lignesInserees(success)
+                .lignesRejetees(rejected)
+                .message("Importation CSV terminée avec succès.")
+                .build();
     }
 
     private void processRow(String rdv, String kyn, String categorie, double impact) {
