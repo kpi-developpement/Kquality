@@ -51,46 +51,45 @@ public class PartnerSyncService {
                 return;
             }
 
-            // 1. Extraire les noms d'entreprises uniques (Ignorer les vides)
             Set<String> entreprisesUniques = tics.stream()
                     .map(ExternalTicDTO::getEntreprise)
                     .filter(e -> e != null && !e.trim().isEmpty())
                     .map(String::trim)
                     .collect(Collectors.toSet());
 
-            log.info("🔍 {} entreprises uniques trouvées dans l'API.", entreprisesUniques.size());
+            log.info("🔍 {} entreprises trouvées dans l'API. Traitement en cours...", entreprisesUniques.size());
 
-            // 2. Boucler 3la les entreprises w n-creyiw l'Partenaire w l'Utilisateur ila makanoch
             for (String nomEntreprise : entreprisesUniques) {
 
-                // A. Création du Partenaire
-                Partenaire partenaire = partenaireRepository.findByNomEntrepriseIgnoreCase(nomEntreprise)
+                // 🛡️ L'FIX HWA HNA: Kan-n9iw l'nom mn ay symbole awla espace bach n-creyiw ID Unique w N9i
+                String cleanName = nomEntreprise.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+                String refContrat = "AUTO-" + cleanName;
+
+                // Kan-9elbou b l'Reference Contrat machi b l'Nom, bach n-tfadaw les doublons
+                Partenaire partenaire = partenaireRepository.findByReferenceContrat(refContrat)
                         .orElseGet(() -> {
                             log.info("✨ Nouveau partenaire détecté : {}", nomEntreprise);
                             Partenaire p = Partenaire.builder()
                                     .nomEntreprise(nomEntreprise)
-                                    .referenceContrat("AUTO-" + nomEntreprise.replaceAll("\\s+", "").toUpperCase())
+                                    .referenceContrat(refContrat)
                                     .build();
                             return partenaireRepository.save(p);
                         });
 
-                // B. Création du Compte Utilisateur (Admin du partenaire)
-                // Format dyal l'email: admin@<nom_entreprise_sans_espace>.kyntus.com
-                String cleanName = nomEntreprise.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();
-                String email = "admin@" + cleanName + ".kyntus.com";
+                // Création du Compte Utilisateur
+                String email = "admin@" + cleanName.toLowerCase() + ".kyntus.com";
 
                 if (utilisateurRepository.findByEmail(email).isEmpty()) {
                     log.info("👤 Création du compte pour le partenaire : {}", email);
 
-                    // Mot de passe par défaut: NomEntreprise2026!
-                    String defaultPassword = cleanName + "2026!";
+                    String defaultPassword = cleanName.toLowerCase() + "2026!";
 
                     Utilisateur user = Utilisateur.builder()
                             .email(email)
                             .motDePasse(passwordEncoder.encode(defaultPassword))
                             .role(Role.PARTENAIRE)
                             .actif(true)
-                            .mustChangePassword(true) // 🛡️ FORCER LE CHANGEMENT DE MOT DE PASSE
+                            .mustChangePassword(true) // Forcer le changement de mot de passe
                             .partenaire(partenaire)
                             .permissions(Arrays.asList("READ_DASHBOARD", "READ_ERREURS", "CREATE_CONTESTATION"))
                             .build();
