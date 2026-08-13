@@ -40,8 +40,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService());
+        // 🛡️ L'FIX HWA HNA: Passina l'UserDetailsService direct f l'constructeur
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService());
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -64,7 +64,6 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll() // L'Login maftou7
-                        // .requestMatchers("/api/v1/admin/**").hasRole("ADMIN") // N9drou n-activiwha mn b3d
                         .anyRequest().permitAll() // L'ba9i maftou7 mo2a9atan bach t-testi l'Frontend
                 )
                 .authenticationProvider(authenticationProvider())
