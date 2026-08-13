@@ -34,7 +34,6 @@ public class ErreurImportService {
         String filename = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
 
         try {
-            // 🛡️ L'FIX: Détection automatique dyal l'format (Excel wla CSV)
             if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
                 return processExcel(file);
             } else {
@@ -46,9 +45,6 @@ public class ErreurImportService {
         }
     }
 
-    // ==========================================
-    // 🟢 MOTEUR EXCEL (.xlsx, .xls)
-    // ==========================================
     private ImportSummaryDTO processExcel(MultipartFile file) throws Exception {
         int total = 0, success = 0, rejected = 0;
 
@@ -101,13 +97,9 @@ public class ErreurImportService {
         return new ImportSummaryDTO(total, success, rejected, "Importation Excel terminée avec succès.");
     }
 
-    // ==========================================
-    // 🔵 MOTEUR CSV (.csv)
-    // ==========================================
     private ImportSummaryDTO processCsv(MultipartFile file) throws Exception {
         int total = 0, success = 0, rejected = 0;
 
-        // 🛡️ L'FIX: Détection automatique dyal l'délimiteur (Virgule awla Point-virgule)
         BufferedReader brTest = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
         String firstLine = brTest.readLine();
         char delimiter = ';';
@@ -165,18 +157,13 @@ public class ErreurImportService {
         return new ImportSummaryDTO(total, success, rejected, "Importation CSV terminée avec succès.");
     }
 
-    // ==========================================
-    // ⚙️ LOGIQUE COMMUNE (Sauvegarde en DB)
-    // ==========================================
     private void processRow(String rdv, String kyn, String categorie, double impact) {
-        // 1. Chercher le Technicien par son KYN
         Optional<Technicien> techOpt = technicienRepository.findByMatricule(kyn);
         if (techOpt.isEmpty()) {
             throw new RuntimeException("Technicien KYN " + kyn + " introuvable dans la base de données.");
         }
         Technicien technicien = techOpt.get();
 
-        // 2. Chercher ou Créer le Dossier
         Dossier dossier = dossierRepository.findByReferenceID(rdv)
                 .orElseGet(() -> dossierRepository.save(Dossier.builder()
                         .referenceID(rdv)
@@ -184,7 +171,6 @@ public class ErreurImportService {
                         .technicien(technicien)
                         .build()));
 
-        // 3. Chercher ou Créer la Règle Qualité
         RegleQualite regle = regleQualiteRepository.findByCodeRegle(categorie)
                 .orElseGet(() -> regleQualiteRepository.save(RegleQualite.builder()
                         .codeRegle(categorie)
@@ -192,7 +178,6 @@ public class ErreurImportService {
                         .penaliteUnitaire(impact)
                         .build()));
 
-        // 4. Créer l'Erreur
         Erreur erreur = Erreur.builder()
                 .dateDetection(LocalDateTime.now())
                 .impactEstime(impact)
@@ -205,9 +190,6 @@ public class ErreurImportService {
         erreurRepository.save(erreur);
     }
 
-    // ==========================================
-    // 🛠️ HELPERS (Nettoyage et Recherche)
-    // ==========================================
     private String getCellValue(Cell cell) {
         if (cell == null) return "";
         switch (cell.getCellType()) {
@@ -221,7 +203,6 @@ public class ErreurImportService {
     private String findColumnName(Map<String, Integer> headers, String... keywords) {
         if (headers == null) return null;
         for (String header : headers.keySet()) {
-            // Nettoyage total: on enlève les espaces, tirets, underscores
             String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
             for (String kw : keywords) {
                 String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
