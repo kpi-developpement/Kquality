@@ -1,35 +1,75 @@
+"use client";
+
+import React, { useEffect, useState } from 'react';
 import { getErreurs } from '@/services/apiService';
+import { ErreurResponseDTO } from '@/types/api';
+import { useAuth } from '@/context/AuthContext';
 import ContestationForm from '../ContestationForm'; 
 import Link from 'next/link';
 import styles from './ErreurDetail.module.css';
-import { revalidatePath } from 'next/cache';
 
-// F Next 15+, params kadiroha Promise
-export default async function ErreurDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  
-  // 1. N-tsennaw l'ID hta y-tcharja mn l'URL
-  const resolvedParams = await params;
+export default function ErreurDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // F Next.js 15+, params hya Promise, khassna n-diro liha React.use() f Client Component
+  const resolvedParams = React.use(params);
   const urlId = resolvedParams.id;
 
-  // 2. N-jbdou ga3 l'erreurs w n-filtriw b l'ID li jbna
-  const erreurs = await getErreurs(1);
-  const erreur = erreurs.find(e => e.id.toString() === urlId);
+  const { user } = useAuth();
+  const [erreur, setErreur] = useState<ErreurResponseDTO | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!erreur) {
+  const fetchErreurDetails = async () => {
+    // 🛡️ L'FIX HWA HNA: Kan-jbdou l'ID dyal l'partenaire m-connecté
+    if (!user?.partenaireId) return;
+    
+    try {
+      setLoading(true);
+      const erreurs = await getErreurs(user.partenaireId);
+      const found = erreurs.find(e => e.id.toString() === urlId);
+      
+      if (found) {
+        setErreur(found);
+      } else {
+        setNotFound(true);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des détails:", error);
+      setNotFound(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchErreurDetails();
+  }, [user, urlId]);
+
+  // Mli l'partenaire y-sifet l'contestation b naja7, kan-refreshiw data
+  const handleSuccess = () => {
+    fetchErreurDetails();
+  };
+
+  if (loading) {
     return (
       <div className={styles.container}>
-        <Link href="/erreurs" className={styles.backLink}>&larr; Retour à la liste</Link>
-        <h1>Erreur introuvable (ID: {urlId})</h1>
+        <div style={{ textAlign: 'center', padding: '50px', color: '#7f8c8d' }}>
+          Chargement des détails de l'erreur...
+        </div>
       </div>
     );
   }
 
-  // 3. Fonction dyal refraîchissement
-  const handleSuccess = async () => {
-    "use server";
-    revalidatePath(`/erreurs/${urlId}`);
-    revalidatePath(`/erreurs`);
-  };
+  if (notFound || !erreur) {
+    return (
+      <div className={styles.container}>
+        <Link href="/erreurs" className={styles.backLink}>&larr; Retour à la liste</Link>
+        <div style={{ textAlign: 'center', padding: '50px', background: '#ffebee', borderRadius: '8px', color: '#c62828' }}>
+          <h1>Erreur introuvable</h1>
+          <p>Cette erreur n'existe pas ou n'appartient pas à votre entreprise.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
