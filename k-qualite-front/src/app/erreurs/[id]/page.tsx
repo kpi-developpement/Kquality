@@ -22,9 +22,9 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
     
     try {
       setLoading(true);
-      let erreurs = [];
+      // 🛡️ L'FIX HWA HNA: TypeScript db 3aref chno kayn f had l'tableau
+      let erreurs: ErreurResponseDTO[] = [];
       
-      // L'Admin y9der y-chouf ay erreur, l'Partenaire y-chouf ghir dyalo
       if (user.role === 'ADMIN') {
         erreurs = await getAdminErreurs("ALL");
       } else if (user.partenaireId) {
@@ -57,10 +57,7 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
   if (loading) return <div className={styles.container}><div style={{ textAlign: 'center', padding: '50px' }}>Chargement...</div></div>;
   if (notFound || !erreur) return <div className={styles.container}><h1>Erreur introuvable</h1></div>;
 
-  // 🛡️ L'FIX HWA HNA: Vérification dyal l'échéance (15 jours)
   const isExpired = new Date() > new Date(erreur.echeanceContestation);
-  
-  // L'Admin makay-dirch contestation, kay-chouf ghir l'détails
   const canContest = user?.role === 'PARTENAIRE' && !isExpired && (erreur.statut === 'NOUVEAU' || erreur.statut === 'A_ANALYSER');
 
   return (
@@ -104,7 +101,6 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      {/* 🛡️ L'FIX HWA HNA: Affichage conditionnel dyal l'Formulaire wla l'Message d'erreur */}
       {canContest ? (
         <ContestationForm erreurId={erreur.id} onSuccess={handleSuccess} />
       ) : user?.role === 'PARTENAIRE' ? (

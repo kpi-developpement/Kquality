@@ -59,7 +59,6 @@ public class ErreurImportService {
                 headerMap.put(getCellValue(cell).trim(), cell.getColumnIndex());
             }
 
-            // 🛡️ L'FIX HWA HNA: 7iydna "tech" mn l'recherche. Kay-9leb GHIR 3la KYN.
             Integer colRdv = findColumnIndex(headerMap, "idrdv", "dossier", "rdv");
             Integer colKyn = findColumnIndex(headerMap, "kyn", "idtecnow");
             Integer colCat = findColumnIndex(headerMap, "categorie", "souscategorie", "regle");
@@ -117,7 +116,6 @@ public class ErreurImportService {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
 
-            // 🛡️ L'FIX HWA HNA: 7iydna "tech" mn l'recherche.
             String colRdv = findColumnName(headerMap, "idrdv", "dossier", "rdv");
             String colKyn = findColumnName(headerMap, "kyn", "idtecnow");
             String colCat = findColumnName(headerMap, "categorie", "souscategorie", "regle");
@@ -153,36 +151,24 @@ public class ErreurImportService {
         return ImportSummaryDTO.builder().totalLignes(total).lignesInserees(success).lignesRejetees(rejected).message("Importation CSV terminée avec succès.").build();
     }
 
-    // ==========================================
-    // ⚙️ LOGIQUE COMMUNE (Recherche KYN w Sauvegarde)
-    // ==========================================
     private boolean processRow(String rdv, String rawKyn, String categorie, double impact) {
-
-        // 1. Nettoyage intelligent dyal l'KYN
         String kyn = rawKyn.trim().toUpperCase();
-        if (kyn.endsWith(".0")) {
-            kyn = kyn.substring(0, kyn.length() - 2); // 7iyd .0 dyal Excel
-        }
-        if (!kyn.startsWith("KYN")) {
-            kyn = "KYN" + kyn; // Zid KYN ila kant na9ssa (ex: 1374 -> KYN1374)
-        }
+        if (kyn.endsWith(".0")) kyn = kyn.substring(0, kyn.length() - 2);
+        if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
 
-        // 2. Chercher le Technicien par son KYN (L'Backend kay-jbed l'Partenaire oumatiquement mn DB)
         Optional<Technicien> techOpt = technicienRepository.findByMatricule(kyn);
 
-        // Fallback: Njerbou b rawKyn kima ja f l'fichier ila mal9inahch
         if (techOpt.isEmpty()) {
             techOpt = technicienRepository.findByMatricule(rawKyn.trim());
         }
 
         if (techOpt.isEmpty()) {
             log.warn("Technicien KYN [{}] introuvable dans la base de données.", kyn);
-            return false; // Rejeté
+            return false;
         }
 
         Technicien technicien = techOpt.get();
 
-        // 3. Chercher ou Créer le Dossier (M-lyé m3a l'Technicien w l'Partenaire dyalo)
         Dossier dossier = dossierRepository.findByReferenceID(rdv)
                 .orElseGet(() -> dossierRepository.save(Dossier.builder()
                         .referenceID(rdv)
@@ -190,7 +176,6 @@ public class ErreurImportService {
                         .technicien(technicien)
                         .build()));
 
-        // 4. Chercher ou Créer la Règle Qualité
         RegleQualite regle = regleQualiteRepository.findByCodeRegle(categorie)
                 .orElseGet(() -> regleQualiteRepository.save(RegleQualite.builder()
                         .codeRegle(categorie)
@@ -198,23 +183,19 @@ public class ErreurImportService {
                         .penaliteUnitaire(impact)
                         .build()));
 
-        // 5. Créer l'Erreur (Li ghat-mchi l'Partenaire)
         Erreur erreur = Erreur.builder()
                 .dateDetection(LocalDateTime.now())
                 .impactEstime(impact)
                 .statut(StatutErreur.NOUVEAU)
-                .echeanceContestation(LocalDateTime.now().plusDays(5))
+                .echeanceContestation(LocalDateTime.now().plusDays(15))
                 .dossier(dossier)
                 .regleQualite(regle)
                 .build();
 
         erreurRepository.save(erreur);
-        return true; // Succès
+        return true;
     }
 
-    // ==========================================
-    // 🛠️ HELPERS (Nettoyage et Recherche)
-    // ==========================================
     private String getCellValue(Cell cell) {
         if (cell == null) return "";
         switch (cell.getCellType()) {
