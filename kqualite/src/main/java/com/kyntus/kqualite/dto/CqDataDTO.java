@@ -19,7 +19,8 @@ public class CqDataDTO {
     private String reference;
     private String departement;
     private Double montant;
+    private Double mtSst; // 🛡️ JDID
     private String valeurMetrique;
     private Long partenaireId;
-    private String partenaireNom; // 🛡️ JDID: Bach l'Admin y-chouf smyt l'entreprise
+    private String partenaireNom;
 }

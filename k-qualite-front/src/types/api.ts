@@ -91,6 +91,7 @@ export interface CqDataDTO {
   reference: string;
   departement: string;
   montant: number;
+  mtSst?: number;
   valeurMetrique: string;
   // 🛡️ L'FIX HWA HNA: Zedt les 2 champs li kano na9sin
   partenaireId?: number;

@@ -3,6 +3,7 @@ package com.kyntus.kqualite.controller;
 import com.kyntus.kqualite.domain.CqData;
 import com.kyntus.kqualite.dto.ApiResponse;
 import com.kyntus.kqualite.dto.CqDataDTO;
+import com.kyntus.kqualite.dto.PartenaireDTO;
 import com.kyntus.kqualite.repository.CqDataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +33,6 @@ public class CqDataController {
         return ResponseEntity.ok(ApiResponse.success(data, "Données récupérées"));
     }
 
-    // 🛡️ API JDIDA L'ADMIN
     @GetMapping("/admin")
     public ResponseEntity<ApiResponse<List<CqDataDTO>>> getCqDataAdmin(
             @RequestParam("type") String typeFeuille,
@@ -51,6 +51,20 @@ public class CqDataController {
         return ResponseEntity.ok(ApiResponse.success(data, "Données Admin récupérées"));
     }
 
+    // 🛡️ L'FIX HWA HNA: API jdida l'Dropdown dyal l'Admin
+    @GetMapping("/admin/partenaires-actifs")
+    public ResponseEntity<ApiResponse<List<PartenaireDTO>>> getPartenairesActifs(
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+
+        List<PartenaireDTO> data = cqDataRepository.findDistinctPartenairesByMoisAndAnnee(month, year)
+                .stream()
+                .map(p -> new PartenaireDTO(p.getId(), p.getNomEntreprise()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.success(data, "Partenaires actifs récupérés"));
+    }
+
     private CqDataDTO mapToDTO(CqData c) {
         return CqDataDTO.builder()
                 .id(c.getId())
@@ -62,6 +76,7 @@ public class CqDataController {
                 .reference(c.getReference())
                 .departement(c.getDepartement())
                 .montant(c.getMontant())
+                .mtSst(c.getMtSst())
                 .valeurMetrique(c.getValeurMetrique())
                 .partenaireId(c.getPartenaire().getId())
                 .partenaireNom(c.getPartenaire().getNomEntreprise())

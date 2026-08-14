@@ -64,19 +64,20 @@ export default function CqDetailsPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                {activeTab === "Audits tech" && <><th>Mois</th><th>ID RDV</th><th>Département</th><th>Montant</th><th>KYN</th></>}
-                {activeTab === "Check-voisinage" && <><th>Mois</th><th>Intervention</th><th>Voisins KO</th><th>Montant</th><th>KYN</th></>}
-                {activeTab === "Expertises SAV" && <><th>N° Intervention</th><th>KYN</th></>}
-                {activeTab === "Taux de coupures" && <><th>ID RDV</th><th>Clients Coupés</th><th>Département</th><th>Montant</th><th>KYN</th></>}
+                {/* 🛡️ L'FIX HWA HNA: L'Partenaire kay-chouf ghir MT SST */}
+                {activeTab === "Audits tech" && <><th>Mois</th><th>ID RDV</th><th>Département</th><th>MT SST</th><th>KYN</th></>}
+                {activeTab === "Check-voisinage" && <><th>Mois</th><th>Intervention</th><th>Voisins KO</th><th>MT SST</th><th>KYN</th></>}
+                {activeTab === "Expertises SAV" && <><th>N° Intervention</th><th>MT SST</th><th>KYN</th></>}
+                {activeTab === "Taux de coupures" && <><th>ID RDV</th><th>Clients Coupés</th><th>Département</th><th>MT SST</th><th>KYN</th></>}
               </tr>
             </thead>
             <tbody>
               {data.map((row) => (
                 <tr key={row.id}>
-                  {activeTab === "Audits tech" && <><td>{row.anMois}</td><td>{row.reference}</td><td>{row.departement}</td><td>{row.montant} €</td><td>{row.kyn}</td></>}
-                  {activeTab === "Check-voisinage" && <><td>{row.anMois}</td><td>{row.reference}</td><td>{row.valeurMetrique}</td><td>{row.montant} €</td><td>{row.kyn}</td></>}
-                  {activeTab === "Expertises SAV" && <><td>{row.reference}</td><td>{row.kyn}</td></>}
-                  {activeTab === "Taux de coupures" && <><td>{row.reference}</td><td>{row.valeurMetrique}</td><td>{row.departement}</td><td>{row.montant} €</td><td>{row.kyn}</td></>}
+                  {activeTab === "Audits tech" && <><td>{row.anMois}</td><td>{row.reference}</td><td>{row.departement}</td><td style={{fontWeight:'bold', color:'#e74c3c'}}>{row.mtSst || 0} €</td><td>{row.kyn}</td></>}
+                  {activeTab === "Check-voisinage" && <><td>{row.anMois}</td><td>{row.reference}</td><td>{row.valeurMetrique}</td><td style={{fontWeight:'bold', color:'#e74c3c'}}>{row.mtSst || 0} €</td><td>{row.kyn}</td></>}
+                  {activeTab === "Expertises SAV" && <><td>{row.reference}</td><td style={{fontWeight:'bold', color:'#e74c3c'}}>{row.mtSst || 0} €</td><td>{row.kyn}</td></>}
+                  {activeTab === "Taux de coupures" && <><td>{row.reference}</td><td>{row.valeurMetrique}</td><td>{row.departement}</td><td style={{fontWeight:'bold', color:'#e74c3c'}}>{row.mtSst || 0} €</td><td>{row.kyn}</td></>}
                 </tr>
               ))}
               {data.length === 0 && (

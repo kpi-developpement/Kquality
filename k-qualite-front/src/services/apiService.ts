@@ -207,3 +207,12 @@ export async function getAdminCqData(typeFeuille: string, month: number, year: n
   const json = await res.json();
   return json.data;
 }
+export async function getActivePartenairesForCq(month: number, year: number): Promise<PartenaireDTO[]> {
+  const res = await fetch(`${BASE_URL}/cq-data/admin/partenaires-actifs?month=${month}&year=${year}`, { 
+    headers: getAuthHeaders(), 
+    cache: 'no-store' 
+  });
+  if (!res.ok) throw new Error('Erreur récupération partenaires actifs');
+  const json = await res.json();
+  return json.data;
+}

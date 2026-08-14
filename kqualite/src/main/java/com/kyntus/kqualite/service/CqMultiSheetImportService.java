@@ -29,7 +29,6 @@ public class CqMultiSheetImportService {
     public ImportSummaryDTO importMultiSheetExcel(MultipartFile file, int month, int year) {
         int total = 0, success = 0, rejected = 0;
 
-        // 🛡️ L'FIX HWA HNA: Kan-ms7ou ghir data dyal dak ch'her machi l'table kamla
         cqDataRepository.deleteByMoisAndAnnee(month, year);
 
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
@@ -92,24 +91,29 @@ public class CqMultiSheetImportService {
         if (techOpt.isEmpty()) return false;
 
         Partenaire partenaire = techOpt.get().getPartenaire();
+
+        // 🛡️ L'FIX HWA HNA: Njbdou l'Montant w l'MT SST f ga3 les feuilles (ila kano)
+        Double montantGlobal = parseDouble(extractValue(row, headers, "montant"));
+        Double mtSst = parseDouble(extractValue(row, headers, "mt sst", "montant sst"));
+
         CqData.CqDataBuilder builder = CqData.builder()
                 .typeFeuille(sheetName)
                 .kyn(kyn)
                 .partenaire(partenaire)
                 .mois(month)
-                .annee(year);
+                .annee(year)
+                .montant(montantGlobal)
+                .mtSst(mtSst);
 
         if (sheetName.equalsIgnoreCase("Audits tech")) {
             builder.anMois(extractValue(row, headers, "an_mois_text"))
                     .reference(extractValue(row, headers, "idnt_rdv_intr_audt"))
-                    .departement(extractValue(row, headers, "code_departement"))
-                    .montant(parseDouble(extractValue(row, headers, "montant")));
+                    .departement(extractValue(row, headers, "code_departement"));
         }
         else if (sheetName.equalsIgnoreCase("Check-voisinage")) {
             builder.anMois(extractValue(row, headers, "an_mois_text"))
                     .reference(extractValue(row, headers, "intervention number"))
-                    .valeurMetrique(extractValue(row, headers, "nbre de voisins en état ko"))
-                    .montant(parseDouble(extractValue(row, headers, "montant")));
+                    .valeurMetrique(extractValue(row, headers, "nbre de voisins en état ko"));
         }
         else if (sheetName.equalsIgnoreCase("Expertises SAV")) {
             builder.reference(extractValue(row, headers, "bat_numero intervention maint"));
@@ -117,8 +121,7 @@ public class CqMultiSheetImportService {
         else if (sheetName.equalsIgnoreCase("Taux de coupures")) {
             builder.reference(extractValue(row, headers, "idnt_rdv"))
                     .valeurMetrique(extractValue(row, headers, "nb_clients_coupes_rdv"))
-                    .departement(extractValue(row, headers, "département", "departement"))
-                    .montant(parseDouble(extractValue(row, headers, "montant", "mt sst")));
+                    .departement(extractValue(row, headers, "département", "departement"));
         }
 
         cqDataRepository.save(builder.build());

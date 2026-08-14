@@ -26,7 +26,6 @@ public class CqData {
     @JoinColumn(name = "partenaire_id", nullable = false)
     private Partenaire partenaire;
 
-    // 🛡️ L'FIX HWA HNA: Zedt Mois w Annee bach n-gériw l'historique
     @Column(name = "mois", nullable = false)
     private Integer mois;
 
@@ -34,7 +33,7 @@ public class CqData {
     private Integer annee;
 
     @Column(name = "an_mois")
-    private String anMois; // L'valeur li jaya mn l'Excel (Optionnelle)
+    private String anMois;
 
     @Column(name = "reference")
     private String reference;
@@ -44,6 +43,10 @@ public class CqData {
 
     @Column(name = "montant")
     private Double montant;
+
+    // 🛡️ L'FIX HWA HNA: Zedt l'colonne MT SST
+    @Column(name = "mt_sst")
+    private Double mtSst;
 
     @Column(name = "valeur_metrique")
     private String valeurMetrique;
