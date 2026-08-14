@@ -216,3 +216,15 @@ export async function getActivePartenairesForCq(month: number, year: number): Pr
   const json = await res.json();
   return json.data;
 }
+
+// --- ERREURS (ADMIN) ---
+export async function getAdminErreurs(partenaireId?: string): Promise<ErreurResponseDTO[]> {
+  let url = `${BASE_URL}/admin/erreurs`;
+  if (partenaireId && partenaireId !== "ALL") {
+    url += `?partenaireId=${partenaireId}`;
+  }
+  const res = await fetch(url, { headers: getAuthHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error('Erreur récupération erreurs admin');
+  const json = await res.json();
+  return json.data;
+}

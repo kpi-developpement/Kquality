@@ -20,14 +20,14 @@ public class ErreurResponseDTO {
     private LocalDateTime echeanceContestation;
     private StatutErreur statut;
 
-    // Des infos mn les autres tables mbessetine
     private String dossierReference;
     private LocalDateTime dossierDateIntervention;
     private String technicienNomComplet;
     private String technicienMatricule;
     private String regleCode;
     private String regleDescription;
-
-    // Bch n3erfo wach fiha contestation wla la
     private Boolean aContestation;
+
+    // 🛡️ L'FIX HWA HNA: Zedt smyt l'partenaire l'Admin
+    private String partenaireNom;
 }

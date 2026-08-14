@@ -18,14 +18,25 @@ public class ErreurService {
 
     @Transactional(readOnly = true)
     public List<ErreurResponseDTO> getErreursByPartenaire(Long partenaireId) {
-        List<Erreur> erreurs = erreurRepository.findAllByPartenaireId(partenaireId);
+        return erreurRepository.findAllByPartenaireId(partenaireId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
 
+    // 🛡️ L'FIX HWA HNA: Fonction jdida l'Admin bach y-jbed kolchi wla y-filtri
+    @Transactional(readOnly = true)
+    public List<ErreurResponseDTO> getAllErreursAdmin(Long partenaireId) {
+        List<Erreur> erreurs;
+        if (partenaireId != null) {
+            erreurs = erreurRepository.findAllByPartenaireId(partenaireId);
+        } else {
+            erreurs = erreurRepository.findAll();
+        }
         return erreurs.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
-    // Fonction d'aide bach n-mappiw l'Entité l' DTO bla man3riw la base de données
     private ErreurResponseDTO mapToDTO(Erreur erreur) {
         return ErreurResponseDTO.builder()
                 .id(erreur.getId())
@@ -41,6 +52,7 @@ public class ErreurService {
                 .regleCode(erreur.getRegleQualite().getCodeRegle())
                 .regleDescription(erreur.getRegleQualite().getDescription())
                 .aContestation(erreur.getContestation() != null)
+                .partenaireNom(erreur.getDossier().getTechnicien().getPartenaire().getNomEntreprise()) // 🛡️ JDID
                 .build();
     }
 }

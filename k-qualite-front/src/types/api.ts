@@ -30,6 +30,7 @@ export interface ErreurResponseDTO {
   regleCode: string;
   regleDescription: string;
   aContestation: boolean;
+  partenaireNom?: string;
 }
 
 export interface ContestationResponseDTO {

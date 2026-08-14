@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { getErreurs } from '@/services/apiService';
+import { getErreurs, getAdminErreurs } from '@/services/apiService';
 import { ErreurResponseDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import ContestationForm from '../ContestationForm'; 
@@ -9,7 +9,6 @@ import Link from 'next/link';
 import styles from './ErreurDetail.module.css';
 
 export default function ErreurDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  // F Next.js 15+, params hya Promise, khassna n-diro liha React.use() f Client Component
   const resolvedParams = React.use(params);
   const urlId = resolvedParams.id;
 
@@ -19,12 +18,19 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
   const [notFound, setNotFound] = useState(false);
 
   const fetchErreurDetails = async () => {
-    // 🛡️ L'FIX HWA HNA: Kan-jbdou l'ID dyal l'partenaire m-connecté
-    if (!user?.partenaireId) return;
+    if (!user) return;
     
     try {
       setLoading(true);
-      const erreurs = await getErreurs(user.partenaireId);
+      let erreurs = [];
+      
+      // L'Admin y9der y-chouf ay erreur, l'Partenaire y-chouf ghir dyalo
+      if (user.role === 'ADMIN') {
+        erreurs = await getAdminErreurs("ALL");
+      } else if (user.partenaireId) {
+        erreurs = await getErreurs(user.partenaireId);
+      }
+
       const found = erreurs.find(e => e.id.toString() === urlId);
       
       if (found) {
@@ -44,36 +50,22 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
     fetchErreurDetails();
   }, [user, urlId]);
 
-  // Mli l'partenaire y-sifet l'contestation b naja7, kan-refreshiw data
   const handleSuccess = () => {
     fetchErreurDetails();
   };
 
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <div style={{ textAlign: 'center', padding: '50px', color: '#7f8c8d' }}>
-          Chargement des détails de l'erreur...
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className={styles.container}><div style={{ textAlign: 'center', padding: '50px' }}>Chargement...</div></div>;
+  if (notFound || !erreur) return <div className={styles.container}><h1>Erreur introuvable</h1></div>;
 
-  if (notFound || !erreur) {
-    return (
-      <div className={styles.container}>
-        <Link href="/erreurs" className={styles.backLink}>&larr; Retour à la liste</Link>
-        <div style={{ textAlign: 'center', padding: '50px', background: '#ffebee', borderRadius: '8px', color: '#c62828' }}>
-          <h1>Erreur introuvable</h1>
-          <p>Cette erreur n'existe pas ou n'appartient pas à votre entreprise.</p>
-        </div>
-      </div>
-    );
-  }
+  // 🛡️ L'FIX HWA HNA: Vérification dyal l'échéance (15 jours)
+  const isExpired = new Date() > new Date(erreur.echeanceContestation);
+  
+  // L'Admin makay-dirch contestation, kay-chouf ghir l'détails
+  const canContest = user?.role === 'PARTENAIRE' && !isExpired && (erreur.statut === 'NOUVEAU' || erreur.statut === 'A_ANALYSER');
 
   return (
     <div className={styles.container}>
-      <Link href="/erreurs" className={styles.backLink}>&larr; Retour à la liste</Link>
+      <Link href={user?.role === 'ADMIN' ? "/admin/erreurs" : "/erreurs"} className={styles.backLink}>&larr; Retour à la liste</Link>
       
       <div className={styles.headerBox}>
         <div className={styles.headerLeft}>
@@ -90,10 +82,14 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
         <div className={styles.infoCard}>
           <h3>Détails de l'intervention</h3>
           <ul>
+            {user?.role === 'ADMIN' && <li style={{ color: '#1976d2', fontWeight: 'bold' }}>Partenaire: {erreur.partenaireNom}</li>}
             <li><strong>Technicien:</strong> {erreur.technicienNomComplet} ({erreur.technicienMatricule})</li>
             <li><strong>Date d'intervention:</strong> {new Date(erreur.dossierDateIntervention).toLocaleDateString()}</li>
             <li><strong>Date de détection:</strong> {new Date(erreur.dateDetection).toLocaleString()}</li>
-            <li><strong>Échéance contestation:</strong> {new Date(erreur.echeanceContestation).toLocaleString()}</li>
+            <li>
+              <strong>Échéance contestation:</strong> {new Date(erreur.echeanceContestation).toLocaleString()}
+              {isExpired && <span style={{ color: '#e74c3c', marginLeft: '10px', fontWeight: 'bold' }}>(Délai dépassé)</span>}
+            </li>
           </ul>
         </div>
         
@@ -108,14 +104,16 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      {/* Formulaire de contestation */}
-      {erreur.statut === 'NOUVEAU' || erreur.statut === 'A_ANALYSER' ? (
+      {/* 🛡️ L'FIX HWA HNA: Affichage conditionnel dyal l'Formulaire wla l'Message d'erreur */}
+      {canContest ? (
         <ContestationForm erreurId={erreur.id} onSuccess={handleSuccess} />
-      ) : (
-        <div className={styles.lockedMessage}>
-          Cette erreur est verrouillée (Statut: {erreur.statut}). Vous ne pouvez plus la contester.
+      ) : user?.role === 'PARTENAIRE' ? (
+        <div className={styles.lockedMessage} style={{ borderColor: isExpired ? '#e74c3c' : '#7f8c8d', backgroundColor: isExpired ? '#fdfefe' : '#f1f2f6' }}>
+          {isExpired 
+            ? "Le délai de 15 jours pour contester cette erreur est dépassé. L'action est désormais verrouillée." 
+            : `Cette erreur est verrouillée (Statut: ${erreur.statut}). Vous ne pouvez plus la contester.`}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

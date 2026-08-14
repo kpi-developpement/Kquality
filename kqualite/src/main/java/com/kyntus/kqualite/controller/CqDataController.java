@@ -51,7 +51,7 @@ public class CqDataController {
         return ResponseEntity.ok(ApiResponse.success(data, "Données Admin récupérées"));
     }
 
-    // 🛡️ L'FIX HWA HNA: API jdida l'Dropdown dyal l'Admin
+    //  API jdida l'Dropdown dyal l'Admin
     @GetMapping("/admin/partenaires-actifs")
     public ResponseEntity<ApiResponse<List<PartenaireDTO>>> getPartenairesActifs(
             @RequestParam("month") int month,
