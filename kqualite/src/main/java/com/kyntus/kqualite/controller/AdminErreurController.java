@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class AdminErreurController {
 
     private final ErreurImportService erreurImportService;
-    private final CqMultiSheetImportService cqMultiSheetImportService; // 🛡️ JDID
+    private final CqMultiSheetImportService cqMultiSheetImportService;
 
     @PostMapping("/import")
     public ResponseEntity<ApiResponse<ImportSummaryDTO>> importErreurs(@RequestParam("file") MultipartFile file) {
@@ -25,11 +25,13 @@ public class AdminErreurController {
         return ResponseEntity.ok(ApiResponse.success(summary, "Fichier traité"));
     }
 
-    // 🛡️ JDID: L'API dyal l'Excel Multi-feuilles
     @PostMapping("/import-multi-cq")
-    public ResponseEntity<ApiResponse<ImportSummaryDTO>> importMultiCq(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ApiResponse<ImportSummaryDTO>> importMultiCq(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
         if (file.isEmpty()) return ResponseEntity.badRequest().build();
-        ImportSummaryDTO summary = cqMultiSheetImportService.importMultiSheetExcel(file);
+        ImportSummaryDTO summary = cqMultiSheetImportService.importMultiSheetExcel(file, month, year);
         return ResponseEntity.ok(ApiResponse.success(summary, "Fichier Multi-feuilles traité"));
     }
 }

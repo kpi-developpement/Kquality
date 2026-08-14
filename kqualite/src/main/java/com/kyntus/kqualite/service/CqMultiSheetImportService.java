@@ -26,11 +26,11 @@ public class CqMultiSheetImportService {
     private final TechnicienRepository technicienRepository;
 
     @Transactional
-    public ImportSummaryDTO importMultiSheetExcel(MultipartFile file) {
+    public ImportSummaryDTO importMultiSheetExcel(MultipartFile file, int month, int year) {
         int total = 0, success = 0, rejected = 0;
 
-        // Vider l'ancienne table avant le nouvel import (Idempotence)
-        cqDataRepository.deleteAll();
+        // 🛡️ L'FIX HWA HNA: Kan-ms7ou ghir data dyal dak ch'her machi l'table kamla
+        cqDataRepository.deleteByMoisAndAnnee(month, year);
 
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
 
@@ -38,7 +38,6 @@ public class CqMultiSheetImportService {
                 Sheet sheet = workbook.getSheetAt(i);
                 String sheetName = sheet.getSheetName().trim();
 
-                // On ignore les feuilles non concernées
                 if (!sheetName.equalsIgnoreCase("Audits tech") &&
                         !sheetName.equalsIgnoreCase("Check-voisinage") &&
                         !sheetName.equalsIgnoreCase("Expertises SAV") &&
@@ -60,7 +59,7 @@ public class CqMultiSheetImportService {
                     total++;
 
                     try {
-                        boolean isProcessed = processRowBySheet(sheetName, row, headerMap);
+                        boolean isProcessed = processRowBySheet(sheetName, row, headerMap, month, year);
                         if (isProcessed) success++; else rejected++;
                     } catch (Exception e) {
                         log.error("Erreur ligne {} feuille {} : {}", r, sheetName, e.getMessage());
@@ -77,27 +76,28 @@ public class CqMultiSheetImportService {
                 .totalLignes(total)
                 .lignesInserees(success)
                 .lignesRejetees(rejected)
-                .message("Importation Multi-feuilles terminée.")
+                .message("Importation Multi-feuilles terminée pour " + month + "/" + year)
                 .build();
     }
 
-    private boolean processRowBySheet(String sheetName, Row row, Map<String, Integer> headers) {
+    private boolean processRowBySheet(String sheetName, Row row, Map<String, Integer> headers, int month, int year) {
         String kyn = extractValue(row, headers, "kyn");
         if (kyn.isEmpty()) return false;
 
-        // Nettoyage KYN
         kyn = kyn.trim().toUpperCase();
         if (kyn.endsWith(".0")) kyn = kyn.substring(0, kyn.length() - 2);
         if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
 
         Optional<Technicien> techOpt = technicienRepository.findByMatricule(kyn);
-        if (techOpt.isEmpty()) return false; // Rejeté si KYN introuvable
+        if (techOpt.isEmpty()) return false;
 
         Partenaire partenaire = techOpt.get().getPartenaire();
         CqData.CqDataBuilder builder = CqData.builder()
                 .typeFeuille(sheetName)
                 .kyn(kyn)
-                .partenaire(partenaire);
+                .partenaire(partenaire)
+                .mois(month)
+                .annee(year);
 
         if (sheetName.equalsIgnoreCase("Audits tech")) {
             builder.anMois(extractValue(row, headers, "an_mois_text"))

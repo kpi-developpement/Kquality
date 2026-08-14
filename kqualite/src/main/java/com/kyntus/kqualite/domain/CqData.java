@@ -17,7 +17,7 @@ public class CqData {
     private Long id;
 
     @Column(name = "type_feuille", nullable = false)
-    private String typeFeuille; // Ex: "Audits tech", "Check-voisinage"...
+    private String typeFeuille;
 
     @Column(name = "kyn", nullable = false)
     private String kyn;
@@ -26,11 +26,18 @@ public class CqData {
     @JoinColumn(name = "partenaire_id", nullable = false)
     private Partenaire partenaire;
 
+    // 🛡️ L'FIX HWA HNA: Zedt Mois w Annee bach n-gériw l'historique
+    @Column(name = "mois", nullable = false)
+    private Integer mois;
+
+    @Column(name = "annee", nullable = false)
+    private Integer annee;
+
     @Column(name = "an_mois")
-    private String anMois;
+    private String anMois; // L'valeur li jaya mn l'Excel (Optionnelle)
 
     @Column(name = "reference")
-    private String reference; // IDNT_RDV, Intervention number...
+    private String reference;
 
     @Column(name = "departement")
     private String departement;
@@ -39,5 +46,5 @@ public class CqData {
     private Double montant;
 
     @Column(name = "valeur_metrique")
-    private String valeurMetrique; // Nb_clients_coupes, Nbre de voisins KO...
+    private String valeurMetrique;
 }

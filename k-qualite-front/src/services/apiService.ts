@@ -165,9 +165,15 @@ export async function importErreursExcel(file: File) {
 
   return await res.json();
 }
-export async function importMultiCqExcel(file: File) {
+
+
+
+
+export async function importMultiCqExcel(file: File, month: number, year: number) {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('month', month.toString());
+  formData.append('year', year.toString());
 
   const res = await fetch(`${BASE_URL}/admin/erreurs/import-multi-cq`, {
     method: 'POST',
@@ -182,12 +188,22 @@ export async function importMultiCqExcel(file: File) {
   return await res.json();
 }
 
-export async function getCqDataByPartenaire(partenaireId: number, typeFeuille: string): Promise<CqDataDTO[]> {
-  const res = await fetch(`${BASE_URL}/cq-data/partenaire/${partenaireId}?type=${encodeURIComponent(typeFeuille)}`, { 
-    headers: getAuthHeaders(), 
-    cache: 'no-store' 
+export async function getCqDataByPartenaire(partenaireId: number, typeFeuille: string, month: number, year: number): Promise<CqDataDTO[]> {
+  const res = await fetch(`${BASE_URL}/cq-data/partenaire/${partenaireId}?type=${encodeURIComponent(typeFeuille)}&month=${month}&year=${year}`, { 
+    headers: getAuthHeaders(), cache: 'no-store' 
   });
   if (!res.ok) throw new Error('Erreur récupération CQ Data');
+  const json = await res.json();
+  return json.data;
+}
+
+export async function getAdminCqData(typeFeuille: string, month: number, year: number, partenaireId?: string): Promise<CqDataDTO[]> {
+  let url = `${BASE_URL}/cq-data/admin?type=${encodeURIComponent(typeFeuille)}&month=${month}&year=${year}`;
+  if (partenaireId && partenaireId !== "ALL") {
+    url += `&partenaireId=${partenaireId}`;
+  }
+  const res = await fetch(url, { headers: getAuthHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error('Erreur récupération CQ Data Admin');
   const json = await res.json();
   return json.data;
 }
