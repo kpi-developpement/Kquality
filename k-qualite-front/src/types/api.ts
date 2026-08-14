@@ -31,6 +31,7 @@ export interface ErreurResponseDTO {
   regleDescription: string;
   aContestation: boolean;
 }
+
 export interface ContestationResponseDTO {
   id: number;
   motif: string;
@@ -43,7 +44,6 @@ export interface ContestationResponseDTO {
   impactEstime: number;
 }
 
-// --- JDID ---
 export interface KpiArchiveDTO {
   id: number;
   mois: number;
@@ -64,7 +64,9 @@ export interface AuthResponseDTO {
   role: string;
   permissions: string[];
   partenaireId: number | null;
+  mustChangePassword?: boolean;
 }
+
 export interface PartenaireDTO {
   id: number;
   nomEntreprise: string;
@@ -80,15 +82,7 @@ export interface UtilisateurDTO {
   partenaireNom?: string;
   permissions: string[];
 }
-export interface AuthResponseDTO {
-  token: string;
-  id: number;
-  email: string;
-  role: string;
-  permissions: string[];
-  partenaireId: number | null;
-  mustChangePassword?: boolean; // 🛡️ L'FIX HWA HNA
-}
+
 export interface CqDataDTO {
   id: number;
   typeFeuille: string;
@@ -98,4 +92,7 @@ export interface CqDataDTO {
   departement: string;
   montant: number;
   valeurMetrique: string;
+  // 🛡️ L'FIX HWA HNA: Zedt les 2 champs li kano na9sin
+  partenaireId?: number;
+  partenaireNom?: string;
 }
