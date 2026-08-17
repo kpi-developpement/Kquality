@@ -43,8 +43,6 @@ public class CqPartenaireImportService {
         cqPartenaireKpiRepository.deleteByMoisAndAnnee(month, year);
 
         Map<Partenaire, Stats> statsMap = new HashMap<>();
-
-        // 🛡️ L'FIX 1: Chargement de tous les techniciens en RAM pour un matching parfait et ultra-rapide
         Map<String, Technicien> techMap = loadTechniciensMap();
         log.info("🚀 {} techniciens chargés en mémoire pour le matching.", techMap.size());
 
@@ -92,13 +90,12 @@ public class CqPartenaireImportService {
 
         return ImportSummaryDTO.builder()
                 .totalLignes(total)
-                .lignesInserees(success) // 🛡️ L'FIX 2: Afficher le vrai nombre de lignes CSV réussies
+                .lignesInserees(success)
                 .lignesRejetees(rejected)
                 .message("Calculs CQ Partenaire terminés pour " + month + "/" + year)
                 .build();
     }
 
-    // 🛡️ L'FIX 3: Fonction li kat-jbed w kat-n99i ga3 les KYNs mn DB
     private Map<String, Technicien> loadTechniciensMap() {
         List<Technicien> allTechs = technicienRepository.findAll();
         Map<String, Technicien> map = new HashMap<>();
@@ -124,7 +121,8 @@ public class CqPartenaireImportService {
                 headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
             }
 
-            Integer colKyn = findColumnIndex(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
+            // 🛡️ L'FIX HWA HNA: Priorité l'prv_tcnw_id_tech w idtecnow
+            Integer colKyn = findColumnIndex(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech");
             Integer colZone = findColumnIndex(headerMap, "zone_statut prise", "zone");
             Integer colRang = findColumnIndex(headerMap, "rang_rdv", "rang");
             Integer colStatut = findColumnIndex(headerMap, "grp_statut_crinstall_mnt", "statut");
@@ -169,7 +167,8 @@ public class CqPartenaireImportService {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
 
-            String colKyn = findColumnName(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
+            // 🛡️ L'FIX HWA HNA: Priorité l'prv_tcnw_id_tech w idtecnow
+            String colKyn = findColumnName(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech");
             String colZone = findColumnName(headerMap, "zone_statut prise", "zone");
             String colRang = findColumnName(headerMap, "rang_rdv", "rang");
             String colStatut = findColumnName(headerMap, "grp_statut_crinstall_mnt", "statut");
@@ -195,15 +194,12 @@ public class CqPartenaireImportService {
     private boolean processRowLogic(String rawKyn, String rawZone, String rawRang, String rawStatut, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap) {
         if (rawKyn == null || rawKyn.trim().isEmpty()) return false;
 
-        // Nettoyage dyal l'KYN li jay mn l'fichier
         String kyn = rawKyn.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
         if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
 
-        // 🛡️ L'FIX 4: Recherche instantanée f l'RAM
         Technicien technicien = techMap.get(kyn);
 
         if (technicien == null) {
-            // N-loggiw ghir chwiya bach may3merch l'serveur
             if (Math.random() < 0.001) log.warn("Exemple de KYN introuvable: [{}] (Original: [{}])", kyn, rawKyn);
             return false;
         }
@@ -264,12 +260,24 @@ public class CqPartenaireImportService {
         }
     }
 
+    // 🛡️ L'FIX HWA HNA: Algorithme Sniper (Match Exact 9bel Contains)
     private String findColumnName(Map<String, Integer> headers, String... keywords) {
         if (headers == null) return null;
-        for (String header : headers.keySet()) {
-            String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
-            for (String kw : keywords) {
-                String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
+
+        // 1. Recherche EXACTE (Priorité absolue)
+        for (String kw : keywords) {
+            String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
+            for (String header : headers.keySet()) {
+                String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
+                if (clean.equals(cleanKw)) return header;
+            }
+        }
+
+        // 2. Recherche par INCLUSION (Fallback)
+        for (String kw : keywords) {
+            String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
+            for (String header : headers.keySet()) {
+                String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
                 if (clean.contains(cleanKw)) return header;
             }
         }
