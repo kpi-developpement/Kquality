@@ -44,14 +44,17 @@ public class CqPartenaireImportService {
 
         Map<Partenaire, Stats> statsMap = new HashMap<>();
 
-        // 🛡️ L'FIX 1: Tableau bach n-récupériw les compteurs mn les fonctions
+        // 🛡️ L'FIX 1: Chargement de tous les techniciens en RAM pour un matching parfait et ultra-rapide
+        Map<String, Technicien> techMap = loadTechniciensMap();
+        log.info("🚀 {} techniciens chargés en mémoire pour le matching.", techMap.size());
+
         int[] counts;
 
         try {
             if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
-                counts = processExcel(file, statsMap);
+                counts = processExcel(file, statsMap, techMap);
             } else {
-                counts = processCsv(file, statsMap);
+                counts = processCsv(file, statsMap, techMap);
             }
         } catch (Exception e) {
             log.error("Erreur globale d'importation CQ Partenaire", e);
@@ -89,13 +92,27 @@ public class CqPartenaireImportService {
 
         return ImportSummaryDTO.builder()
                 .totalLignes(total)
-                .lignesInserees(success) // Lignes li dazou b naja7
+                .lignesInserees(success) // 🛡️ L'FIX 2: Afficher le vrai nombre de lignes CSV réussies
                 .lignesRejetees(rejected)
                 .message("Calculs CQ Partenaire terminés pour " + month + "/" + year)
                 .build();
     }
 
-    private int[] processExcel(MultipartFile file, Map<Partenaire, Stats> statsMap) throws Exception {
+    // 🛡️ L'FIX 3: Fonction li kat-jbed w kat-n99i ga3 les KYNs mn DB
+    private Map<String, Technicien> loadTechniciensMap() {
+        List<Technicien> allTechs = technicienRepository.findAll();
+        Map<String, Technicien> map = new HashMap<>();
+        for (Technicien t : allTechs) {
+            if (t.getMatricule() != null) {
+                String cleanMatricule = t.getMatricule().replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+                if (!cleanMatricule.startsWith("KYN")) cleanMatricule = "KYN" + cleanMatricule;
+                map.put(cleanMatricule, t);
+            }
+        }
+        return map;
+    }
+
+    private int[] processExcel(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap) throws Exception {
         int total = 0, success = 0, rejected = 0;
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
@@ -126,14 +143,14 @@ public class CqPartenaireImportService {
                 String rang = getCellValue(row.getCell(colRang));
                 String statut = getCellValue(row.getCell(colStatut));
 
-                boolean isProcessed = processRowLogic(kyn, zone, rang, statut, statsMap);
+                boolean isProcessed = processRowLogic(kyn, zone, rang, statut, statsMap, techMap);
                 if (isProcessed) success++; else rejected++;
             }
         }
         return new int[]{total, success, rejected};
     }
 
-    private int[] processCsv(MultipartFile file, Map<Partenaire, Stats> statsMap) throws Exception {
+    private int[] processCsv(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap) throws Exception {
         int total = 0, success = 0, rejected = 0;
 
         BufferedReader brTest = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
@@ -168,33 +185,30 @@ public class CqPartenaireImportService {
                 String rang = record.get(colRang);
                 String statut = record.get(colStatut);
 
-                boolean isProcessed = processRowLogic(kyn, zone, rang, statut, statsMap);
+                boolean isProcessed = processRowLogic(kyn, zone, rang, statut, statsMap, techMap);
                 if (isProcessed) success++; else rejected++;
             }
         }
         return new int[]{total, success, rejected};
     }
 
-    private boolean processRowLogic(String rawKyn, String rawZone, String rawRang, String rawStatut, Map<Partenaire, Stats> statsMap) {
+    private boolean processRowLogic(String rawKyn, String rawZone, String rawRang, String rawStatut, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap) {
         if (rawKyn == null || rawKyn.trim().isEmpty()) return false;
 
-        // 🛡️ L'FIX 2: Nettoyage Agressif (7iydna ay 7aja machi 7erf wla r9em)
+        // Nettoyage dyal l'KYN li jay mn l'fichier
         String kyn = rawKyn.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
-
         if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
 
-        Optional<Technicien> techOpt = technicienRepository.findByMatricule(kyn);
+        // 🛡️ L'FIX 4: Recherche instantanée f l'RAM
+        Technicien technicien = techMap.get(kyn);
 
-        // Fallback b rawKyn ila kan fih chi format fchkel f DB
-        if (techOpt.isEmpty()) techOpt = technicienRepository.findByMatricule(rawKyn.trim());
-
-        if (techOpt.isEmpty()) {
-            // N-loggiw ghir chwiya bach may3merch l'serveur b 240MB dyal les logs
+        if (technicien == null) {
+            // N-loggiw ghir chwiya bach may3merch l'serveur
             if (Math.random() < 0.001) log.warn("Exemple de KYN introuvable: [{}] (Original: [{}])", kyn, rawKyn);
             return false;
         }
 
-        Partenaire partenaire = techOpt.get().getPartenaire();
+        Partenaire partenaire = technicien.getPartenaire();
         statsMap.putIfAbsent(partenaire, new Stats());
         Stats s = statsMap.get(partenaire);
 
