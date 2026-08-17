@@ -2,29 +2,36 @@ spring:
   application:
     name: K-Qualite
 
-  # Configuration de la base de données PostgreSQL
   datasource:
-    # L'URL par défaut (Ila knti khddam f l'PC dyalk Local)
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/kqualite_db}
     username: ${SPRING_DATASOURCE_USERNAME:kyntus_user}
     password: ${SPRING_DATASOURCE_PASSWORD:kyntus_password}
     driver-class-name: org.postgresql.Driver
 
-  # Configuration JPA & Hibernate
   jpa:
     hibernate:
-      ddl-auto: update # Kay-créer w kay-modifier les tables automatiquement
-    show-sql: false
+      ddl-auto: update
+    show-sql: false 
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-# Configuration du serveur
+  # 🛡️ L'FIX 3: N-kebbrou l'limite dyal l'Upload l 1 Giga (1024MB)
+  servlet:
+    multipart:
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+
 server:
   port: ${SERVER_PORT:8256}
+  # 🛡️ L'FIX 4: N-kebbrou l'we9t dyal Tomcat (10 minutes) w n-7iydou l'limite dyal l'Swallow
+  tomcat:
+    connection-timeout: 600000
+    max-swallow-size: -1
+    max-threads: 200
+    accept-count: 100
 
-# Configuration des logs
 logging:
   level:
     org.springframework.web: INFO
