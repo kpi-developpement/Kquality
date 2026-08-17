@@ -29,7 +29,6 @@ public class CqPartenaireImportService {
     private final CqPartenaireKpiRepository cqPartenaireKpiRepository;
     private final TechnicienRepository technicienRepository;
 
-    // Classe interne bach n-jme3ou les calculs par Partenaire
     private static class Stats {
         long p1NumA = 0, p1DenA = 0, p1NumB = 0, p1DenB = 0, p1NumC = 0, p1DenC = 0;
         long hNumA = 0, hDenA = 0, hNumB = 0, hDenB = 0, hNumC = 0, hDenC = 0;
@@ -54,32 +53,27 @@ public class CqPartenaireImportService {
             }
         } catch (Exception e) {
             log.error("Erreur globale d'importation CQ Partenaire", e);
-            throw new RuntimeException("Erreur de lecture du fichier : " + e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
 
-        // Sauvegarde f l'Base de données
         List<CqPartenaireKpi> archivesToSave = new ArrayList<>();
 
         for (Map.Entry<Partenaire, Stats> entry : statsMap.entrySet()) {
             Partenaire p = entry.getKey();
             Stats s = entry.getValue();
 
-            // PLP
             archivesToSave.add(buildKpi(p, month, year, "PLP", "A", s.p1NumA, s.p1DenA));
             archivesToSave.add(buildKpi(p, month, year, "PLP", "B", s.p1NumB, s.p1DenB));
             archivesToSave.add(buildKpi(p, month, year, "PLP", "C", s.p1NumC, s.p1DenC));
 
-            // HOTLINE
             archivesToSave.add(buildKpi(p, month, year, "HOTLINE", "A", s.hNumA, s.hDenA));
             archivesToSave.add(buildKpi(p, month, year, "HOTLINE", "B", s.hNumB, s.hDenB));
             archivesToSave.add(buildKpi(p, month, year, "HOTLINE", "C", s.hNumC, s.hDenC));
 
-            // CONSTRUCTION
             archivesToSave.add(buildKpi(p, month, year, "CONSTRUCTION", "A", s.cNumA, s.cDenA));
             archivesToSave.add(buildKpi(p, month, year, "CONSTRUCTION", "B", s.cNumB, s.cDenB));
             archivesToSave.add(buildKpi(p, month, year, "CONSTRUCTION", "C", s.cNumC, s.cDenC));
 
-            // RANG 2
             archivesToSave.add(buildKpi(p, month, year, "RANG_2", "A", s.p2NumA, s.p2DenA));
             archivesToSave.add(buildKpi(p, month, year, "RANG_2", "B", s.p2NumB, s.p2DenB));
             archivesToSave.add(buildKpi(p, month, year, "RANG_2", "C", s.p2NumC, s.p2DenC));
@@ -88,7 +82,7 @@ public class CqPartenaireImportService {
         cqPartenaireKpiRepository.saveAll(archivesToSave);
 
         return ImportSummaryDTO.builder()
-                .totalLignes(total) // Hna ghadi n-gaddou l'compteur f l'optimisation jaya
+                .totalLignes(total)
                 .lignesInserees(archivesToSave.size())
                 .lignesRejetees(0)
                 .message("Calculs CQ Partenaire terminés pour " + month + "/" + year)
@@ -106,13 +100,19 @@ public class CqPartenaireImportService {
                 headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
             }
 
-            Integer colKyn = findColumnIndex(headerMap, "kyn", "idtecnow");
+            // 🛡️ L'FIX HWA HNA: Zedt prv_tcnw_id_tech
+            Integer colKyn = findColumnIndex(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
             Integer colZone = findColumnIndex(headerMap, "zone_statut prise", "zone");
             Integer colRang = findColumnIndex(headerMap, "rang_rdv", "rang");
             Integer colStatut = findColumnIndex(headerMap, "grp_statut_crinstall_mnt", "statut");
 
             if (colKyn == null || colZone == null || colRang == null || colStatut == null) {
-                throw new RuntimeException("Colonnes obligatoires introuvables (KYN, Zone, Rang, Statut).");
+                List<String> missing = new ArrayList<>();
+                if (colKyn == null) missing.add("KYN/TECH");
+                if (colZone == null) missing.add("ZONE");
+                if (colRang == null) missing.add("RANG");
+                if (colStatut == null) missing.add("STATUT");
+                throw new RuntimeException("Colonnes introuvables : " + missing + ". Headers détectés dans votre fichier : " + headerMap.keySet());
             }
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -145,13 +145,20 @@ public class CqPartenaireImportService {
              CSVParser parser = new CSVParser(br, format)) {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
-            String colKyn = findColumnName(headerMap, "kyn", "idtecnow");
+
+            // 🛡️ L'FIX HWA HNA: Zedt prv_tcnw_id_tech
+            String colKyn = findColumnName(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
             String colZone = findColumnName(headerMap, "zone_statut prise", "zone");
             String colRang = findColumnName(headerMap, "rang_rdv", "rang");
             String colStatut = findColumnName(headerMap, "grp_statut_crinstall_mnt", "statut");
 
             if (colKyn == null || colZone == null || colRang == null || colStatut == null) {
-                throw new RuntimeException("Colonnes obligatoires introuvables.");
+                List<String> missing = new ArrayList<>();
+                if (colKyn == null) missing.add("KYN/TECH");
+                if (colZone == null) missing.add("ZONE");
+                if (colRang == null) missing.add("RANG");
+                if (colStatut == null) missing.add("STATUT");
+                throw new RuntimeException("Colonnes introuvables : " + missing + ". Headers détectés dans votre fichier : " + headerMap.keySet());
             }
 
             for (CSVRecord record : parser) {
@@ -217,7 +224,7 @@ public class CqPartenaireImportService {
                 .num(num)
                 .denum(denum)
                 .resultat(resultat)
-                .bonus(0.0) // L'bonus ghaydar f l'étape jaya
+                .bonus(0.0)
                 .build();
     }
 

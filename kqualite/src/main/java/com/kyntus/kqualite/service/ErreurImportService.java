@@ -60,7 +60,8 @@ public class ErreurImportService {
             }
 
             Integer colRdv = findColumnIndex(headerMap, "idrdv", "dossier", "rdv");
-            Integer colKyn = findColumnIndex(headerMap, "kyn", "idtecnow");
+            // 🛡️ L'FIX HWA HNA: Zedt prv_tcnw_id_tech
+            Integer colKyn = findColumnIndex(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
             Integer colCat = findColumnIndex(headerMap, "categorie", "souscategorie", "regle");
             Integer colImpact = findColumnIndex(headerMap, "impact", "montant");
 
@@ -117,7 +118,8 @@ public class ErreurImportService {
             Map<String, Integer> headerMap = parser.getHeaderMap();
 
             String colRdv = findColumnName(headerMap, "idrdv", "dossier", "rdv");
-            String colKyn = findColumnName(headerMap, "kyn", "idtecnow");
+            // 🛡️ L'FIX HWA HNA: Zedt prv_tcnw_id_tech
+            String colKyn = findColumnName(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
             String colCat = findColumnName(headerMap, "categorie", "souscategorie", "regle");
             String colImpact = findColumnName(headerMap, "impact", "montant");
 
