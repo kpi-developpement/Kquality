@@ -5,6 +5,7 @@ import com.kyntus.kqualite.domain.Partenaire;
 import com.kyntus.kqualite.domain.Technicien;
 import com.kyntus.kqualite.dto.ImportSummaryDTO;
 import com.kyntus.kqualite.repository.CqPartenaireKpiRepository;
+import com.kyntus.kqualite.repository.PartenaireRepository;
 import com.kyntus.kqualite.repository.TechnicienRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class CqPartenaireImportService {
 
     private final CqPartenaireKpiRepository cqPartenaireKpiRepository;
     private final TechnicienRepository technicienRepository;
+    private final PartenaireRepository partenaireRepository; // 🛡️ JDID
 
     private static class Stats {
         long p1NumA = 0, p1DenA = 0, p1NumB = 0, p1DenB = 0, p1NumC = 0, p1DenC = 0;
@@ -38,14 +40,10 @@ public class CqPartenaireImportService {
         long sarcliNum = 0, sarcliDenum = 0;
     }
 
-    // ==========================================
-    // 1. IMPORT FICHIER 2 (PLP, HOTLINE, CONST, R2)
-    // ==========================================
     @Transactional
     public ImportSummaryDTO importCqPartenaire(MultipartFile file, int month, int year) {
         String filename = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
 
-        // N-ms7ou ghir les indicateurs dyal Fichier 2
         List<CqPartenaireKpi> existing = cqPartenaireKpiRepository.findByMoisAndAnnee(month, year);
         for (CqPartenaireKpi kpi : existing) {
             if (!kpi.getIndicateur().equals("SACLI") && !kpi.getIndicateur().equals("SARCLI")) {
@@ -55,19 +53,29 @@ public class CqPartenaireImportService {
 
         Map<Partenaire, Stats> statsMap = new HashMap<>();
         Map<String, Technicien> techMap = loadTechniciensMap();
+
+        // 🛡️ L'FIX HWA HNA: Création dyal Partenaire "INCONNU" bach 7ta ligne mat-tضيع
+        Partenaire inconnu = partenaireRepository.findByNomEntrepriseIgnoreCase("INCONNU")
+                .orElseGet(() -> partenaireRepository.save(Partenaire.builder().nomEntreprise("INCONNU").referenceContrat("AUTO-INCONNU").build()));
+
         int[] counts;
 
         try {
             if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
-                counts = processExcelFichier2(file, statsMap, techMap);
+                counts = processExcelFichier2(file, statsMap, techMap, inconnu);
             } else {
-                counts = processCsvFichier2(file, statsMap, techMap);
+                counts = processCsvFichier2(file, statsMap, techMap, inconnu);
             }
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
 
+        int total = counts[0];
+        int success = counts[1];
+        int rejected = counts[2];
+
         List<CqPartenaireKpi> archivesToSave = new ArrayList<>();
+
         for (Map.Entry<Partenaire, Stats> entry : statsMap.entrySet()) {
             Partenaire p = entry.getKey();
             Stats s = entry.getValue();
@@ -91,34 +99,36 @@ public class CqPartenaireImportService {
 
         cqPartenaireKpiRepository.saveAll(archivesToSave);
 
-        return ImportSummaryDTO.builder().totalLignes(counts[0]).lignesInserees(counts[1]).lignesRejetees(counts[2]).message("Calculs Fichier 2 terminés").build();
+        return ImportSummaryDTO.builder()
+                .totalLignes(total)
+                .lignesInserees(success)
+                .lignesRejetees(rejected)
+                .message("Calculs CQ Partenaire terminés pour " + month + "/" + year)
+                .build();
     }
 
-    // ==========================================
-    // 2. IMPORT SACLI & SARCLI
-    // ==========================================
     @Transactional
     public ImportSummaryDTO importSacliSarcli(MultipartFile file, int month, int year, boolean isSacli) {
         String filename = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
         String indicateur = isSacli ? "SACLI" : "SARCLI";
 
-        // N-ms7ou ghir SACLI wla SARCLI dyal dak ch'her
         List<CqPartenaireKpi> existing = cqPartenaireKpiRepository.findByMoisAndAnnee(month, year);
         for (CqPartenaireKpi kpi : existing) {
-            if (kpi.getIndicateur().equals(indicateur)) {
-                cqPartenaireKpiRepository.delete(kpi);
-            }
+            if (kpi.getIndicateur().equals(indicateur)) cqPartenaireKpiRepository.delete(kpi);
         }
 
         Map<Partenaire, Stats> statsMap = new HashMap<>();
         Map<String, Technicien> techMap = loadTechniciensMap();
+        Partenaire inconnu = partenaireRepository.findByNomEntrepriseIgnoreCase("INCONNU")
+                .orElseGet(() -> partenaireRepository.save(Partenaire.builder().nomEntreprise("INCONNU").referenceContrat("AUTO-INCONNU").build()));
+
         int[] counts;
 
         try {
             if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
-                counts = processExcelSacliSarcli(file, statsMap, techMap, isSacli);
+                counts = processExcelSacliSarcli(file, statsMap, techMap, inconnu, isSacli);
             } else {
-                counts = processCsvSacliSarcli(file, statsMap, techMap, isSacli);
+                counts = processCsvSacliSarcli(file, statsMap, techMap, inconnu, isSacli);
             }
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -128,10 +138,8 @@ public class CqPartenaireImportService {
         for (Map.Entry<Partenaire, Stats> entry : statsMap.entrySet()) {
             Partenaire p = entry.getKey();
             Stats s = entry.getValue();
-
             long num = isSacli ? s.sacliNum : s.sarcliNum;
             long denum = isSacli ? s.sacliDenum : s.sarcliDenum;
-
             archivesToSave.add(buildKpi(p, month, year, indicateur, "GLOBAL", num, denum));
         }
 
@@ -140,10 +148,20 @@ public class CqPartenaireImportService {
         return ImportSummaryDTO.builder().totalLignes(counts[0]).lignesInserees(counts[1]).lignesRejetees(counts[2]).message("Calculs " + indicateur + " terminés").build();
     }
 
-    // ==========================================
-    // 🛠️ MOTEURS DE LECTURE (Fichier 2)
-    // ==========================================
-    private int[] processExcelFichier2(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap) throws Exception {
+    private Map<String, Technicien> loadTechniciensMap() {
+        List<Technicien> allTechs = technicienRepository.findAll();
+        Map<String, Technicien> map = new HashMap<>();
+        for (Technicien t : allTechs) {
+            if (t.getMatricule() != null) {
+                String cleanMatricule = t.getMatricule().replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+                if (!cleanMatricule.startsWith("KYN")) cleanMatricule = "KYN" + cleanMatricule;
+                map.put(cleanMatricule, t);
+            }
+        }
+        return map;
+    }
+
+    private int[] processExcelFichier2(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) throws Exception {
         int total = 0, success = 0, rejected = 0;
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
@@ -158,25 +176,26 @@ public class CqPartenaireImportService {
             Integer colRang = findColumnIndex(headerMap, "rang_rdv", "rang");
             Integer colStatut = findColumnIndex(headerMap, "grp_statut_crinstall_mnt", "statut");
 
-            if (colKyn == null || colZone == null || colRang == null || colStatut == null) throw new RuntimeException("Colonnes introuvables.");
+            if (colZone == null || colRang == null || colStatut == null) throw new RuntimeException("Colonnes introuvables.");
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
                 total++;
 
-                String kyn = getCellValue(row.getCell(colKyn));
+                String kyn = colKyn != null ? getCellValue(row.getCell(colKyn)) : "";
                 String zone = getCellValue(row.getCell(colZone));
                 String rang = getCellValue(row.getCell(colRang));
                 String statut = getCellValue(row.getCell(colStatut));
 
-                if (processRowLogicFichier2(kyn, zone, rang, statut, statsMap, techMap)) success++; else rejected++;
+                processRowLogicFichier2(kyn, zone, rang, statut, statsMap, techMap, inconnu);
+                success++;
             }
         }
         return new int[]{total, success, rejected};
     }
 
-    private int[] processCsvFichier2(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap) throws Exception {
+    private int[] processCsvFichier2(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) throws Exception {
         int total = 0, success = 0, rejected = 0;
         char delimiter = detectDelimiter(file);
         CSVFormat format = CSVFormat.Builder.create().setDelimiter(delimiter).setHeader().setSkipHeaderRecord(true).setIgnoreHeaderCase(true).setTrim(true).build();
@@ -190,20 +209,23 @@ public class CqPartenaireImportService {
             String colRang = findColumnName(headerMap, "rang_rdv", "rang");
             String colStatut = findColumnName(headerMap, "grp_statut_crinstall_mnt", "statut");
 
-            if (colKyn == null || colZone == null || colRang == null || colStatut == null) throw new RuntimeException("Colonnes introuvables.");
+            if (colZone == null || colRang == null || colStatut == null) throw new RuntimeException("Colonnes introuvables.");
 
             for (CSVRecord record : parser) {
                 total++;
-                if (processRowLogicFichier2(record.get(colKyn), record.get(colZone), record.get(colRang), record.get(colStatut), statsMap, techMap)) success++; else rejected++;
+                String kyn = colKyn != null && record.isMapped(colKyn) ? record.get(colKyn) : "";
+                String zone = record.get(colZone);
+                String rang = record.get(colRang);
+                String statut = record.get(colStatut);
+
+                processRowLogicFichier2(kyn, zone, rang, statut, statsMap, techMap, inconnu);
+                success++;
             }
         }
         return new int[]{total, success, rejected};
     }
 
-    // ==========================================
-    // 🛠️ MOTEURS DE LECTURE (SACLI / SARCLI)
-    // ==========================================
-    private int[] processExcelSacliSarcli(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, boolean isSacli) throws Exception {
+    private int[] processExcelSacliSarcli(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu, boolean isSacli) throws Exception {
         int total = 0, success = 0, rejected = 0;
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
@@ -213,27 +235,27 @@ public class CqPartenaireImportService {
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
 
-            // 🛡️ L'FIX HWA HNA: KYN smyto "Nom_Technicien"
             Integer colKyn = findColumnIndex(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn");
             Integer colValr = findColumnIndex(headerMap, "valr not glbl", "valeur", "note");
 
-            if (colKyn == null || colValr == null) throw new RuntimeException("Colonnes introuvables (Nom_Technicien ou valr not glbl).");
+            if (colValr == null) throw new RuntimeException("Colonne valeur introuvable.");
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
                 total++;
 
-                String kyn = getCellValue(row.getCell(colKyn));
+                String kyn = colKyn != null ? getCellValue(row.getCell(colKyn)) : "";
                 String valr = getCellValue(row.getCell(colValr));
 
-                if (processRowLogicSacliSarcli(kyn, valr, statsMap, techMap, isSacli)) success++; else rejected++;
+                processRowLogicSacliSarcli(kyn, valr, statsMap, techMap, inconnu, isSacli);
+                success++;
             }
         }
         return new int[]{total, success, rejected};
     }
 
-    private int[] processCsvSacliSarcli(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, boolean isSacli) throws Exception {
+    private int[] processCsvSacliSarcli(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu, boolean isSacli) throws Exception {
         int total = 0, success = 0, rejected = 0;
         char delimiter = detectDelimiter(file);
         CSVFormat format = CSVFormat.Builder.create().setDelimiter(delimiter).setHeader().setSkipHeaderRecord(true).setIgnoreHeaderCase(true).setTrim(true).build();
@@ -245,33 +267,43 @@ public class CqPartenaireImportService {
             String colKyn = findColumnName(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn");
             String colValr = findColumnName(headerMap, "valr not glbl", "valeur", "note");
 
-            if (colKyn == null || colValr == null) throw new RuntimeException("Colonnes introuvables (Nom_Technicien ou valr not glbl).");
+            if (colValr == null) throw new RuntimeException("Colonne valeur introuvable.");
 
             for (CSVRecord record : parser) {
                 total++;
-                if (processRowLogicSacliSarcli(record.get(colKyn), record.get(colValr), statsMap, techMap, isSacli)) success++; else rejected++;
+                String kyn = colKyn != null && record.isMapped(colKyn) ? record.get(colKyn) : "";
+                String valr = record.get(colValr);
+
+                processRowLogicSacliSarcli(kyn, valr, statsMap, techMap, inconnu, isSacli);
+                success++;
             }
         }
         return new int[]{total, success, rejected};
     }
 
     // ==========================================
-    // ⚙️ LOGIQUE METIER
+    // ⚙️ LOGIQUE METIER (EXACTEMENT COMME L'APP 1)
     // ==========================================
-    private boolean processRowLogicFichier2(String rawKyn, String rawZone, String rawRang, String rawStatut, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap) {
-        if (rawKyn == null || rawKyn.trim().isEmpty()) return false;
+    private void processRowLogicFichier2(String rawKyn, String rawZone, String rawRang, String rawStatut, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) {
 
-        String kyn = rawKyn.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
-        if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
+        Partenaire partenaire = inconnu;
 
-        Technicien technicien = techMap.get(kyn);
-        if (technicien == null) technicien = techMap.get(rawKyn.trim().toUpperCase());
-        if (technicien == null) return false;
+        if (rawKyn != null && !rawKyn.trim().isEmpty()) {
+            String kyn = rawKyn.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+            if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
 
-        Partenaire partenaire = technicien.getPartenaire();
+            Technicien technicien = techMap.get(kyn);
+            if (technicien == null) technicien = techMap.get(rawKyn.trim().toUpperCase());
+
+            if (technicien != null) {
+                partenaire = technicien.getPartenaire();
+            }
+        }
+
         statsMap.putIfAbsent(partenaire, new Stats());
         Stats s = statsMap.get(partenaire);
 
+        // 🛡️ L'FIX HWA HNA: L'Logique dyal l'App 1 b dbt (bla isNumericValue)
         String rang = rawRang != null ? rawRang.trim() : "";
         String zone = rawZone != null ? rawZone.toUpperCase().replaceAll("[\\n\\r]+", " ").replaceAll("\\s+", " ").trim() : "";
         String statut = rawStatut != null ? rawStatut.toUpperCase().trim() : "";
@@ -296,23 +328,27 @@ public class CqPartenaireImportService {
             if (zone.contains("ZONE B")) { s.p2DenB++; if(isCrOk) s.p2NumB++; }
             if (zone.contains("ZONE C")) { s.p2DenC++; if(isCrOk) s.p2NumC++; }
         }
-        return true;
     }
 
-    private boolean processRowLogicSacliSarcli(String rawKyn, String rawValr, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, boolean isSacli) {
-        if (rawKyn == null || rawKyn.trim().isEmpty()) return false;
+    private void processRowLogicSacliSarcli(String rawKyn, String rawValr, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu, boolean isSacli) {
+        Partenaire partenaire = inconnu;
 
-        String kyn = rawKyn.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
-        if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
+        if (rawKyn != null && !rawKyn.trim().isEmpty()) {
+            String kyn = rawKyn.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+            if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
 
-        Technicien technicien = techMap.get(kyn);
-        if (technicien == null) technicien = techMap.get(rawKyn.trim().toUpperCase());
-        if (technicien == null) return false;
+            Technicien technicien = techMap.get(kyn);
+            if (technicien == null) technicien = techMap.get(rawKyn.trim().toUpperCase());
 
-        Partenaire partenaire = technicien.getPartenaire();
+            if (technicien != null) {
+                partenaire = technicien.getPartenaire();
+            }
+        }
+
         statsMap.putIfAbsent(partenaire, new Stats());
         Stats s = statsMap.get(partenaire);
 
+        // 🛡️ L'FIX HWA HNA: L'Logique dyal l'App 1 b dbt
         String valr = rawValr != null ? rawValr.trim() : "";
         boolean isValr5 = valr.equals("5") || valr.equals("5.0") || valr.equals("5,0");
         boolean isValr4 = valr.equals("4") || valr.equals("4.0") || valr.equals("4,0");
@@ -324,25 +360,11 @@ public class CqPartenaireImportService {
             s.sarcliDenum++;
             if (isValr4 || isValr5) s.sarcliNum++;
         }
-        return true;
     }
 
     // ==========================================
     // 🛠️ HELPERS
     // ==========================================
-    private Map<String, Technicien> loadTechniciensMap() {
-        List<Technicien> allTechs = technicienRepository.findAll();
-        Map<String, Technicien> map = new HashMap<>();
-        for (Technicien t : allTechs) {
-            if (t.getMatricule() != null) {
-                String cleanMatricule = t.getMatricule().replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
-                if (!cleanMatricule.startsWith("KYN")) cleanMatricule = "KYN" + cleanMatricule;
-                map.put(cleanMatricule, t);
-            }
-        }
-        return map;
-    }
-
     private CqPartenaireKpi buildKpi(Partenaire p, int month, int year, String indicateur, String zone, long num, long denum) {
         double resultat = denum > 0 ? Math.round((((double) num / denum) * 100) * 100.0) / 100.0 : 0.0;
         return CqPartenaireKpi.builder().partenaire(p).mois(month).annee(year).indicateur(indicateur).zone(zone).num(num).denum(denum).resultat(resultat).bonus(0.0).build();
