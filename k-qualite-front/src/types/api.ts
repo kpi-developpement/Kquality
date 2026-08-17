@@ -98,3 +98,16 @@ export interface CqDataDTO {
   partenaireId?: number;
   partenaireNom?: string;
 }
+export interface CqPartenaireKpiDTO {
+  id: number;
+  partenaireId: number;
+  partenaireNom: string;
+  mois: number;
+  annee: number;
+  indicateur: string;
+  zone: string;
+  num: number;
+  denum: number;
+  resultat: number;
+  bonus: number;
+}

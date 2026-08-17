@@ -44,6 +44,7 @@ export default function Navbar() {
             <Link href="/admin" className={`${styles.navItem} ${pathname === '/admin' ? styles.active : ''}`}>Contestations</Link>
             <Link href="/admin/utilisateurs" className={`${styles.navItem} ${pathname === '/admin/utilisateurs' ? styles.active : ''}`}>Utilisateurs</Link>
             <Link href="/admin/import" className={`${styles.navItem} ${pathname === '/admin/import' ? styles.active : ''}`}>Import</Link>
+            <Link href="/admin/cq-partenaire" className={`${styles.navItem} ${pathname === '/admin/cq-partenaire' ? styles.active : ''}`}>CQ Partenaire</Link>
           </>
         )}
       </div>

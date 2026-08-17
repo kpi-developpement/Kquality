@@ -1,6 +1,7 @@
 import { ApiResponse, DashboardPartenaireDTO, ErreurResponseDTO, ContestationResponseDTO, KpiArchiveDTO, AuthResponseDTO } from '../types/api';
 import { PartenaireDTO, UtilisateurDTO } from '../types/api';
 import { CqDataDTO } from '../types/api';
+import { CqPartenaireKpiDTO } from '../types/api';
 
 const isServer = typeof window === 'undefined';
 const BASE_URL = isServer 
@@ -225,6 +226,30 @@ export async function getAdminErreurs(partenaireId?: string): Promise<ErreurResp
   }
   const res = await fetch(url, { headers: getAuthHeaders(), cache: 'no-store' });
   if (!res.ok) throw new Error('Erreur récupération erreurs admin');
+  const json = await res.json();
+  return json.data;
+}
+export async function importCqPartenaireExcel(file: File, month: number, year: number) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('month', month.toString());
+  formData.append('year', year.toString());
+
+  const res = await fetch(`${BASE_URL}/admin/cq-partenaire/import`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` },
+    body: formData
+  });
+  if (!res.ok) throw new Error("Erreur lors de l'importation CQ Partenaire");
+  return await res.json();
+}
+
+export async function getAdminCqPartenaire(month: number, year: number, partenaireId?: string): Promise<CqPartenaireKpiDTO[]> {
+  let url = `${BASE_URL}/admin/cq-partenaire?month=${month}&year=${year}`;
+  if (partenaireId && partenaireId !== "ALL") url += `&partenaireId=${partenaireId}`;
+  
+  const res = await fetch(url, { headers: getAuthHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error('Erreur récupération CQ Partenaire');
   const json = await res.json();
   return json.data;
 }
