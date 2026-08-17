@@ -27,10 +27,30 @@ public class AdminCqPartenaireController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("month") int month,
             @RequestParam("year") int year) {
-
         if (file.isEmpty()) return ResponseEntity.badRequest().build();
         ImportSummaryDTO summary = importService.importCqPartenaire(file, month, year);
         return ResponseEntity.ok(ApiResponse.success(summary, "Calculs CQ Partenaire terminés"));
+    }
+
+    // 🛡️ L'FIX HWA HNA: APIs jdad l SACLI w SARCLI
+    @PostMapping("/import-sacli")
+    public ResponseEntity<ApiResponse<ImportSummaryDTO>> importSacli(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+        if (file.isEmpty()) return ResponseEntity.badRequest().build();
+        ImportSummaryDTO summary = importService.importSacliSarcli(file, month, year, true);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Calculs SACLI terminés"));
+    }
+
+    @PostMapping("/import-sarcli")
+    public ResponseEntity<ApiResponse<ImportSummaryDTO>> importSarcli(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+        if (file.isEmpty()) return ResponseEntity.badRequest().build();
+        ImportSummaryDTO summary = importService.importSacliSarcli(file, month, year, false);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Calculs SARCLI terminés"));
     }
 
     @GetMapping

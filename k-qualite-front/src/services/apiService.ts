@@ -253,3 +253,33 @@ export async function getAdminCqPartenaire(month: number, year: number, partenai
   const json = await res.json();
   return json.data;
 }
+// ...
+export async function importSacliPartenaireExcel(file: File, month: number, year: number) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('month', month.toString());
+  formData.append('year', year.toString());
+
+  const res = await fetch(`${BASE_URL}/admin/cq-partenaire/import-sacli`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` },
+    body: formData
+  });
+  if (!res.ok) throw new Error("Erreur lors de l'importation SACLI");
+  return await res.json();
+}
+
+export async function importSarcliPartenaireExcel(file: File, month: number, year: number) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('month', month.toString());
+  formData.append('year', year.toString());
+
+  const res = await fetch(`${BASE_URL}/admin/cq-partenaire/import-sarcli`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` },
+    body: formData
+  });
+  if (!res.ok) throw new Error("Erreur lors de l'importation SARCLI");
+  return await res.json();
+}

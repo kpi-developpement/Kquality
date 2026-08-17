@@ -20,18 +20,39 @@ export default function AdminCqPartenairePage() {
 
   useEffect(() => {
     setLoading(true);
-    getAdminCqPartenaire(month, year, selectedPartenaire)
+    // 🛡️ L'FIX HWA HNA: Mli ykoun ALL, kan-siftou undefined l'API bach t-jbed kolchi
+    getAdminCqPartenaire(month, year, selectedPartenaire === "ALL" ? undefined : selectedPartenaire)
       .then(setData)
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [month, year, selectedPartenaire]);
+
+  // 🛡️ L'FIX HWA HNA: L'Agrégation Globale f l'Frontend
+  let displayData = data;
+  if (selectedPartenaire === "ALL" && data.length > 0) {
+    const aggregated: Record<string, CqPartenaireKpiDTO> = {};
+    
+    data.forEach(row => {
+      const key = `${row.indicateur}-${row.zone}`;
+      if (!aggregated[key]) {
+        aggregated[key] = { ...row, id: Math.random(), partenaireNom: "VUE GLOBALE (TOUS)", num: 0, denum: 0 };
+      }
+      aggregated[key].num += row.num;
+      aggregated[key].denum += row.denum;
+    });
+
+    displayData = Object.values(aggregated).map(row => ({
+      ...row,
+      resultat: row.denum > 0 ? Number(((row.num / row.denum) * 100).toFixed(2)) : 0
+    }));
+  }
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.adminBadge}>ESPACE ADMIN</div>
         <h1>Calculs CQ Partenaire</h1>
-        <p>Performances PLP, Hotline, Construction et Rang 2 par partenaire.</p>
+        <p>Performances PLP, Hotline, Construction, Rang 2, SACLI et SARCLI.</p>
       </header>
 
       <div className={styles.filters}>
@@ -50,7 +71,7 @@ export default function AdminCqPartenairePage() {
         <div className={styles.filterGroup} style={{ flex: 1 }}>
           <label>PARTENAIRE</label>
           <select className={styles.filterSelect} value={selectedPartenaire} onChange={e => setSelectedPartenaire(e.target.value)}>
-            <option value="ALL">Tous les partenaires</option>
+            <option value="ALL">Vue Globale (Tous les partenaires)</option>
             {partenaires.map(p => <option key={p.id} value={p.id.toString()}>{p.nomEntreprise}</option>)}
           </select>
         </div>
@@ -72,17 +93,17 @@ export default function AdminCqPartenairePage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((row) => (
-                <tr key={row.id}>
-                  <td style={{ fontWeight: 'bold', color: '#2c3e50' }}>{row.partenaireNom}</td>
+              {displayData.map((row) => (
+                <tr key={row.id} style={{ backgroundColor: row.partenaireNom.includes("GLOBALE") ? '#f8f9fa' : 'white' }}>
+                  <td style={{ fontWeight: 'bold', color: row.partenaireNom.includes("GLOBALE") ? '#e74c3c' : '#2c3e50' }}>{row.partenaireNom}</td>
                   <td style={{ fontWeight: 'bold', color: '#3498db' }}>{row.indicateur.replace('_', ' ')}</td>
-                  <td>ZONE {row.zone}</td>
-                  <td>{row.num}</td>
-                  <td>{row.denum}</td>
+                  <td>{row.zone === 'GLOBAL' ? '-' : `ZONE ${row.zone}`}</td>
+                  <td>{row.num.toLocaleString('fr-FR')}</td>
+                  <td>{row.denum.toLocaleString('fr-FR')}</td>
                   <td><span className={styles.badgeSuccess}>{row.resultat}%</span></td>
                 </tr>
               ))}
-              {data.length === 0 && (
+              {displayData.length === 0 && (
                 <tr>
                   <td colSpan={6} className={styles.empty}>Aucune donnée trouvée pour cette période.</td>
                 </tr>
