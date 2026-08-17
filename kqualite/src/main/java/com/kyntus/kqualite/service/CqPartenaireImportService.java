@@ -43,18 +43,24 @@ public class CqPartenaireImportService {
         cqPartenaireKpiRepository.deleteByMoisAndAnnee(month, year);
 
         Map<Partenaire, Stats> statsMap = new HashMap<>();
-        int total = 0, success = 0, rejected = 0;
+
+        // 🛡️ L'FIX 1: Tableau bach n-récupériw les compteurs mn les fonctions
+        int[] counts;
 
         try {
             if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
-                processExcel(file, statsMap);
+                counts = processExcel(file, statsMap);
             } else {
-                processCsv(file, statsMap);
+                counts = processCsv(file, statsMap);
             }
         } catch (Exception e) {
             log.error("Erreur globale d'importation CQ Partenaire", e);
             throw new RuntimeException(e.getMessage());
         }
+
+        int total = counts[0];
+        int success = counts[1];
+        int rejected = counts[2];
 
         List<CqPartenaireKpi> archivesToSave = new ArrayList<>();
 
@@ -83,13 +89,14 @@ public class CqPartenaireImportService {
 
         return ImportSummaryDTO.builder()
                 .totalLignes(total)
-                .lignesInserees(archivesToSave.size())
-                .lignesRejetees(0)
+                .lignesInserees(success) // Lignes li dazou b naja7
+                .lignesRejetees(rejected)
                 .message("Calculs CQ Partenaire terminés pour " + month + "/" + year)
                 .build();
     }
 
-    private void processExcel(MultipartFile file, Map<Partenaire, Stats> statsMap) throws Exception {
+    private int[] processExcel(MultipartFile file, Map<Partenaire, Stats> statsMap) throws Exception {
+        int total = 0, success = 0, rejected = 0;
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
@@ -100,36 +107,35 @@ public class CqPartenaireImportService {
                 headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
             }
 
-            // 🛡️ L'FIX HWA HNA: Zedt prv_tcnw_id_tech
             Integer colKyn = findColumnIndex(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
             Integer colZone = findColumnIndex(headerMap, "zone_statut prise", "zone");
             Integer colRang = findColumnIndex(headerMap, "rang_rdv", "rang");
             Integer colStatut = findColumnIndex(headerMap, "grp_statut_crinstall_mnt", "statut");
 
             if (colKyn == null || colZone == null || colRang == null || colStatut == null) {
-                List<String> missing = new ArrayList<>();
-                if (colKyn == null) missing.add("KYN/TECH");
-                if (colZone == null) missing.add("ZONE");
-                if (colRang == null) missing.add("RANG");
-                if (colStatut == null) missing.add("STATUT");
-                throw new RuntimeException("Colonnes introuvables : " + missing + ". Headers détectés dans votre fichier : " + headerMap.keySet());
+                throw new RuntimeException("Colonnes introuvables. Headers détectés : " + headerMap.keySet());
             }
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
+                total++;
 
                 String kyn = getCellValue(row.getCell(colKyn));
                 String zone = getCellValue(row.getCell(colZone));
                 String rang = getCellValue(row.getCell(colRang));
                 String statut = getCellValue(row.getCell(colStatut));
 
-                processRowLogic(kyn, zone, rang, statut, statsMap);
+                boolean isProcessed = processRowLogic(kyn, zone, rang, statut, statsMap);
+                if (isProcessed) success++; else rejected++;
             }
         }
+        return new int[]{total, success, rejected};
     }
 
-    private void processCsv(MultipartFile file, Map<Partenaire, Stats> statsMap) throws Exception {
+    private int[] processCsv(MultipartFile file, Map<Partenaire, Stats> statsMap) throws Exception {
+        int total = 0, success = 0, rejected = 0;
+
         BufferedReader brTest = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
         String firstLine = brTest.readLine();
         char delimiter = ';';
@@ -146,42 +152,47 @@ public class CqPartenaireImportService {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
 
-            // 🛡️ L'FIX HWA HNA: Zedt prv_tcnw_id_tech
             String colKyn = findColumnName(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
             String colZone = findColumnName(headerMap, "zone_statut prise", "zone");
             String colRang = findColumnName(headerMap, "rang_rdv", "rang");
             String colStatut = findColumnName(headerMap, "grp_statut_crinstall_mnt", "statut");
 
             if (colKyn == null || colZone == null || colRang == null || colStatut == null) {
-                List<String> missing = new ArrayList<>();
-                if (colKyn == null) missing.add("KYN/TECH");
-                if (colZone == null) missing.add("ZONE");
-                if (colRang == null) missing.add("RANG");
-                if (colStatut == null) missing.add("STATUT");
-                throw new RuntimeException("Colonnes introuvables : " + missing + ". Headers détectés dans votre fichier : " + headerMap.keySet());
+                throw new RuntimeException("Colonnes introuvables. Délimiteur: '" + delimiter + "'. Headers: " + headerMap.keySet());
             }
 
             for (CSVRecord record : parser) {
+                total++;
                 String kyn = record.get(colKyn);
                 String zone = record.get(colZone);
                 String rang = record.get(colRang);
                 String statut = record.get(colStatut);
 
-                processRowLogic(kyn, zone, rang, statut, statsMap);
+                boolean isProcessed = processRowLogic(kyn, zone, rang, statut, statsMap);
+                if (isProcessed) success++; else rejected++;
             }
         }
+        return new int[]{total, success, rejected};
     }
 
-    private void processRowLogic(String rawKyn, String rawZone, String rawRang, String rawStatut, Map<Partenaire, Stats> statsMap) {
-        if (rawKyn == null || rawKyn.trim().isEmpty()) return;
+    private boolean processRowLogic(String rawKyn, String rawZone, String rawRang, String rawStatut, Map<Partenaire, Stats> statsMap) {
+        if (rawKyn == null || rawKyn.trim().isEmpty()) return false;
 
-        String kyn = rawKyn.trim().toUpperCase();
-        if (kyn.endsWith(".0")) kyn = kyn.substring(0, kyn.length() - 2);
+        // 🛡️ L'FIX 2: Nettoyage Agressif (7iydna ay 7aja machi 7erf wla r9em)
+        String kyn = rawKyn.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+
         if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
 
         Optional<Technicien> techOpt = technicienRepository.findByMatricule(kyn);
+
+        // Fallback b rawKyn ila kan fih chi format fchkel f DB
         if (techOpt.isEmpty()) techOpt = technicienRepository.findByMatricule(rawKyn.trim());
-        if (techOpt.isEmpty()) return;
+
+        if (techOpt.isEmpty()) {
+            // N-loggiw ghir chwiya bach may3merch l'serveur b 240MB dyal les logs
+            if (Math.random() < 0.001) log.warn("Exemple de KYN introuvable: [{}] (Original: [{}])", kyn, rawKyn);
+            return false;
+        }
 
         Partenaire partenaire = techOpt.get().getPartenaire();
         statsMap.putIfAbsent(partenaire, new Stats());
@@ -211,6 +222,8 @@ public class CqPartenaireImportService {
             if (zone.contains("ZONE B")) { s.p2DenB++; if(isCrOk) s.p2NumB++; }
             if (zone.contains("ZONE C")) { s.p2DenC++; if(isCrOk) s.p2NumC++; }
         }
+
+        return true;
     }
 
     private CqPartenaireKpi buildKpi(Partenaire p, int month, int year, String indicateur, String zone, long num, long denum) {
