@@ -283,3 +283,12 @@ export async function importSarcliPartenaireExcel(file: File, month: number, yea
   if (!res.ok) throw new Error("Erreur lors de l'importation SARCLI");
   return await res.json();
 }
+export async function getPartenaireCqKpis(partenaireId: number, month: number, year: number): Promise<CqPartenaireKpiDTO[]> {
+  const res = await fetch(`${BASE_URL}/cq-partenaire/partenaire/${partenaireId}?month=${month}&year=${year}`, { 
+    headers: getAuthHeaders(), 
+    cache: 'no-store' 
+  });
+  if (!res.ok) throw new Error('Erreur récupération Indicateurs CQ');
+  const json = await res.json();
+  return json.data;
+}
