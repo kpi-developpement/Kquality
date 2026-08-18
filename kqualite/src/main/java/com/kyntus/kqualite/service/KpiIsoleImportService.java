@@ -153,7 +153,7 @@ public class KpiIsoleImportService {
             String kyn = findValue(rowData, "prv_tcnw_id_tech", "kyn");
             String idRacc = findValue(rowData, "id racc", "id_racc", "idracc");
 
-            // 🛡️ L'FIX HWA HNA: Recherche ultra-flexible dyal "PTO magouille"
+            // 🛡️ L'FIX HWA HNA: Recherche exacte dyal "pto magouille"
             String ptoMagouille = findValue(rowData, "pto magouille", "pto_magouille", "ptomagouille", "magouille");
 
             if (idRacc.isEmpty()) return; // DENUM = Total des lignes dyal l collone : Id Racc
@@ -164,9 +164,9 @@ public class KpiIsoleImportService {
 
             s.denum++;
 
-            // 🛡️ L'FIX HWA HNA: Nettoyage dyal l'valeur 9bel l'comparaison
-            String cleanPto = ptoMagouille.replaceAll("[^0-9]", ""); // N-khelliw ghir l'ar9am
-            if (cleanPto.equals("1")) {
+            // 🛡️ L'FIX HWA HNA: Comparaison Bulletproof l'Excel
+            String cleanPto = ptoMagouille.trim().toLowerCase();
+            if (cleanPto.equals("1") || cleanPto.equals("1.0") || cleanPto.equals("1,0") || cleanPto.equals("true") || cleanPto.equals("vrai")) {
                 s.num++; // NUM = colonne "PTO magouille" = 1
             }
 
@@ -182,8 +182,10 @@ public class KpiIsoleImportService {
             String cohorte = findValue(rowData, "cohorte date rdv racc", "cohorte");
 
             // Filtre --> Colonne "TVC" bla valeur OUI + Colonne "Flg Gem" bl valeur 1
-            String cleanFlgGem = flgGem.replaceAll("[^0-9]", "");
-            if (!tvc.equalsIgnoreCase("OUI") || !cleanFlgGem.equals("1")) return;
+            String cleanFlgGem = flgGem.trim().toLowerCase();
+            boolean isFlgGem1 = cleanFlgGem.equals("1") || cleanFlgGem.equals("1.0") || cleanFlgGem.equals("1,0") || cleanFlgGem.equals("true") || cleanFlgGem.equals("vrai");
+
+            if (!tvc.equalsIgnoreCase("OUI") || !isFlgGem1) return;
 
             // DENUM : TOTAL DES LIGNES dyal lcollone : Cohorte date rdv racc
             if (cohorte.isEmpty()) return;
@@ -227,6 +229,15 @@ public class KpiIsoleImportService {
     }
 
     private String findValue(Map<String, String> rowData, String... keywords) {
+        // 1. Recherche Exacte
+        for (String kw : keywords) {
+            String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
+            for (Map.Entry<String, String> entry : rowData.entrySet()) {
+                String cleanKey = entry.getKey().replaceAll("[^a-z0-9]", "");
+                if (cleanKey.equals(cleanKw)) return entry.getValue().trim();
+            }
+        }
+        // 2. Recherche par Inclusion
         for (String kw : keywords) {
             String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
             for (Map.Entry<String, String> entry : rowData.entrySet()) {
@@ -250,6 +261,7 @@ public class KpiIsoleImportService {
         switch (cell.getCellType()) {
             case STRING: return cell.getStringCellValue().trim();
             case NUMERIC: return String.valueOf(cell.getNumericCellValue());
+            case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
             default: return "";
         }
     }
