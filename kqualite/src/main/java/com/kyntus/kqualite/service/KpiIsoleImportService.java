@@ -58,7 +58,6 @@ public class KpiIsoleImportService {
     private ImportSummaryDTO processIsolatedFile(MultipartFile file, int month, int year, String indicateur) {
         String filename = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
 
-        // Nettoyage dyal les anciens calculs w les détails
         List<CqPartenaireKpi> existing = cqPartenaireKpiRepository.findByMoisAndAnnee(month, year);
         List<CqPartenaireKpi> toDelete = new ArrayList<>();
         for (CqPartenaireKpi kpi : existing) {
@@ -97,7 +96,7 @@ public class KpiIsoleImportService {
         }
 
         cqPartenaireKpiRepository.saveAll(archivesToSave);
-        cqLigneDetailRepository.saveAll(detailsToSave); // Sauvegarde dyal l'historique
+        cqLigneDetailRepository.saveAll(detailsToSave);
 
         return ImportSummaryDTO.builder().totalLignes(total).lignesInserees(archivesToSave.size()).lignesRejetees(0).message("Calculs " + indicateur + " terminés").build();
     }
@@ -152,8 +151,10 @@ public class KpiIsoleImportService {
 
         if (indicateur.equals("INCOHERENCE_PTO")) {
             String kyn = findValue(rowData, "prv_tcnw_id_tech", "kyn");
-            String idRacc = findValue(rowData, "id racc");
-            String ptoMagouille = findValue(rowData, "pto magouille");
+            String idRacc = findValue(rowData, "id racc", "id_racc", "idracc");
+
+            // 🛡️ L'FIX HWA HNA: Recherche ultra-flexible dyal "PTO magouille"
+            String ptoMagouille = findValue(rowData, "pto magouille", "pto_magouille", "ptomagouille", "magouille");
 
             if (idRacc.isEmpty()) return; // DENUM = Total des lignes dyal l collone : Id Racc
 
@@ -162,7 +163,12 @@ public class KpiIsoleImportService {
             Stats s = statsMap.get(p);
 
             s.denum++;
-            if (isNumericValue(ptoMagouille, 1.0)) s.num++; // NUM = colonne "PTO magouille" = 1
+
+            // 🛡️ L'FIX HWA HNA: Nettoyage dyal l'valeur 9bel l'comparaison
+            String cleanPto = ptoMagouille.replaceAll("[^0-9]", ""); // N-khelliw ghir l'ar9am
+            if (cleanPto.equals("1")) {
+                s.num++; // NUM = colonne "PTO magouille" = 1
+            }
 
             details.add(CqLigneDetail.builder().mois(month).annee(year).indicateur(indicateur).partenaire(p)
                     .kyn(kyn).reference(idRacc).champ1(ptoMagouille).build());
@@ -170,13 +176,14 @@ public class KpiIsoleImportService {
         else if (indicateur.equals("GEM_NOK")) {
             String kyn = findValue(rowData, "kyn", "prv_tcnw_id_tech");
             String tvc = findValue(rowData, "tvc");
-            String flgGem = findValue(rowData, "flg gem");
-            String statut = findValue(rowData, "grp statut crinstall mnt");
-            String libRef = findValue(rowData, "lib ref erdv");
-            String cohorte = findValue(rowData, "cohorte date rdv racc");
+            String flgGem = findValue(rowData, "flg gem", "flg_gem", "flggem");
+            String statut = findValue(rowData, "grp statut crinstall mnt", "grp_statut");
+            String libRef = findValue(rowData, "lib ref erdv", "lib_ref");
+            String cohorte = findValue(rowData, "cohorte date rdv racc", "cohorte");
 
             // Filtre --> Colonne "TVC" bla valeur OUI + Colonne "Flg Gem" bl valeur 1
-            if (!tvc.equalsIgnoreCase("OUI") || !isNumericValue(flgGem, 1.0)) return;
+            String cleanFlgGem = flgGem.replaceAll("[^0-9]", "");
+            if (!tvc.equalsIgnoreCase("OUI") || !cleanFlgGem.equals("1")) return;
 
             // DENUM : TOTAL DES LIGNES dyal lcollone : Cohorte date rdv racc
             if (cohorte.isEmpty()) return;
@@ -228,14 +235,6 @@ public class KpiIsoleImportService {
             }
         }
         return "";
-    }
-
-    private boolean isNumericValue(String raw, double target) {
-        if (raw == null || raw.trim().isEmpty()) return false;
-        try {
-            double val = Double.parseDouble(raw.replaceAll("[^\\d.,-]", "").replace(",", "."));
-            return Math.abs(val - target) < 0.001;
-        } catch (Exception e) { return false; }
     }
 
     private char detectDelimiter(MultipartFile file) throws Exception {
