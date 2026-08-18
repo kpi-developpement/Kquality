@@ -24,11 +24,24 @@ export default function CqPartenairePage() {
     }
   }, [user, month, year]);
 
+  // 🛡️ L'FIX HWA HNA: Enrichissement dyal TAUX_PLAINTE b l'DENUM dyal Fichier 2
+  const displayData = data.map(row => {
+    if (row.indicateur === 'TAUX_PLAINTE') {
+      const f2Denum = data
+        .filter(d => ['PLP', 'HOTLINE', 'CONSTRUCTION', 'RANG_2'].includes(d.indicateur))
+        .reduce((sum, d) => sum + d.denum, 0);
+      
+      const res = f2Denum > 0 ? Number(((row.num / f2Denum) * 100).toFixed(2)) : 0;
+      return { ...row, denum: f2Denum, resultat: res, isLocked: f2Denum === 0 } as any;
+    }
+    return row;
+  });
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <h1>Mes Indicateurs CQ</h1>
-        <p>Consultez vos performances (PLP, Hotline, Construction, SACLI...) pour le mois sélectionné.</p>
+        <p>Consultez vos performances (PLP, Hotline, Construction, SACLI, Taux de Plainte...) pour le mois sélectionné.</p>
       </header>
 
       <div className={styles.filters}>
@@ -61,16 +74,22 @@ export default function CqPartenairePage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((row) => (
+              {displayData.map((row: any) => (
                 <tr key={row.id}>
                   <td style={{ fontWeight: 'bold', color: '#3498db' }}>{row.indicateur.replace('_', ' ')}</td>
                   <td>{row.zone === 'GLOBAL' ? '-' : `ZONE ${row.zone}`}</td>
                   <td>{row.num.toLocaleString('fr-FR')}</td>
-                  <td>{row.denum.toLocaleString('fr-FR')}</td>
-                  <td><span className={styles.badgeSuccess}>{row.resultat}%</span></td>
+                  
+                  {/* 🛡️ L'FIX HWA HNA: Affichage dyal l'9fel ila kan Fichier 2 mazal mat-injecta */}
+                  <td>{row.isLocked ? <span title="Nécessite l'import du Fichier 2 (PLP...)">🔒</span> : row.denum.toLocaleString('fr-FR')}</td>
+                  <td>
+                    {row.isLocked 
+                      ? <span className={styles.badgeSuccess} style={{background:'#f1f2f6', color:'#7f8c8d'}}>En attente F2</span> 
+                      : <span className={styles.badgeSuccess}>{row.resultat}%</span>}
+                  </td>
                 </tr>
               ))}
-              {data.length === 0 && (
+              {displayData.length === 0 && (
                 <tr>
                   <td colSpan={5} className={styles.empty}>Aucune donnée trouvée pour cette période.</td>
                 </tr>

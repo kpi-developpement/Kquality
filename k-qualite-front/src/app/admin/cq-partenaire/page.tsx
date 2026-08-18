@@ -20,15 +20,15 @@ export default function AdminCqPartenairePage() {
 
   useEffect(() => {
     setLoading(true);
-    // 🛡️ L'FIX HWA HNA: Mli ykoun ALL, kan-siftou undefined l'API bach t-jbed kolchi
     getAdminCqPartenaire(month, year, selectedPartenaire === "ALL" ? undefined : selectedPartenaire)
       .then(setData)
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [month, year, selectedPartenaire]);
 
-  // 🛡️ L'FIX HWA HNA: L'Agrégation Globale f l'Frontend
+  // 🛡️ L'FIX HWA HNA: L'Agrégation Globale w l'Calcul Dynamique dyal TAUX_PLAINTE
   let displayData = data;
+  
   if (selectedPartenaire === "ALL" && data.length > 0) {
     const aggregated: Record<string, CqPartenaireKpiDTO> = {};
     
@@ -41,18 +41,29 @@ export default function AdminCqPartenairePage() {
       aggregated[key].denum += row.denum;
     });
 
-    displayData = Object.values(aggregated).map(row => ({
-      ...row,
-      resultat: row.denum > 0 ? Number(((row.num / row.denum) * 100).toFixed(2)) : 0
-    }));
+    displayData = Object.values(aggregated);
   }
+
+  // 🛡️ ENRICHISSEMENT TAUX_PLAINTE
+  displayData = displayData.map(row => {
+    if (row.indicateur === 'TAUX_PLAINTE') {
+      // N-jme3ou l'DENUM dyal Fichier 2 l nfs l'Partenaire (awla l'Global)
+      const f2Denum = displayData
+        .filter(d => d.partenaireNom === row.partenaireNom && ['PLP', 'HOTLINE', 'CONSTRUCTION', 'RANG_2'].includes(d.indicateur))
+        .reduce((sum, d) => sum + d.denum, 0);
+      
+      const res = f2Denum > 0 ? Number(((row.num / f2Denum) * 100).toFixed(2)) : 0;
+      return { ...row, denum: f2Denum, resultat: res, isLocked: f2Denum === 0 } as any;
+    }
+    return row;
+  });
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.adminBadge}>ESPACE ADMIN</div>
         <h1>Calculs CQ Partenaire</h1>
-        <p>Performances PLP, Hotline, Construction, Rang 2, SACLI et SARCLI.</p>
+        <p>Performances PLP, Hotline, Construction, Rang 2, SACLI, SARCLI, et Taux de Plainte.</p>
       </header>
 
       <div className={styles.filters}>
@@ -93,14 +104,19 @@ export default function AdminCqPartenairePage() {
               </tr>
             </thead>
             <tbody>
-              {displayData.map((row) => (
+              {displayData.map((row: any) => (
                 <tr key={row.id} style={{ backgroundColor: row.partenaireNom.includes("GLOBALE") ? '#f8f9fa' : 'white' }}>
                   <td style={{ fontWeight: 'bold', color: row.partenaireNom.includes("GLOBALE") ? '#e74c3c' : '#2c3e50' }}>{row.partenaireNom}</td>
                   <td style={{ fontWeight: 'bold', color: '#3498db' }}>{row.indicateur.replace('_', ' ')}</td>
                   <td>{row.zone === 'GLOBAL' ? '-' : `ZONE ${row.zone}`}</td>
                   <td>{row.num.toLocaleString('fr-FR')}</td>
-                  <td>{row.denum.toLocaleString('fr-FR')}</td>
-                  <td><span className={styles.badgeSuccess}>{row.resultat}%</span></td>
+                  {/* 🛡️ L'FIX HWA HNA: Affichage dyal l'9fel ila kan Fichier 2 mazal mat-injecta */}
+                  <td>{row.isLocked ? <span title="Nécessite l'import du Fichier 2 (PLP...)">🔒</span> : row.denum.toLocaleString('fr-FR')}</td>
+                  <td>
+                    {row.isLocked 
+                      ? <span className={styles.badgeBonus} style={{background:'#f1f2f6', color:'#7f8c8d'}}>En attente F2</span> 
+                      : <span className={styles.badgeSuccess}>{row.resultat}%</span>}
+                  </td>
                 </tr>
               ))}
               {displayData.length === 0 && (

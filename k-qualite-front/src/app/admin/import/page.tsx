@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useRef } from 'react';
-import { importErreursExcel, importMultiCqExcel, importCqPartenaireExcel, importSacliPartenaireExcel, importSarcliPartenaireExcel, importIncoherencePtoExcel, importGemNokExcel, importCadrageExcel } from '@/services/apiService';
+import { 
+  importErreursExcel, 
+  importMultiCqExcel, 
+  importCqPartenaireExcel, 
+  importSacliPartenaireExcel, 
+  importSarcliPartenaireExcel, 
+  importIncoherencePtoExcel, 
+  importGemNokExcel, 
+  importCadrageExcel,
+  importTauxPlainteExcel // 🛡️ JDID
+} from '@/services/apiService';
 import styles from './Import.module.css';
 
 export default function ImportErreursPage() {
@@ -19,7 +29,8 @@ export default function ImportErreursPage() {
   const fileInputSarcliRef = useRef<HTMLInputElement>(null);
   const fileInputPtoRef = useRef<HTMLInputElement>(null);
   const fileInputGemRef = useRef<HTMLInputElement>(null);
-  const fileInputCadrageRef = useRef<HTMLInputElement>(null); // 🛡️ JDID
+  const fileInputCadrageRef = useRef<HTMLInputElement>(null);
+  const fileInputPlainteRef = useRef<HTMLInputElement>(null); // 🛡️ JDID
 
   const handleUploadErreurs = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
@@ -91,7 +102,6 @@ export default function ImportErreursPage() {
     finally { setLoading(false); if(fileInputGemRef.current) fileInputGemRef.current.value = ""; }
   };
 
-  // 🛡️ JDID: Handler CADRAGE
   const handleUploadCadrage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
     setLoading(true); setError(""); setSummary(null);
@@ -100,6 +110,17 @@ export default function ImportErreursPage() {
       setSummary({ type: 'CADRAGE', data: res.data });
     } catch (err: any) { setError(err.message); } 
     finally { setLoading(false); if(fileInputCadrageRef.current) fileInputCadrageRef.current.value = ""; }
+  };
+
+  // 🛡️ JDID: Handler dyal TAUX DE PLAINTE
+  const handleUploadPlainte = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    setLoading(true); setError(""); setSummary(null);
+    try {
+      const res = await importTauxPlainteExcel(e.target.files[0], month, year);
+      setSummary({ type: 'TAUX DE PLAINTE', data: res.data });
+    } catch (err: any) { setError(err.message); } 
+    finally { setLoading(false); if(fileInputPlainteRef.current) fileInputPlainteRef.current.value = ""; }
   };
 
   return (
@@ -178,12 +199,19 @@ export default function ImportErreursPage() {
           <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Filtre TVC w Flg Gem</p>
         </div>
 
-        {/* 🛡️ JDID: BOX CADRAGE */}
         <div className={styles.uploadBox} onClick={() => !loading && fileInputCadrageRef.current?.click()}>
           <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputCadrageRef} onChange={handleUploadCadrage} className={styles.fileInput} />
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#16a085" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
           <h3 style={{ color: '#16a085' }}>8. CADRAGE</h3>
           <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs MAL_CADREE (0 ou 1)</p>
+        </div>
+
+        {/* 🛡️ JDID: BOX TAUX DE PLAINTE */}
+        <div className={styles.uploadBox} onClick={() => !loading && fileInputPlainteRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputPlainteRef} onChange={handleUploadPlainte} className={styles.fileInput} />
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e84393" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          <h3 style={{ color: '#e84393' }}>9. TAUX DE PLAINTE</h3>
+          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs Volume Ticket Qualité</p>
         </div>
 
       </div>

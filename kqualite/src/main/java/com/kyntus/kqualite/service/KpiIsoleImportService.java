@@ -49,10 +49,15 @@ public class KpiIsoleImportService {
         return processIsolatedFile(file, month, year, "GEM_NOK");
     }
 
-    // 🛡️ JDID: L'API dyal CADRAGE
     @Transactional
     public ImportSummaryDTO importCadrage(MultipartFile file, int month, int year) {
         return processIsolatedFile(file, month, year, "CADRAGE");
+    }
+
+    // 🛡️ JDID: L'API dyal TAUX DE PLAINTE
+    @Transactional
+    public ImportSummaryDTO importTauxPlainte(MultipartFile file, int month, int year) {
+        return processIsolatedFile(file, month, year, "TAUX_PLAINTE");
     }
 
     private ImportSummaryDTO processIsolatedFile(MultipartFile file, int month, int year, String indicateur) {
@@ -160,7 +165,6 @@ public class KpiIsoleImportService {
             Stats s = statsMap.get(p);
 
             s.denum++;
-
             String cleanPto = ptoMagouille.trim().toLowerCase();
             if (cleanPto.equals("1") || cleanPto.equals("1.0") || cleanPto.equals("1,0") || cleanPto.equals("true") || cleanPto.equals("vrai")) {
                 s.num++;
@@ -193,7 +197,6 @@ public class KpiIsoleImportService {
             details.add(CqLigneDetail.builder().mois(month).annee(year).indicateur(indicateur).partenaire(p)
                     .kyn(kyn).reference(libRef).champ1(tvc).champ2(flgGem).champ3(statut).build());
         }
-        // 🛡️ JDID: Logique CADRAGE
         else if (indicateur.equals("CADRAGE")) {
             String kyn = findValue(rowData, "id_tech", "idtech", "kyn", "prv_tcnw_id_tech");
             String idRdv = findValue(rowData, "idnt_rdv", "id rdv", "idrdv");
@@ -203,7 +206,6 @@ public class KpiIsoleImportService {
             boolean is0 = cleanMalCadree.equals("0") || cleanMalCadree.equals("0.0") || cleanMalCadree.equals("0,0") || cleanMalCadree.equals("false") || cleanMalCadree.equals("faux");
             boolean is1 = cleanMalCadree.equals("1") || cleanMalCadree.equals("1.0") || cleanMalCadree.equals("1,0") || cleanMalCadree.equals("true") || cleanMalCadree.equals("vrai");
 
-            // DENUM = 0 ou 1
             if (!is0 && !is1) return;
 
             Partenaire p = getPartenaire(kyn, techMap, inconnu);
@@ -211,11 +213,34 @@ public class KpiIsoleImportService {
             Stats s = statsMap.get(p);
 
             s.denum++;
-            // NUM = 1
             if (is1) s.num++;
 
             details.add(CqLigneDetail.builder().mois(month).annee(year).indicateur(indicateur).partenaire(p)
                     .kyn(kyn).reference(idRdv).champ1(malCadree).build());
+        }
+        // 🛡️ JDID: Logique TAUX DE PLAINTE
+        else if (indicateur.equals("TAUX_PLAINTE")) {
+            String kyn = findValue(rowData, "id_tech", "id tech", "idtech", "kyn", "prv_tcnw_id_tech");
+            String idRdv = findValue(rowData, "id_rdv", "id rdv", "idrdv");
+            String ticket = findValue(rowData, "volume ticket qualité", "volume ticket", "ticket");
+
+            if (idRdv.isEmpty()) return;
+
+            Partenaire p = getPartenaire(kyn, techMap, inconnu);
+            statsMap.putIfAbsent(p, new Stats());
+            Stats s = statsMap.get(p);
+
+            // DENUM kay-b9a 0, ghay-t7seb f l'Frontend mn Fichier 2
+            s.denum = 0;
+
+            // NUM = 1
+            String cleanTicket = ticket.trim().toLowerCase();
+            if (cleanTicket.equals("1") || cleanTicket.equals("1.0") || cleanTicket.equals("1,0") || cleanTicket.equals("true") || cleanTicket.equals("vrai")) {
+                s.num++;
+            }
+
+            details.add(CqLigneDetail.builder().mois(month).annee(year).indicateur(indicateur).partenaire(p)
+                    .kyn(kyn).reference(idRdv).champ1(ticket).build());
         }
     }
 
