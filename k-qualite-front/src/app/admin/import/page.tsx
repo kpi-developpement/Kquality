@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from 'react';
-import { importErreursExcel, importMultiCqExcel, importCqPartenaireExcel, importSacliPartenaireExcel, importSarcliPartenaireExcel, importIncoherencePtoExcel, importGemNokExcel } from '@/services/apiService';
+import { importErreursExcel, importMultiCqExcel, importCqPartenaireExcel, importSacliPartenaireExcel, importSarcliPartenaireExcel, importIncoherencePtoExcel, importGemNokExcel, importCadrageExcel } from '@/services/apiService';
 import styles from './Import.module.css';
 
 export default function ImportErreursPage() {
@@ -19,6 +19,7 @@ export default function ImportErreursPage() {
   const fileInputSarcliRef = useRef<HTMLInputElement>(null);
   const fileInputPtoRef = useRef<HTMLInputElement>(null);
   const fileInputGemRef = useRef<HTMLInputElement>(null);
+  const fileInputCadrageRef = useRef<HTMLInputElement>(null); // 🛡️ JDID
 
   const handleUploadErreurs = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
@@ -90,6 +91,17 @@ export default function ImportErreursPage() {
     finally { setLoading(false); if(fileInputGemRef.current) fileInputGemRef.current.value = ""; }
   };
 
+  // 🛡️ JDID: Handler CADRAGE
+  const handleUploadCadrage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    setLoading(true); setError(""); setSummary(null);
+    try {
+      const res = await importCadrageExcel(e.target.files[0], month, year);
+      setSummary({ type: 'CADRAGE', data: res.data });
+    } catch (err: any) { setError(err.message); } 
+    finally { setLoading(false); if(fileInputCadrageRef.current) fileInputCadrageRef.current.value = ""; }
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -152,7 +164,6 @@ export default function ImportErreursPage() {
           <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs SARCLI (valr not glbl = 4 ou 5)</p>
         </div>
 
-        {/* 🛡️ L'FIX HWA HNA: Boxes jdad l'PTO w GEM NOK */}
         <div className={styles.uploadBox} onClick={() => !loading && fileInputPtoRef.current?.click()}>
           <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputPtoRef} onChange={handleUploadPto} className={styles.fileInput} />
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#9b59b6" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
@@ -165,6 +176,14 @@ export default function ImportErreursPage() {
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e67e22" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
           <h3 style={{ color: '#d35400' }}>7. GEM NOK</h3>
           <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Filtre TVC w Flg Gem</p>
+        </div>
+
+        {/* 🛡️ JDID: BOX CADRAGE */}
+        <div className={styles.uploadBox} onClick={() => !loading && fileInputCadrageRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputCadrageRef} onChange={handleUploadCadrage} className={styles.fileInput} />
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#16a085" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          <h3 style={{ color: '#16a085' }}>8. CADRAGE</h3>
+          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs MAL_CADREE (0 ou 1)</p>
         </div>
 
       </div>

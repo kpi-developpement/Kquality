@@ -39,20 +39,20 @@ public class KpiIsoleImportService {
         long denum = 0;
     }
 
-    // ==========================================
-    // 1. INCOHERENCE PTO (Fichier Indépendant)
-    // ==========================================
     @Transactional
     public ImportSummaryDTO importIncoherencePto(MultipartFile file, int month, int year) {
         return processIsolatedFile(file, month, year, "INCOHERENCE_PTO");
     }
 
-    // ==========================================
-    // 2. GEM NOK (Fichier Indépendant)
-    // ==========================================
     @Transactional
     public ImportSummaryDTO importGemNok(MultipartFile file, int month, int year) {
         return processIsolatedFile(file, month, year, "GEM_NOK");
+    }
+
+    // 🛡️ JDID: L'API dyal CADRAGE
+    @Transactional
+    public ImportSummaryDTO importCadrage(MultipartFile file, int month, int year) {
+        return processIsolatedFile(file, month, year, "CADRAGE");
     }
 
     private ImportSummaryDTO processIsolatedFile(MultipartFile file, int month, int year, String indicateur) {
@@ -146,17 +146,14 @@ public class KpiIsoleImportService {
         return total;
     }
 
-    // 🛡️ L'LOGIQUE EXACTE LI TLBTI
     private void applyLogic(Map<String, String> rowData, Map<Partenaire, Stats> statsMap, List<CqLigneDetail> details, Map<String, Technicien> techMap, Partenaire inconnu, String indicateur, int month, int year) {
 
         if (indicateur.equals("INCOHERENCE_PTO")) {
             String kyn = findValue(rowData, "prv_tcnw_id_tech", "kyn");
             String idRacc = findValue(rowData, "id racc", "id_racc", "idracc");
-
-            // 🛡️ L'FIX HWA HNA: Recherche exacte dyal "pto magouille"
             String ptoMagouille = findValue(rowData, "pto magouille", "pto_magouille", "ptomagouille", "magouille");
 
-            if (idRacc.isEmpty()) return; // DENUM = Total des lignes dyal l collone : Id Racc
+            if (idRacc.isEmpty()) return;
 
             Partenaire p = getPartenaire(kyn, techMap, inconnu);
             statsMap.putIfAbsent(p, new Stats());
@@ -164,10 +161,9 @@ public class KpiIsoleImportService {
 
             s.denum++;
 
-            // 🛡️ L'FIX HWA HNA: Comparaison Bulletproof l'Excel
             String cleanPto = ptoMagouille.trim().toLowerCase();
             if (cleanPto.equals("1") || cleanPto.equals("1.0") || cleanPto.equals("1,0") || cleanPto.equals("true") || cleanPto.equals("vrai")) {
-                s.num++; // NUM = colonne "PTO magouille" = 1
+                s.num++;
             }
 
             details.add(CqLigneDetail.builder().mois(month).annee(year).indicateur(indicateur).partenaire(p)
@@ -181,13 +177,10 @@ public class KpiIsoleImportService {
             String libRef = findValue(rowData, "lib ref erdv", "lib_ref");
             String cohorte = findValue(rowData, "cohorte date rdv racc", "cohorte");
 
-            // Filtre --> Colonne "TVC" bla valeur OUI + Colonne "Flg Gem" bl valeur 1
             String cleanFlgGem = flgGem.trim().toLowerCase();
             boolean isFlgGem1 = cleanFlgGem.equals("1") || cleanFlgGem.equals("1.0") || cleanFlgGem.equals("1,0") || cleanFlgGem.equals("true") || cleanFlgGem.equals("vrai");
 
             if (!tvc.equalsIgnoreCase("OUI") || !isFlgGem1) return;
-
-            // DENUM : TOTAL DES LIGNES dyal lcollone : Cohorte date rdv racc
             if (cohorte.isEmpty()) return;
 
             Partenaire p = getPartenaire(kyn, techMap, inconnu);
@@ -195,11 +188,34 @@ public class KpiIsoleImportService {
             Stats s = statsMap.get(p);
 
             s.denum++;
-            // NUM : Colonne "Grp Statut Crinstall Mnt" = CR_MNT_OK
             if (statut.equalsIgnoreCase("CR_MNT_OK")) s.num++;
 
             details.add(CqLigneDetail.builder().mois(month).annee(year).indicateur(indicateur).partenaire(p)
                     .kyn(kyn).reference(libRef).champ1(tvc).champ2(flgGem).champ3(statut).build());
+        }
+        // 🛡️ JDID: Logique CADRAGE
+        else if (indicateur.equals("CADRAGE")) {
+            String kyn = findValue(rowData, "id_tech", "idtech", "kyn", "prv_tcnw_id_tech");
+            String idRdv = findValue(rowData, "idnt_rdv", "id rdv", "idrdv");
+            String malCadree = findValue(rowData, "mal_cadree", "mal cadree", "malcadree");
+
+            String cleanMalCadree = malCadree.trim().toLowerCase();
+            boolean is0 = cleanMalCadree.equals("0") || cleanMalCadree.equals("0.0") || cleanMalCadree.equals("0,0") || cleanMalCadree.equals("false") || cleanMalCadree.equals("faux");
+            boolean is1 = cleanMalCadree.equals("1") || cleanMalCadree.equals("1.0") || cleanMalCadree.equals("1,0") || cleanMalCadree.equals("true") || cleanMalCadree.equals("vrai");
+
+            // DENUM = 0 ou 1
+            if (!is0 && !is1) return;
+
+            Partenaire p = getPartenaire(kyn, techMap, inconnu);
+            statsMap.putIfAbsent(p, new Stats());
+            Stats s = statsMap.get(p);
+
+            s.denum++;
+            // NUM = 1
+            if (is1) s.num++;
+
+            details.add(CqLigneDetail.builder().mois(month).annee(year).indicateur(indicateur).partenaire(p)
+                    .kyn(kyn).reference(idRdv).champ1(malCadree).build());
         }
     }
 
@@ -229,7 +245,6 @@ public class KpiIsoleImportService {
     }
 
     private String findValue(Map<String, String> rowData, String... keywords) {
-        // 1. Recherche Exacte
         for (String kw : keywords) {
             String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
             for (Map.Entry<String, String> entry : rowData.entrySet()) {
@@ -237,7 +252,6 @@ public class KpiIsoleImportService {
                 if (cleanKey.equals(cleanKw)) return entry.getValue().trim();
             }
         }
-        // 2. Recherche par Inclusion
         for (String kw : keywords) {
             String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
             for (Map.Entry<String, String> entry : rowData.entrySet()) {

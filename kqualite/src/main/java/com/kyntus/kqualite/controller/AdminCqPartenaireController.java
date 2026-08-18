@@ -74,6 +74,15 @@ public class AdminCqPartenaireController {
         ImportSummaryDTO summary = kpiIsoleImportService.importGemNok(file, month, year);
         return ResponseEntity.ok(ApiResponse.success(summary, "Calculs GEM NOK terminés"));
     }
+    @PostMapping("/import-cadrage")
+    public ResponseEntity<ApiResponse<ImportSummaryDTO>> importCadrage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+        if (file.isEmpty()) return ResponseEntity.badRequest().build();
+        ImportSummaryDTO summary = kpiIsoleImportService.importCadrage(file, month, year);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Calculs CADRAGE terminés"));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<CqPartenaireKpiDTO>>> getCqPartenaire(

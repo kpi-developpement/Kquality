@@ -305,3 +305,10 @@ export async function importGemNokExcel(file: File, month: number, year: number)
   if (!res.ok) throw new Error("Erreur importation GEM NOK");
   return await res.json();
 }
+
+export async function importCadrageExcel(file: File, month: number, year: number) {
+  const formData = new FormData(); formData.append('file', file); formData.append('month', month.toString()); formData.append('year', year.toString());
+  const res = await fetch(`${BASE_URL}/admin/cq-partenaire/import-cadrage`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` }, body: formData });
+  if (!res.ok) throw new Error("Erreur importation CADRAGE");
+  return await res.json();
+}
