@@ -5,6 +5,7 @@ import com.kyntus.kqualite.dto.CqPartenaireKpiDTO;
 import com.kyntus.kqualite.dto.ImportSummaryDTO;
 import com.kyntus.kqualite.repository.CqPartenaireKpiRepository;
 import com.kyntus.kqualite.service.CqPartenaireImportService;
+import com.kyntus.kqualite.service.KpiIsoleImportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 public class AdminCqPartenaireController {
 
     private final CqPartenaireImportService importService;
+    private final KpiIsoleImportService kpiIsoleImportService; // 🛡️ JDID
     private final CqPartenaireKpiRepository repository;
 
     @PostMapping("/import")
@@ -32,7 +34,6 @@ public class AdminCqPartenaireController {
         return ResponseEntity.ok(ApiResponse.success(summary, "Calculs CQ Partenaire terminés"));
     }
 
-    // 🛡️ L'FIX HWA HNA: APIs jdad l SACLI w SARCLI
     @PostMapping("/import-sacli")
     public ResponseEntity<ApiResponse<ImportSummaryDTO>> importSacli(
             @RequestParam("file") MultipartFile file,
@@ -51,6 +52,27 @@ public class AdminCqPartenaireController {
         if (file.isEmpty()) return ResponseEntity.badRequest().build();
         ImportSummaryDTO summary = importService.importSacliSarcli(file, month, year, false);
         return ResponseEntity.ok(ApiResponse.success(summary, "Calculs SARCLI terminés"));
+    }
+
+    // 🛡️ L'FIX HWA HNA: 2 APIs jdad l'Incoherence PTO w GEM NOK
+    @PostMapping("/import-incoherence-pto")
+    public ResponseEntity<ApiResponse<ImportSummaryDTO>> importIncoherencePto(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+        if (file.isEmpty()) return ResponseEntity.badRequest().build();
+        ImportSummaryDTO summary = kpiIsoleImportService.importIncoherencePto(file, month, year);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Calculs Incohérence PTO terminés"));
+    }
+
+    @PostMapping("/import-gem-nok")
+    public ResponseEntity<ApiResponse<ImportSummaryDTO>> importGemNok(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+        if (file.isEmpty()) return ResponseEntity.badRequest().build();
+        ImportSummaryDTO summary = kpiIsoleImportService.importGemNok(file, month, year);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Calculs GEM NOK terminés"));
     }
 
     @GetMapping

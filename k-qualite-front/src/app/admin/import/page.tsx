@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from 'react';
-import { importErreursExcel, importMultiCqExcel, importCqPartenaireExcel, importSacliPartenaireExcel, importSarcliPartenaireExcel } from '@/services/apiService';
+import { importErreursExcel, importMultiCqExcel, importCqPartenaireExcel, importSacliPartenaireExcel, importSarcliPartenaireExcel, importIncoherencePtoExcel, importGemNokExcel } from '@/services/apiService';
 import styles from './Import.module.css';
 
 export default function ImportErreursPage() {
@@ -17,6 +17,8 @@ export default function ImportErreursPage() {
   const fileInputCqPartenaireRef = useRef<HTMLInputElement>(null);
   const fileInputSacliRef = useRef<HTMLInputElement>(null);
   const fileInputSarcliRef = useRef<HTMLInputElement>(null);
+  const fileInputPtoRef = useRef<HTMLInputElement>(null);
+  const fileInputGemRef = useRef<HTMLInputElement>(null);
 
   const handleUploadErreurs = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
@@ -68,6 +70,26 @@ export default function ImportErreursPage() {
     finally { setLoading(false); if(fileInputSarcliRef.current) fileInputSarcliRef.current.value = ""; }
   };
 
+  const handleUploadPto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    setLoading(true); setError(""); setSummary(null);
+    try {
+      const res = await importIncoherencePtoExcel(e.target.files[0], month, year);
+      setSummary({ type: 'Incohérence PTO', data: res.data });
+    } catch (err: any) { setError(err.message); } 
+    finally { setLoading(false); if(fileInputPtoRef.current) fileInputPtoRef.current.value = ""; }
+  };
+
+  const handleUploadGem = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    setLoading(true); setError(""); setSummary(null);
+    try {
+      const res = await importGemNokExcel(e.target.files[0], month, year);
+      setSummary({ type: 'GEM NOK', data: res.data });
+    } catch (err: any) { setError(err.message); } 
+    finally { setLoading(false); if(fileInputGemRef.current) fileInputGemRef.current.value = ""; }
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -116,7 +138,6 @@ export default function ImportErreursPage() {
           <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs PLP, Hotline, Construction, Rang 2</p>
         </div>
 
-        {/* 🛡️ L'FIX HWA HNA: Boxes jdad l SACLI w SARCLI */}
         <div className={styles.uploadBox} onClick={() => !loading && fileInputSacliRef.current?.click()}>
           <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputSacliRef} onChange={handleUploadSacli} className={styles.fileInput} />
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#8e44ad" strokeWidth="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
@@ -129,6 +150,21 @@ export default function ImportErreursPage() {
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#d35400" strokeWidth="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
           <h3 style={{ color: '#d35400' }}>5. SARCLI NOK</h3>
           <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs SARCLI (valr not glbl = 4 ou 5)</p>
+        </div>
+
+        {/* 🛡️ L'FIX HWA HNA: Boxes jdad l'PTO w GEM NOK */}
+        <div className={styles.uploadBox} onClick={() => !loading && fileInputPtoRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputPtoRef} onChange={handleUploadPto} className={styles.fileInput} />
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#9b59b6" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <h3 style={{ color: '#8e44ad' }}>6. Incohérence PTO</h3>
+          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs PTO Magouille</p>
+        </div>
+
+        <div className={styles.uploadBox} onClick={() => !loading && fileInputGemRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputGemRef} onChange={handleUploadGem} className={styles.fileInput} />
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e67e22" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+          <h3 style={{ color: '#d35400' }}>7. GEM NOK</h3>
+          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Filtre TVC w Flg Gem</p>
         </div>
 
       </div>

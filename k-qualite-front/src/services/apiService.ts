@@ -292,3 +292,16 @@ export async function getPartenaireCqKpis(partenaireId: number, month: number, y
   const json = await res.json();
   return json.data;
 }
+export async function importIncoherencePtoExcel(file: File, month: number, year: number) {
+  const formData = new FormData(); formData.append('file', file); formData.append('month', month.toString()); formData.append('year', year.toString());
+  const res = await fetch(`${BASE_URL}/admin/cq-partenaire/import-incoherence-pto`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` }, body: formData });
+  if (!res.ok) throw new Error("Erreur importation Incohérence PTO");
+  return await res.json();
+}
+
+export async function importGemNokExcel(file: File, month: number, year: number) {
+  const formData = new FormData(); formData.append('file', file); formData.append('month', month.toString()); formData.append('year', year.toString());
+  const res = await fetch(`${BASE_URL}/admin/cq-partenaire/import-gem-nok`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` }, body: formData });
+  if (!res.ok) throw new Error("Erreur importation GEM NOK");
+  return await res.json();
+}
