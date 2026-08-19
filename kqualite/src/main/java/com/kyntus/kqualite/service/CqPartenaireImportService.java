@@ -272,7 +272,7 @@ public class CqPartenaireImportService {
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
 
-            Integer colKyn = findColumnIndex(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
+            Integer colKyn = findColumnIndex(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
             Integer colValr = findColumnIndex(headerMap, "valr not glbl", "valeur", "note");
 
             if (colValr == null) throw new RuntimeException("Colonne valeur introuvable.");
@@ -301,7 +301,7 @@ public class CqPartenaireImportService {
              CSVParser parser = new CSVParser(br, format)) {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
-            String colKyn = findColumnName(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
+            String colKyn = findColumnName(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
             String colValr = findColumnName(headerMap, "valr not glbl", "valeur", "note");
 
             if (colValr == null) throw new RuntimeException("Colonne valeur introuvable.");
@@ -497,12 +497,14 @@ public class CqPartenaireImportService {
             }
         }
 
-        // TNH SAV
-        if (rawTnh != null && !rawTnh.trim().isEmpty()) {
-            s.savTnhDenum++;
-            String cleanTnh = rawTnh.trim().toLowerCase();
-            if (cleanTnh.equals("inr2c") || cleanTnh.equals("inr2b")) {
-                s.savTnhNum++;
+        // 🛡️ L'FIX HWA HNA: Nettoyage agressif dyal TNH SAV
+        if (rawTnh != null) {
+            String cleanTnh = rawTnh.replaceAll("[\\s\\xA0]+", "").trim().toLowerCase();
+            if (!cleanTnh.isEmpty() && !cleanTnh.equals("-") && !cleanTnh.equals("0") && !cleanTnh.equals("na") && !cleanTnh.equals("n/a")) {
+                s.savTnhDenum++;
+                if (cleanTnh.equals("inr2c") || cleanTnh.equals("inr2b")) {
+                    s.savTnhNum++;
+                }
             }
         }
     }
