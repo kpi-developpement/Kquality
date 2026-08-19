@@ -17,3 +17,19 @@ a {
 .main-content {
   padding-top: 20px;
 }
+/* Zid had l'layout structure f globals.css dyalk */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #f4f7fb; /* L'fond m-matchi m3a l'Vue Globale */
+}
+
+.main-content {
+  flex: 1;
+  width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/ui/Navbar/Navbar";
+import Sidebar from "@/components/ui/Sidebar/Sidebar"; // 🚀 Bdlnaha l Sidebar
 import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
@@ -17,10 +17,12 @@ export default function RootLayout({
     <html lang="fr">
       <body>
         <AuthProvider>
-          <Navbar />
-          <main className="main-content">
-            {children}
-          </main>
+          <div className="app-layout">
+            <Sidebar />
+            <main className="main-content">
+              {children}
+            </main>
+          </div>
         </AuthProvider>
       </body>
     </html>

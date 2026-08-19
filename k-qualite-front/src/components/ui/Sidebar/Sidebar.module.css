@@ -1,0 +1,231 @@
+/* Sidebar.module.css */
+
+.sidebar {
+  width: 90px;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(226, 232, 240, 0.9);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.02);
+  position: relative;
+  z-index: 999; /* Dima fo9 l'contenu */
+  overflow: hidden;
+}
+
+.sidebar.expanded {
+  width: 280px;
+  box-shadow: 20px 0 50px rgba(0, 0, 0, 0.05);
+}
+
+/* --- LOGO SECTION --- */
+.logoSection {
+  display: flex;
+  align-items: center;
+  padding: 30px 25px;
+  gap: 15px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  min-width: 280px;
+}
+
+.logoBadge {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  color: white;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: 20px;
+  box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3);
+  transition: transform 0.4s ease;
+}
+
+.sidebar.expanded .logoBadge {
+  transform: rotate(360deg);
+}
+
+.logoTextWrapper {
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+}
+
+.sidebar.expanded .logoTextWrapper {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.logoText { font-size: 18px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; }
+.logoSubtext { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; }
+
+/* --- NAV LINKS --- */
+.navLinks {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 25px 15px;
+  gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.navLinks::-webkit-scrollbar { width: 4px; }
+.navLinks::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+.navItem {
+  display: flex;
+  align-items: center;
+  padding: 12px 10px;
+  border-radius: 14px;
+  color: #64748b; /* Text gris par défaut */
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  min-width: 250px;
+  overflow: hidden;
+}
+
+.iconBox {
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a; /* 🚀 ICONS DARK BLUE */
+  transition: all 0.3s ease;
+}
+
+.iconBox svg {
+  width: 22px;
+  height: 22px;
+  transition: all 0.3s ease;
+}
+
+.navText {
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: 10px;
+  opacity: 0;
+  transform: translateX(-15px);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  white-space: nowrap;
+}
+
+.sidebar.expanded .navText {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Hover Effects */
+.navItem:hover {
+  background: rgba(241, 245, 249, 0.8);
+  transform: translateX(4px);
+}
+
+.navItem:hover .iconBox {
+  color: #3b82f6; /* Kayweli bleu fo9 l'hover */
+  transform: scale(1.1);
+}
+
+.navItem:hover .navText {
+  color: #0f172a;
+}
+
+/* Active State (L'page li rak fiha) */
+.navItem.active {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.navItem.active .iconBox {
+  color: #2563eb;
+  filter: drop-shadow(0 2px 5px rgba(37, 99, 235, 0.3));
+}
+
+.navItem.active .navText {
+  color: #2563eb;
+  font-weight: 800;
+}
+
+.navItem.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 4px;
+  background: #3b82f6;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 2px 0 8px rgba(59, 130, 246, 0.4);
+}
+
+/* --- FOOTER SECTION (Profile & Logout) --- */
+.footerSection {
+  padding: 20px 15px;
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 280px;
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  gap: 15px;
+}
+
+.userAvatar {
+  min-width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.expanded .userInfo { opacity: 1; }
+
+.partnerName { font-size: 13px; font-weight: 800; color: #0f172a; text-transform: uppercase; }
+.roleBadge { font-size: 10px; font-weight: 800; color: #3b82f6; letter-spacing: 0.5px; }
+
+/* Logout Button */
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.logoutBtn .iconBox { color: #ef4444; }
+.logoutBtn .navText { color: #ef4444; font-weight: 800; }
+
+.logoutBtn:hover {
+  background: #fef2f2;
+}
+.logoutBtn:hover .iconBox { transform: scale(1.1); filter: drop-shadow(0 2px 5px rgba(239, 68, 68, 0.3)); }
