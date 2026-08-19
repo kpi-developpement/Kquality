@@ -1,11 +1,23 @@
 "use client";
 
 import { useState, useRef } from 'react';
-import { importErreursExcel, importMultiCqExcel, importCqPartenaireExcel, importSacliPartenaireExcel, importSarcliPartenaireExcel, importIncoherencePtoExcel, importGemNokExcel, importCadrageExcel, importTauxPlainteExcel, importSavExcel } from '@/services/apiService';
+import { 
+  importErreursExcel, 
+  importMultiCqExcel, 
+  importCqPartenaireExcel, 
+  importSacliPartenaireExcel, 
+  importSarcliPartenaireExcel, 
+  importIncoherencePtoExcel, 
+  importGemNokExcel, 
+  importCadrageExcel,
+  importTauxPlainteExcel,
+  importSavExcel
+} from '@/services/apiService';
 import styles from './Import.module.css';
 
 export default function ImportErreursPage() {
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("");
   const [summary, setSummary] = useState<any>(null);
   const [error, setError] = useState("");
   
@@ -15,224 +27,208 @@ export default function ImportErreursPage() {
   const fileInputErreursRef = useRef<HTMLInputElement>(null);
   const fileInputMultiRef = useRef<HTMLInputElement>(null);
   const fileInputCqPartenaireRef = useRef<HTMLInputElement>(null);
+  const fileInputSavRef = useRef<HTMLInputElement>(null);
+  
   const fileInputSacliRef = useRef<HTMLInputElement>(null);
   const fileInputSarcliRef = useRef<HTMLInputElement>(null);
   const fileInputPtoRef = useRef<HTMLInputElement>(null);
   const fileInputGemRef = useRef<HTMLInputElement>(null);
   const fileInputCadrageRef = useRef<HTMLInputElement>(null);
   const fileInputPlainteRef = useRef<HTMLInputElement>(null);
-  const fileInputSavRef = useRef<HTMLInputElement>(null); // 🛡️ JDID
 
-  const handleUploadErreurs = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>, 
+    apiCall: Function, 
+    typeName: string, 
+    ref: React.RefObject<HTMLInputElement | null>
+  ) => {
     if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
+    
+    setLoading(true); 
+    setLoadingMsg(`Analyse de ${typeName} en cours...`);
+    setError(""); 
+    setSummary(null);
+    
     try {
-      const res = await importErreursExcel(e.target.files[0]);
-      setSummary({ type: 'Erreurs Classiques', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputErreursRef.current) fileInputErreursRef.current.value = ""; }
-  };
-
-  const handleUploadMultiCq = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
-    try {
-      const res = await importMultiCqExcel(e.target.files[0], month, year);
-      setSummary({ type: 'Fichier Multi-Feuilles CQ', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputMultiRef.current) fileInputMultiRef.current.value = ""; }
-  };
-
-  const handleUploadCqPartenaire = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
-    try {
-      const res = await importCqPartenaireExcel(e.target.files[0], month, year);
-      setSummary({ type: 'Calculs CQ Partenaire (PLP, Hotline...)', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputCqPartenaireRef.current) fileInputCqPartenaireRef.current.value = ""; }
-  };
-
-  const handleUploadSacli = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
-    try {
-      const res = await importSacliPartenaireExcel(e.target.files[0], month, year);
-      setSummary({ type: 'Calculs SACLI OK', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputSacliRef.current) fileInputSacliRef.current.value = ""; }
-  };
-
-  const handleUploadSarcli = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
-    try {
-      const res = await importSarcliPartenaireExcel(e.target.files[0], month, year);
-      setSummary({ type: 'Calculs SARCLI NOK', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputSarcliRef.current) fileInputSarcliRef.current.value = ""; }
-  };
-
-  const handleUploadPto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
-    try {
-      const res = await importIncoherencePtoExcel(e.target.files[0], month, year);
-      setSummary({ type: 'Incohérence PTO', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputPtoRef.current) fileInputPtoRef.current.value = ""; }
-  };
-
-  const handleUploadGem = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
-    try {
-      const res = await importGemNokExcel(e.target.files[0], month, year);
-      setSummary({ type: 'GEM NOK', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputGemRef.current) fileInputGemRef.current.value = ""; }
-  };
-
-  const handleUploadCadrage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
-    try {
-      const res = await importCadrageExcel(e.target.files[0], month, year);
-      setSummary({ type: 'CADRAGE', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputCadrageRef.current) fileInputCadrageRef.current.value = ""; }
-  };
-
-  const handleUploadPlainte = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
-    try {
-      const res = await importTauxPlainteExcel(e.target.files[0], month, year);
-      setSummary({ type: 'TAUX DE PLAINTE', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputPlainteRef.current) fileInputPlainteRef.current.value = ""; }
-  };
-
-  // 🛡️ JDID: Handler SAV
-  const handleUploadSav = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    setLoading(true); setError(""); setSummary(null);
-    try {
-      const res = await importSavExcel(e.target.files[0], month, year);
-      setSummary({ type: 'Fichier SAV (SATCLI, SECU, TNH)', data: res.data });
-    } catch (err: any) { setError(err.message); } 
-    finally { setLoading(false); if(fileInputSavRef.current) fileInputSavRef.current.value = ""; }
+      // Si c'est le fichier des erreurs, il ne prend pas month/year
+      const res = typeName === 'Erreurs Classiques' 
+        ? await apiCall(e.target.files[0])
+        : await apiCall(e.target.files[0], month, year);
+        
+      setSummary({ type: typeName, data: res.data });
+    } catch (err: any) { 
+      setError(err.message); 
+    } finally { 
+      setLoading(false); 
+      if(ref.current) ref.current.value = ""; 
+    }
   };
 
   return (
     <div className={styles.container}>
+      
+      {/* --- LOADING OVERLAY --- */}
+      {loading && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.spinner}></div>
+          <h2>Traitement en cours</h2>
+          <p>{loadingMsg}</p>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '10px' }}>Veuillez patienter, cela peut prendre quelques secondes pour les gros fichiers.</p>
+        </div>
+      )}
+
       <header className={styles.header}>
-        <div className={styles.adminBadge}>DISPATCHER</div>
+        <div className={styles.adminBadge}>DATA DISPATCHER</div>
         <h1>Importation des Données</h1>
-        <p>Injectez les fichiers. Le système distribuera automatiquement les lignes aux bons partenaires via le KYN.</p>
+        <p>Injectez les fichiers Excel/CSV. Le système distribuera automatiquement les lignes aux bons partenaires via le matricule KYN.</p>
       </header>
 
-      <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '30px', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#7f8c8d' }}>MOIS CIBLE</label>
-          <select value={month} onChange={e => setMonth(Number(e.target.value))} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
+      {/* --- CONTROL PANEL --- */}
+      <div className={styles.controlPanel}>
+        <div className={styles.filterGroup}>
+          <label>MOIS CIBLE</label>
+          <select className={styles.filterSelect} value={month} onChange={e => setMonth(Number(e.target.value))}>
             {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#7f8c8d' }}>ANNÉE CIBLE</label>
-          <select value={year} onChange={e => setYear(Number(e.target.value))} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
+        <div className={styles.filterGroup}>
+          <label>ANNÉE CIBLE</label>
+          <select className={styles.filterSelect} value={year} onChange={e => setYear(Number(e.target.value))}>
             {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
       </div>
 
-      {error && <div style={{ color: 'red', background: '#ffebee', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>{error}</div>}
+      {error && <div style={{ color: '#ef4444', background: '#fef2f2', padding: '15px 20px', borderRadius: '12px', border: '1px solid #fecaca', marginBottom: '30px', fontWeight: '600', textAlign: 'center' }}>⚠️ {error}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+      {/* ================= GROUP 1: FICHIERS PRINCIPAUX ================= */}
+      <h2 className={styles.sectionTitle}>
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        Fichiers Principaux & Agrégeurs
+      </h2>
+      <div className={styles.grid}>
         
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputErreursRef.current?.click()}>
-          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputErreursRef} onChange={handleUploadErreurs} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e74c3c" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-          <h3 style={{ color: '#c0392b' }}>1. Fichier des Erreurs</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Contient: ID RDV, KYN, Categorie, Impact</p>
+        <div className={`${styles.uploadBox} ${styles.boxRed}`} onClick={() => fileInputErreursRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputErreursRef} onChange={(e) => handleUpload(e, importErreursExcel, 'Erreurs Classiques', fileInputErreursRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </div>
+          <h3 style={{ color: '#ef4444' }}>Fichier des Erreurs</h3>
+          <p>ID RDV, KYN, Categorie, Impact</p>
         </div>
 
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputMultiRef.current?.click()}>
-          <input type="file" accept=".xlsx,.xls" ref={fileInputMultiRef} onChange={handleUploadMultiCq} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#27ae60" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-          <h3 style={{ color: '#27ae60' }}>2. Multi-Feuilles CQ</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Audits, Voisinage, Expertises, Coupures</p>
+        <div className={`${styles.uploadBox} ${styles.boxGreen}`} onClick={() => fileInputMultiRef.current?.click()}>
+          <input type="file" accept=".xlsx,.xls" ref={fileInputMultiRef} onChange={(e) => handleUpload(e, importMultiCqExcel, 'Multi-Feuilles CQ', fileInputMultiRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </div>
+          <h3 style={{ color: '#10b981' }}>Multi-Feuilles CQ</h3>
+          <p>Audits, Voisinage, Expertises, Coupures</p>
         </div>
 
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputCqPartenaireRef.current?.click()}>
-          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputCqPartenaireRef} onChange={handleUploadCqPartenaire} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#f39c12" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-          <h3 style={{ color: '#e67e22' }}>3. CQ Partenaire</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs PLP, Hotline, Construction, Rang 2</p>
+        <div className={`${styles.uploadBox} ${styles.boxOrange}`} onClick={() => fileInputCqPartenaireRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputCqPartenaireRef} onChange={(e) => handleUpload(e, importCqPartenaireExcel, 'CQ Partenaire (Fichier 2)', fileInputCqPartenaireRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          </div>
+          <h3 style={{ color: '#f59e0b' }}>CQ Partenaire (F2)</h3>
+          <p>PLP, Hotline, Construction, Rang 2, TNH</p>
         </div>
 
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputSacliRef.current?.click()}>
-          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputSacliRef} onChange={handleUploadSacli} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#8e44ad" strokeWidth="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-          <h3 style={{ color: '#8e44ad' }}>4. SACLI OK</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs SACLI (valr not glbl = 5)</p>
-        </div>
-
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputSarcliRef.current?.click()}>
-          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputSarcliRef} onChange={handleUploadSarcli} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#d35400" strokeWidth="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-          <h3 style={{ color: '#d35400' }}>5. SARCLI NOK</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs SARCLI (valr not glbl = 4 ou 5)</p>
-        </div>
-
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputPtoRef.current?.click()}>
-          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputPtoRef} onChange={handleUploadPto} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#9b59b6" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-          <h3 style={{ color: '#8e44ad' }}>6. Incohérence PTO</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs PTO Magouille</p>
-        </div>
-
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputGemRef.current?.click()}>
-          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputGemRef} onChange={handleUploadGem} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e67e22" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-          <h3 style={{ color: '#d35400' }}>7. GEM NOK</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Filtre TVC w Flg Gem</p>
-        </div>
-
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputCadrageRef.current?.click()}>
-          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputCadrageRef} onChange={handleUploadCadrage} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#16a085" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-          <h3 style={{ color: '#16a085' }}>8. CADRAGE</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs MAL_CADREE (0 ou 1)</p>
-        </div>
-
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputPlainteRef.current?.click()}>
-          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputPlainteRef} onChange={handleUploadPlainte} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e84393" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-          <h3 style={{ color: '#e84393' }}>9. TAUX DE PLAINTE</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs Volume Ticket Qualité</p>
-        </div>
-
-        {/* 🛡️ JDID: BOX FICHIER SAV */}
-        <div className={styles.uploadBox} onClick={() => !loading && fileInputSavRef.current?.click()}>
-          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputSavRef} onChange={handleUploadSav} className={styles.fileInput} />
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#2980b9" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-          <h3 style={{ color: '#2980b9' }}>10. Fichier SAV</h3>
-          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>SATCLI, SECURISATION, TNH SAV</p>
+        <div className={`${styles.uploadBox} ${styles.boxBlue}`} onClick={() => fileInputSavRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputSavRef} onChange={(e) => handleUpload(e, importSavExcel, 'Fichier SAV', fileInputSavRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </div>
+          <h3 style={{ color: '#3b82f6' }}>Fichier SAV</h3>
+          <p>SATCLI, SECU, TNH SAV, CCR, PERF</p>
         </div>
 
       </div>
 
-      {loading && <div style={{ textAlign: 'center', marginTop: '20px', fontWeight: 'bold', color: '#3498db' }}>Analyse et distribution en cours...</div>}
+      {/* ================= GROUP 2: INDICATEURS ISOLES ================= */}
+      <h2 className={styles.sectionTitle}>
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        Indicateurs Isolés (RACC)
+      </h2>
+      <div className={styles.grid}>
+        
+        <div className={`${styles.uploadBox} ${styles.boxPurple}`} onClick={() => fileInputSacliRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputSacliRef} onChange={(e) => handleUpload(e, importSacliPartenaireExcel, 'SACLI OK', fileInputSacliRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+          </div>
+          <h3 style={{ color: '#8b5cf6' }}>SACLI OK</h3>
+          <p>Calculs SACLI (valr not glbl = 5)</p>
+        </div>
 
-      {summary && (
+        <div className={`${styles.uploadBox} ${styles.boxOrange}`} onClick={() => fileInputSarcliRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputSarcliRef} onChange={(e) => handleUpload(e, importSarcliPartenaireExcel, 'SARCLI NOK', fileInputSarcliRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </div>
+          <h3 style={{ color: '#f97316' }}>SARCLI NOK</h3>
+          <p>Calculs SARCLI (valr not glbl = 4 ou 5)</p>
+        </div>
+
+        <div className={`${styles.uploadBox} ${styles.boxPink}`} onClick={() => fileInputPtoRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputPtoRef} onChange={(e) => handleUpload(e, importIncoherencePtoExcel, 'Incohérence PTO', fileInputPtoRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <h3 style={{ color: '#ec4899' }}>Incohérence PTO</h3>
+          <p>Calculs PTO Magouille</p>
+        </div>
+
+        <div className={`${styles.uploadBox} ${styles.boxRed}`} onClick={() => fileInputGemRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputGemRef} onChange={(e) => handleUpload(e, importGemNokExcel, 'GEM NOK', fileInputGemRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          </div>
+          <h3 style={{ color: '#ef4444' }}>GEM NOK</h3>
+          <p>Filtre TVC w Flg Gem</p>
+        </div>
+
+        <div className={`${styles.uploadBox} ${styles.boxGreen}`} onClick={() => fileInputCadrageRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputCadrageRef} onChange={(e) => handleUpload(e, importCadrageExcel, 'CADRAGE', fileInputCadrageRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          </div>
+          <h3 style={{ color: '#10b981' }}>CADRAGE</h3>
+          <p>Calculs MAL_CADREE (0 ou 1)</p>
+        </div>
+
+        <div className={`${styles.uploadBox} ${styles.boxBlue}`} onClick={() => fileInputPlainteRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputPlainteRef} onChange={(e) => handleUpload(e, importTauxPlainteExcel, 'TAUX DE PLAINTE', fileInputPlainteRef)} className={styles.fileInput} />
+          <div className={styles.iconWrapper}>
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          </div>
+          <h3 style={{ color: '#3b82f6' }}>TAUX DE PLAINTE</h3>
+          <p>Calculs Volume Ticket Qualité</p>
+        </div>
+
+      </div>
+
+      {/* --- SUMMARY SUCCESS CARD --- */}
+      {summary && !loading && (
         <div className={styles.summaryCard}>
-          <h3>✅ Importation réussie : {summary.type}</h3>
-          <ul>
-            <li>Total des lignes lues : {summary.data.totalLignes}</li>
-            <li>Lignes insérées et distribuées : {summary.data.lignesInserees}</li>
-            <li style={{ color: '#c62828' }}>Lignes rejetées (KYN introuvable) : {summary.data.lignesRejetees}</li>
+          <h3>
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Importation réussie : {summary.type}
+          </h3>
+          <ul className={styles.summaryList}>
+            <li className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>Total Lignes Lues</span>
+              <span className={styles.summaryValue}>{summary.data.totalLignes.toLocaleString()}</span>
+            </li>
+            <li className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>Insérées / Distribuées</span>
+              <span className={`${styles.summaryValue} ${styles.valueSuccess}`}>{summary.data.lignesInserees.toLocaleString()}</span>
+            </li>
+            <li className={styles.summaryItem}>
+              <span className={styles.summaryLabel}>Rejetées (KYN Introuvable)</span>
+              <span className={`${styles.summaryValue} ${summary.data.lignesRejetees > 0 ? styles.valueError : ''}`}>{summary.data.lignesRejetees.toLocaleString()}</span>
+            </li>
           </ul>
         </div>
       )}
