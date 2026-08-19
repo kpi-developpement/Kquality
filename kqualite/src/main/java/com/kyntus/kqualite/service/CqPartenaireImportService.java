@@ -323,6 +323,8 @@ public class CqPartenaireImportService {
     // ==========================================
     private int[] processExcelSav(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) throws Exception {
         int total = 0, success = 0, rejected = 0;
+        int tnhLogCount = 0; // 🛡️ JDID: Compteur dyal les logs
+
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
@@ -331,15 +333,16 @@ public class CqPartenaireImportService {
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
 
+            // 🛡️ L'FIX HWA HNA: Recherche EXACTE 100% b7al App 1
             Integer colKyn = findColumnIndex(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur", "intervenant");
-            Integer colSatcli = findColumnIndex(headerMap, "note satcli ftth", "note_satcli", "satcli");
-            Integer colSecu = findColumnIndex(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv", "secu");
-
-            // 🛡️ L'FIX HWA HNA: Recherche EXACTE dyal "cod cltr main"
+            Integer colSatcli = findColumnIndexExact(headerMap, "note satcli ftth");
+            Integer colSecu = findColumnIndexExact(headerMap, "flag_secu_interv_cq2024");
             Integer colTnh = findColumnIndexExact(headerMap, "cod cltr main");
 
-            if (colSatcli == null && colSecu == null && colTnh == null) {
-                throw new RuntimeException("Aucune colonne SAV trouvée. Headers: " + headerMap.keySet());
+            log.info("🎯 Colonnes SAV matchées (EXACT) -> KYN: [{}], SATCLI: [{}], SECU: [{}], TNH: [{}]", colKyn, colSatcli, colSecu, colTnh);
+
+            if (colKyn == null) {
+                throw new RuntimeException("Colonne KYN (Id Tech / Nom_Technicien) introuvable. Headers: " + headerMap.keySet());
             }
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -352,6 +355,12 @@ public class CqPartenaireImportService {
                 String secu = colSecu != null ? getCellValue(row.getCell(colSecu)) : "";
                 String tnh = colTnh != null ? getCellValue(row.getCell(colTnh)) : "";
 
+                // 🛡️ JDID: Audit dyal les 5 premières valeurs dyal TNH
+                if (tnhLogCount < 5 && tnh != null && !tnh.trim().isEmpty()) {
+                    log.info("🔍 Audit TNH Value (Excel): [{}]", tnh);
+                    tnhLogCount++;
+                }
+
                 processRowLogicSav(kyn, satcli, secu, tnh, statsMap, techMap, inconnu);
                 success++;
             }
@@ -361,6 +370,8 @@ public class CqPartenaireImportService {
 
     private int[] processCsvSav(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) throws Exception {
         int total = 0, success = 0, rejected = 0;
+        int tnhLogCount = 0; // 🛡️ JDID: Compteur dyal les logs
+
         char delimiter = detectDelimiter(file);
         CSVFormat format = CSVFormat.Builder.create().setDelimiter(delimiter).setHeader().setSkipHeaderRecord(true).setIgnoreHeaderCase(true).setTrim(true).build();
 
@@ -369,15 +380,16 @@ public class CqPartenaireImportService {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
 
+            // 🛡️ L'FIX HWA HNA: Recherche EXACTE 100% b7al App 1
             String colKyn = findColumnName(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur", "intervenant");
-            String colSatcli = findColumnName(headerMap, "note satcli ftth", "note_satcli", "satcli");
-            String colSecu = findColumnName(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv", "secu");
-
-            // 🛡️ L'FIX HWA HNA: Recherche EXACTE dyal "cod cltr main"
+            String colSatcli = findColumnNameExact(headerMap, "note satcli ftth");
+            String colSecu = findColumnNameExact(headerMap, "flag_secu_interv_cq2024");
             String colTnh = findColumnNameExact(headerMap, "cod cltr main");
 
-            if (colSatcli == null && colSecu == null && colTnh == null) {
-                throw new RuntimeException("Aucune colonne SAV trouvée. Headers: " + headerMap.keySet());
+            log.info("🎯 Colonnes SAV matchées (EXACT) -> KYN: [{}], SATCLI: [{}], SECU: [{}], TNH: [{}]", colKyn, colSatcli, colSecu, colTnh);
+
+            if (colKyn == null) {
+                throw new RuntimeException("Colonne KYN (Id Tech / Nom_Technicien) introuvable. Headers: " + headerMap.keySet());
             }
 
             for (CSVRecord record : parser) {
@@ -386,6 +398,12 @@ public class CqPartenaireImportService {
                 String satcli = colSatcli != null && record.isMapped(colSatcli) ? record.get(colSatcli) : "";
                 String secu = colSecu != null && record.isMapped(colSecu) ? record.get(colSecu) : "";
                 String tnh = colTnh != null && record.isMapped(colTnh) ? record.get(colTnh) : "";
+
+                // 🛡️ JDID: Audit dyal les 5 premières valeurs dyal TNH
+                if (tnhLogCount < 5 && tnh != null && !tnh.trim().isEmpty()) {
+                    log.info("🔍 Audit TNH Value (CSV): [{}]", tnh);
+                    tnhLogCount++;
+                }
 
                 processRowLogicSav(kyn, satcli, secu, tnh, statsMap, techMap, inconnu);
                 success++;
@@ -497,12 +515,13 @@ public class CqPartenaireImportService {
             }
         }
 
-        // 🛡️ L'FIX HWA HNA: Nettoyage agressif dyal TNH SAV
+        // 🛡️ L'FIX HWA HNA: TNH SAV (Exactement kima App 1)
         if (rawTnh != null) {
-            String cleanTnh = rawTnh.replaceAll("[\\s\\xA0]+", "").trim().toLowerCase();
-            if (!cleanTnh.isEmpty() && !cleanTnh.equals("-") && !cleanTnh.equals("0") && !cleanTnh.equals("na") && !cleanTnh.equals("n/a")) {
+            String cleanTnh = rawTnh.trim().toUpperCase();
+            // N-7sboha f l'DENUM ghir ila kant 3amra w machi tiret w machi 0
+            if (!cleanTnh.isEmpty() && !cleanTnh.equals("-") && !cleanTnh.equals("N/A") && !cleanTnh.equals("0")) {
                 s.savTnhDenum++;
-                if (cleanTnh.equals("inr2c") || cleanTnh.equals("inr2b")) {
+                if (cleanTnh.equals("INR2C") || cleanTnh.equals("INR2B")) {
                     s.savTnhNum++;
                 }
             }
@@ -586,14 +605,12 @@ public class CqPartenaireImportService {
         return colName != null ? headers.get(colName) : null;
     }
 
-    // 🛡️ L'FIX HWA HNA: Fonction jdida l'Match Exact 100% (Bla Contains)
+    // 🛡️ L'FIX HWA HNA: Recherche Exacte 100% (Bla Contains)
     private String findColumnNameExact(Map<String, Integer> headers, String... keywords) {
         if (headers == null) return null;
         for (String kw : keywords) {
-            String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
             for (String header : headers.keySet()) {
-                String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
-                if (clean.equals(cleanKw)) return header;
+                if (header.trim().equalsIgnoreCase(kw.trim())) return header;
             }
         }
         return null;
