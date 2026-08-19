@@ -164,7 +164,7 @@ public class CqPartenaireImportService {
             if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) counts = processExcelSav(file, statsMap, techMap);
             else counts = processCsvSav(file, statsMap, techMap);
         } catch (Exception e) {
-            log.error("❌ Erreur CRITIQUE Import SAV: ", e); // 🛡️ LOG DÉTAILLÉ
+            log.error("❌ Erreur CRITIQUE Import SAV: ", e);
             throw new RuntimeException(e.getMessage());
         }
 
@@ -195,23 +195,22 @@ public class CqPartenaireImportService {
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
 
-            Integer colKyn = findColumnIndex(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
+            // 🛡️ L'FIX: Zedt "id tech" f l'wl dyal l'recherche
+            Integer colKyn = findColumnIndex(headerMap, "id_tech", "id tech", "idtech", "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
             Integer colZone = findColumnIndex(headerMap, "zone_statut prise", "zone");
             Integer colRang = findColumnIndex(headerMap, "rang_rdv", "rang");
             Integer colStatut = findColumnIndex(headerMap, "grp_statut_crinstall_mnt", "statut");
             Integer colCohorte = findColumnIndex(headerMap, "cohorte rdv racc", "cohorte");
             Integer colMotif = findColumnIndex(headerMap, "motf_ko_cr_inst_first_crinstall_mnt", "motf_ko", "motif");
 
-            if (colKyn == null || colZone == null || colRang == null || colStatut == null) {
-                throw new RuntimeException("Colonnes introuvables. Headers: " + headerMap.keySet());
-            }
+            if (colZone == null || colRang == null || colStatut == null) throw new RuntimeException("Colonnes introuvables.");
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
                 total++;
 
-                String kyn = getCellValue(row.getCell(colKyn));
+                String kyn = colKyn != null ? getCellValue(row.getCell(colKyn)) : "";
                 String zone = getCellValue(row.getCell(colZone));
                 String rang = getCellValue(row.getCell(colRang));
                 String statut = getCellValue(row.getCell(colStatut));
@@ -233,20 +232,20 @@ public class CqPartenaireImportService {
              CSVParser parser = new CSVParser(br, format)) {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
-            String colKyn = findColumnName(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
+
+            // 🛡️ L'FIX: Zedt "id tech" f l'wl dyal l'recherche
+            String colKyn = findColumnName(headerMap, "id_tech", "id tech", "idtech", "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
             String colZone = findColumnName(headerMap, "zone_statut prise", "zone");
             String colRang = findColumnName(headerMap, "rang_rdv", "rang");
             String colStatut = findColumnName(headerMap, "grp_statut_crinstall_mnt", "statut");
             String colCohorte = findColumnName(headerMap, "cohorte rdv racc", "cohorte");
             String colMotif = findColumnName(headerMap, "motf_ko_cr_inst_first_crinstall_mnt", "motf_ko", "motif");
 
-            if (colKyn == null || colZone == null || colRang == null || colStatut == null) {
-                throw new RuntimeException("Colonnes introuvables. Headers: " + headerMap.keySet());
-            }
+            if (colZone == null || colRang == null || colStatut == null) throw new RuntimeException("Colonnes introuvables.");
 
             for (CSVRecord record : parser) {
                 total++;
-                String kyn = record.get(colKyn);
+                String kyn = colKyn != null && record.isMapped(colKyn) ? record.get(colKyn) : "";
                 String zone = record.get(colZone);
                 String rang = record.get(colRang);
                 String statut = record.get(colStatut);
@@ -272,17 +271,18 @@ public class CqPartenaireImportService {
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
 
-            Integer colKyn = findColumnIndex(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech");
+            // 🛡️ L'FIX: Zedt "id tech" f l'wl dyal l'recherche
+            Integer colKyn = findColumnIndex(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
             Integer colValr = findColumnIndex(headerMap, "valr not glbl", "valeur", "note");
 
-            if (colKyn == null || colValr == null) throw new RuntimeException("Colonnes introuvables. Headers: " + headerMap.keySet());
+            if (colValr == null) throw new RuntimeException("Colonne valeur introuvable.");
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
                 total++;
 
-                String kyn = getCellValue(row.getCell(colKyn));
+                String kyn = colKyn != null ? getCellValue(row.getCell(colKyn)) : "";
                 String valr = getCellValue(row.getCell(colValr));
 
                 if (processRowLogicSacliSarcli(kyn, valr, statsMap, techMap, isSacli)) success++; else rejected++;
@@ -300,14 +300,16 @@ public class CqPartenaireImportService {
              CSVParser parser = new CSVParser(br, format)) {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
-            String colKyn = findColumnName(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech");
+
+            // 🛡️ L'FIX: Zedt "id tech" f l'wl dyal l'recherche
+            String colKyn = findColumnName(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
             String colValr = findColumnName(headerMap, "valr not glbl", "valeur", "note");
 
-            if (colKyn == null || colValr == null) throw new RuntimeException("Colonnes introuvables. Headers: " + headerMap.keySet());
+            if (colValr == null) throw new RuntimeException("Colonne valeur introuvable.");
 
             for (CSVRecord record : parser) {
                 total++;
-                String kyn = record.get(colKyn);
+                String kyn = colKyn != null && record.isMapped(colKyn) ? record.get(colKyn) : "";
                 String valr = record.get(colValr);
 
                 if (processRowLogicSacliSarcli(kyn, valr, statsMap, techMap, isSacli)) success++; else rejected++;
@@ -331,16 +333,16 @@ public class CqPartenaireImportService {
 
             log.info("📊 Headers trouvés dans Excel SAV : {}", headerMap.keySet());
 
-            // 🛡️ L'FIX: Recherche ultra-précise
-            Integer colKyn = findColumnIndex(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech");
+            // 🛡️ L'FIX HWA HNA: Zedt "id tech" f l'wl dyal l'recherche
+            Integer colKyn = findColumnIndex(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur", "intervenant");
             Integer colSatcli = findColumnIndex(headerMap, "note satcli ftth", "note_satcli", "satcli");
             Integer colSecu = findColumnIndex(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv", "secu");
-            Integer colTnh = findColumnIndex(headerMap, "cod cltr main", "cod_cltr", "cod cltr");
+            Integer colTnh = findColumnIndex(headerMap, "cod cltr main", "cod_cltr", "cod cltr", "cloture");
 
             log.info("🎯 Colonnes matchées -> KYN: {}, SATCLI: {}, SECU: {}, TNH: {}", colKyn, colSatcli, colSecu, colTnh);
 
             if (colKyn == null) {
-                throw new RuntimeException("Colonne KYN (Nom_Technicien) introuvable. Headers: " + headerMap.keySet());
+                throw new RuntimeException("Colonne KYN (Id Tech / Nom_Technicien) introuvable. Headers: " + headerMap.keySet());
             }
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -370,20 +372,21 @@ public class CqPartenaireImportService {
             Map<String, Integer> headerMap = parser.getHeaderMap();
             log.info("📊 Headers trouvés dans CSV SAV : {}", headerMap.keySet());
 
-            String colKyn = findColumnName(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech");
+            // 🛡️ L'FIX HWA HNA: Zedt "id tech" f l'wl dyal l'recherche
+            String colKyn = findColumnName(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur", "intervenant");
             String colSatcli = findColumnName(headerMap, "note satcli ftth", "note_satcli", "satcli");
             String colSecu = findColumnName(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv", "secu");
-            String colTnh = findColumnName(headerMap, "cod cltr main", "cod_cltr", "cod cltr");
+            String colTnh = findColumnName(headerMap, "cod cltr main", "cod_cltr", "cod cltr", "cloture");
 
             log.info("🎯 Colonnes matchées -> KYN: {}, SATCLI: {}, SECU: {}, TNH: {}", colKyn, colSatcli, colSecu, colTnh);
 
             if (colKyn == null) {
-                throw new RuntimeException("Colonne KYN (Nom_Technicien) introuvable. Headers: " + headerMap.keySet());
+                throw new RuntimeException("Colonne KYN (Id Tech / Nom_Technicien) introuvable. Headers: " + headerMap.keySet());
             }
 
             for (CSVRecord record : parser) {
                 total++;
-                String kyn = record.get(colKyn);
+                String kyn = colKyn != null && record.isMapped(colKyn) ? record.get(colKyn) : "";
                 String satcli = colSatcli != null && record.isMapped(colSatcli) ? record.get(colSatcli) : "";
                 String secu = colSecu != null && record.isMapped(colSecu) ? record.get(colSecu) : "";
                 String tnh = colTnh != null && record.isMapped(colTnh) ? record.get(colTnh) : "";
@@ -481,7 +484,6 @@ public class CqPartenaireImportService {
     private boolean processRowLogicSav(String rawKyn, String rawSatcli, String rawSecu, String rawTnh, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap) {
         if (rawKyn == null || rawKyn.trim().isEmpty()) return false;
 
-        // 🛡️ L'FIX HWA HNA: Double matching (Nom awla KYN)
         String cleanKynOrName = rawKyn.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
         Technicien technicien = techMap.get(cleanKynOrName);
 
@@ -530,13 +532,11 @@ public class CqPartenaireImportService {
         List<Technicien> allTechs = technicienRepository.findAll();
         Map<String, Technicien> map = new HashMap<>();
         for (Technicien t : allTechs) {
-            // 1. Mapping b l'Matricule (KYN)
             if (t.getMatricule() != null) {
                 String cleanMatricule = t.getMatricule().replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
                 if (!cleanMatricule.startsWith("KYN")) cleanMatricule = "KYN" + cleanMatricule;
                 map.put(cleanMatricule, t);
             }
-            // 2. 🛡️ L'FIX HWA HNA: Mapping b l'Nom (REMI SANTOS)
             if (t.getNomComplet() != null) {
                 String cleanName = t.getNomComplet().replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
                 map.put(cleanName, t);
