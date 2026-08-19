@@ -1,17 +1,7 @@
 "use client";
 
 import { useState, useRef } from 'react';
-import { 
-  importErreursExcel, 
-  importMultiCqExcel, 
-  importCqPartenaireExcel, 
-  importSacliPartenaireExcel, 
-  importSarcliPartenaireExcel, 
-  importIncoherencePtoExcel, 
-  importGemNokExcel, 
-  importCadrageExcel,
-  importTauxPlainteExcel // 🛡️ JDID
-} from '@/services/apiService';
+import { importErreursExcel, importMultiCqExcel, importCqPartenaireExcel, importSacliPartenaireExcel, importSarcliPartenaireExcel, importIncoherencePtoExcel, importGemNokExcel, importCadrageExcel, importTauxPlainteExcel, importSavExcel } from '@/services/apiService';
 import styles from './Import.module.css';
 
 export default function ImportErreursPage() {
@@ -30,7 +20,8 @@ export default function ImportErreursPage() {
   const fileInputPtoRef = useRef<HTMLInputElement>(null);
   const fileInputGemRef = useRef<HTMLInputElement>(null);
   const fileInputCadrageRef = useRef<HTMLInputElement>(null);
-  const fileInputPlainteRef = useRef<HTMLInputElement>(null); // 🛡️ JDID
+  const fileInputPlainteRef = useRef<HTMLInputElement>(null);
+  const fileInputSavRef = useRef<HTMLInputElement>(null); // 🛡️ JDID
 
   const handleUploadErreurs = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
@@ -112,7 +103,6 @@ export default function ImportErreursPage() {
     finally { setLoading(false); if(fileInputCadrageRef.current) fileInputCadrageRef.current.value = ""; }
   };
 
-  // 🛡️ JDID: Handler dyal TAUX DE PLAINTE
   const handleUploadPlainte = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
     setLoading(true); setError(""); setSummary(null);
@@ -121,6 +111,17 @@ export default function ImportErreursPage() {
       setSummary({ type: 'TAUX DE PLAINTE', data: res.data });
     } catch (err: any) { setError(err.message); } 
     finally { setLoading(false); if(fileInputPlainteRef.current) fileInputPlainteRef.current.value = ""; }
+  };
+
+  // 🛡️ JDID: Handler SAV
+  const handleUploadSav = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    setLoading(true); setError(""); setSummary(null);
+    try {
+      const res = await importSavExcel(e.target.files[0], month, year);
+      setSummary({ type: 'Fichier SAV (SATCLI, SECU, TNH)', data: res.data });
+    } catch (err: any) { setError(err.message); } 
+    finally { setLoading(false); if(fileInputSavRef.current) fileInputSavRef.current.value = ""; }
   };
 
   return (
@@ -206,12 +207,19 @@ export default function ImportErreursPage() {
           <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs MAL_CADREE (0 ou 1)</p>
         </div>
 
-        {/* 🛡️ JDID: BOX TAUX DE PLAINTE */}
         <div className={styles.uploadBox} onClick={() => !loading && fileInputPlainteRef.current?.click()}>
           <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputPlainteRef} onChange={handleUploadPlainte} className={styles.fileInput} />
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e84393" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
           <h3 style={{ color: '#e84393' }}>9. TAUX DE PLAINTE</h3>
           <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Calculs Volume Ticket Qualité</p>
+        </div>
+
+        {/* 🛡️ JDID: BOX FICHIER SAV */}
+        <div className={styles.uploadBox} onClick={() => !loading && fileInputSavRef.current?.click()}>
+          <input type="file" accept=".csv,.xlsx,.xls" ref={fileInputSavRef} onChange={handleUploadSav} className={styles.fileInput} />
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#2980b9" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          <h3 style={{ color: '#2980b9' }}>10. Fichier SAV</h3>
+          <p style={{ color: '#7f8c8d', fontSize: '13px' }}>SATCLI, SECURISATION, TNH SAV</p>
         </div>
 
       </div>

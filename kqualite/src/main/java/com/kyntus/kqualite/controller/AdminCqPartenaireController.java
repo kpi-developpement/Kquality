@@ -92,6 +92,15 @@ public class AdminCqPartenaireController {
         ImportSummaryDTO summary = kpiIsoleImportService.importTauxPlainte(file, month, year);
         return ResponseEntity.ok(ApiResponse.success(summary, "Calculs TAUX DE PLAINTE terminés"));
     }
+    @PostMapping("/import-sav")
+    public ResponseEntity<ApiResponse<ImportSummaryDTO>> importSav(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+        if (file.isEmpty()) return ResponseEntity.badRequest().build();
+        ImportSummaryDTO summary = importService.importSav(file, month, year);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Calculs SAV terminés"));
+    }
     @GetMapping
     public ResponseEntity<ApiResponse<List<CqPartenaireKpiDTO>>> getCqPartenaire(
             @RequestParam("month") int month,
