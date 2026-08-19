@@ -16,7 +16,6 @@ export default function VueGlobalePage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [selectedDept, setSelectedDept] = useState("GLOBAL");
   
-  // 🛡️ L'FIX: Vision State (Admin vs Partenaire) Kima l'code dyal Contre-Qualité
   const [visionMode, setVisionMode] = useState<'ADMIN' | 'PARTENAIRE'>('ADMIN');
   
   const [data, setData] = useState<KpiArchiveDTO[]>([]);
@@ -24,13 +23,11 @@ export default function VueGlobalePage() {
   const [departments, setDepartments] = useState<string[]>(["GLOBAL"]);
   const [loading, setLoading] = useState(false);
 
-  // States Chart
   const [chartDataRacc, setChartDataRacc] = useState<number[]>([]);
   const [chartDataSav, setChartDataSav] = useState<number[]>([]);
   const [chartLabels, setChartLabels] = useState<string[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
 
-  // 🛡️ State Dynamique des Pénalités CQ
   const [totalCqPenalties, setTotalCqPenalties] = useState<number>(0);
 
   useEffect(() => {
@@ -47,7 +44,6 @@ export default function VueGlobalePage() {
         let m = currentMonth - i;
         let y = currentYear;
         if (m <= 0) { m += 12; y -= 1; }
-        
         const date = new Date(y, m - 1);
         labels.push(date.toLocaleString('fr-FR', { month: 'short' }).charAt(0).toUpperCase() + date.toLocaleString('fr-FR', { month: 'short' }).slice(1) + '.');
         promises.push(getKpiGlobalAdmin(m, y));
@@ -79,7 +75,6 @@ export default function VueGlobalePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch KPI Data
       const result = await getKpiGlobalAdmin(month, year);
       setData(result);
       
@@ -89,15 +84,12 @@ export default function VueGlobalePage() {
       setDepartments(sortedDepts.length > 0 ? sortedDepts : ["GLOBAL"]);
       if (!sortedDepts.includes(selectedDept)) setSelectedDept("GLOBAL");
 
-      // 🛡️ Fetch CQ Data Dynamique pour les Pénalités
       const cqPromises = CQ_TABS.map(tab => getAdminCqData(tab, month, year));
       const cqResults = await Promise.all(cqPromises);
       const flatCqData = cqResults.flat();
       
-      // Calcul du total basé sur visionMode (Admin: montant, Partenaire: mtSst)
       const calculatedTotal = flatCqData.reduce((sum, row) => sum + (visionMode === 'ADMIN' ? (row.montant || 0) : (row.mtSst || 0)), 0);
       setTotalCqPenalties(calculatedTotal);
-
     } catch (err) {
       console.error(err);
     } finally {
@@ -105,14 +97,8 @@ export default function VueGlobalePage() {
     }
   };
 
-  // Re-fetch quand Mois, Année ou Mode Vision change
-  useEffect(() => { 
-    fetchData(); 
-  }, [month, year, visionMode]);
-
-  useEffect(() => {
-    fetchTrendData(month, year);
-  }, [month, year]);
+  useEffect(() => { fetchData(); }, [month, year, visionMode]);
+  useEffect(() => { fetchTrendData(month, year); }, [month, year]);
 
   const filteredData = data.filter(item => item.departement === selectedDept);
   const raccProcessus = ["SACLI_OK", "SARCLI_NOK", "GEM_NOK", "TAUX_20J", "ZMD_AMII", "ZMD_RIP", "ZTD", "TNH", "PERF_RANG_1_A", "PERF_RANG_1_B", "PERF_RANG_1_C", "HOTLINE_RANG_1_A", "HOTLINE_RANG_1_B", "HOTLINE_RANG_1_C", "CONSTRUCTION_RANG_1_A", "CONSTRUCTION_RANG_1_B", "CONSTRUCTION_RANG_1_C", "PERF_RANG_2_A", "PERF_RANG_2_B", "PERF_RANG_2_C", "INCOHERENCE_PTO", "CADRAGE", "TAUX_PLAINTE"];
@@ -123,10 +109,10 @@ export default function VueGlobalePage() {
   const totalSavBonus = savData.reduce((sum, item) => sum + item.bonus, 0);
   const finalScore = data.length > 0 ? Math.min(100, 90 + totalRaccBonus + totalSavBonus) : 0;
 
-  const IconRacc = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
-  const IconSav = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
-  const IconScore = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
-  const IconMoney = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>;
+  const IconRacc = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
+  const IconSav = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
+  const IconScore = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+  const IconMoney = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>;
 
   return (
     <div className={styles.pageWrapper}>
@@ -143,7 +129,6 @@ export default function VueGlobalePage() {
           </div>
           
           <div className={styles.controlsWrapper}>
-            {/* 🛡️ VISION TOGGLE ADMIN / PARTENAIRE */}
             <div className={styles.visionToggle}>
               <button 
                 className={`${styles.visionBtn} ${visionMode === 'ADMIN' ? styles.activeAdmin : ''}`}
@@ -177,17 +162,13 @@ export default function VueGlobalePage() {
           <InteractiveCard delayIndex={1}>
             <StatCard title="Bonus RACC Cumulé" value={`+${totalRaccBonus.toFixed(2)}%`} icon={IconRacc} colorBg="#fef2f2" colorIcon="#ef4444" trend="Stable" />
           </InteractiveCard>
-          
           <InteractiveCard delayIndex={2}>
             <StatCard title="Bonus SAV Cumulé" value={`+${totalSavBonus.toFixed(2)}%`} icon={IconSav} colorBg="#ecfdf5" colorIcon="#10b981" trend="+1.2%" trendType="positive" />
           </InteractiveCard>
-          
           <InteractiveCard delayIndex={3}>
             <StatCard title="Score Global (Base 90%)" value={`${finalScore.toFixed(2)}%`} icon={IconScore} colorBg="#fffbeb" colorIcon="#d97706" />
           </InteractiveCard>
-          
           <InteractiveCard delayIndex={4}>
-            {/* 🛡️ Affiche dynamiquement le total des pénalités selon la Vision (Backend) */}
             <StatCard title={`Pénalités Évitées (${visionMode})`} value={`${totalCqPenalties.toLocaleString('fr-FR')} €`} icon={IconMoney} colorBg="#eff6ff" colorIcon="#3b82f6" />
           </InteractiveCard>
         </div>
@@ -198,11 +179,10 @@ export default function VueGlobalePage() {
           </InteractiveCard>
           
           <InteractiveCard delayIndex={6}>
-            {/* 🛡️ Pipeline Dynamique basé sur l'API CQ Backend */}
             <PenaltyPipeline 
               detectees={totalCqPenalties} 
-              contestees={Math.floor(totalCqPenalties * 0.4)} // Estimation contestation 40%
-              validees={Math.floor(totalCqPenalties * 0.25)}  // Estimation validée 25%
+              contestees={Math.floor(totalCqPenalties * 0.4)}
+              validees={Math.floor(totalCqPenalties * 0.25)} 
               vision={visionMode}
             />
           </InteractiveCard>
@@ -210,7 +190,7 @@ export default function VueGlobalePage() {
 
         <div className={styles.tableWrapper}>
           {loading ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des données...</div>
+            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des données en temps réel...</div>
           ) : (
             <table className={styles.table}>
               <thead>
@@ -224,20 +204,20 @@ export default function VueGlobalePage() {
                 </tr>
               </thead>
               <tbody>
-                {raccData.map(item => (
-                  <tr key={item.id}>
-                    <td><span style={{color:'#ef4444', fontWeight:'800'}}>RACC</span></td>
-                    <td style={{fontWeight:'700', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
+                {raccData.map((item, index) => (
+                  <tr key={item.id} className={styles.tableRow} style={{ animationDelay: `${0.6 + index * 0.05}s` }}>
+                    <td><span style={{color:'#ef4444', fontWeight:'900'}}>RACC</span></td>
+                    <td style={{fontWeight:'800', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
                     <td>{item.num.toLocaleString()}</td>
                     <td>{item.denum.toLocaleString()}</td>
                     <td><span className={styles.badgeSuccess}>{item.resultat}%</span></td>
                     <td><span className={styles.badgeBonus}>+{item.bonus}%</span></td>
                   </tr>
                 ))}
-                {savData.map(item => (
-                  <tr key={item.id}>
-                    <td><span style={{color:'#10b981', fontWeight:'800'}}>SAV</span></td>
-                    <td style={{fontWeight:'700', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
+                {savData.map((item, index) => (
+                  <tr key={item.id} className={styles.tableRow} style={{ animationDelay: `${0.6 + (raccData.length + index) * 0.05}s` }}>
+                    <td><span style={{color:'#10b981', fontWeight:'900'}}>SAV</span></td>
+                    <td style={{fontWeight:'800', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
                     <td>{item.num.toLocaleString()}</td>
                     <td>{item.denum.toLocaleString()}</td>
                     <td><span className={styles.badgeSuccess}>{item.resultat}%</span></td>

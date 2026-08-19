@@ -1,40 +1,60 @@
-.chartContainer { height: 100%; display: flex; flex-direction: column; }
-.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
+.chartContainer { height: 100%; display: flex; flex-direction: column; position: relative; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; position: relative; z-index: 2; }
 .titleArea { display: flex; flex-direction: column; gap: 4px; }
-.subtitle { font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: 1.5px; text-transform: uppercase; }
-.titleArea h3 { color: #0f172a; margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+.subtitle { font-size: 11px; font-weight: 900; color: #94a3b8; letter-spacing: 2px; text-transform: uppercase; }
+.titleArea h3 { color: #0f172a; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
 
 .legendArea { display: flex; align-items: center; gap: 20px; }
-.legendItem { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #475569; }
-.dot { width: 10px; height: 10px; border-radius: 50%; }
-.dotRed { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
-.dotGreen { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+.legendItem { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: #475569; }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dotRed { background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+.dotGreen { background: #10b981; box-shadow: 0 0 12px rgba(16, 185, 129, 0.6); }
 
-.timeSelect { padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 13px; font-weight: 700; color: #334155; outline: none; cursor: pointer; transition: 0.2s; }
-.timeSelect:hover { border-color: #94a3b8; }
+.timeSelect { padding: 8px 18px; border: 1px solid rgba(255,255,255,1); border-radius: 10px; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); font-size: 13px; font-weight: 800; color: #334155; outline: none; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+.timeSelect:hover { border-color: #3b82f6; box-shadow: 0 4px 15px rgba(59,130,246,0.1); transform: translateY(-1px); }
 
-.svgChart { width: 100%; height: 280px; overflow: visible; margin-top: auto; }
-.gridLine { stroke: #e2e8f0; stroke-width: 1.5; stroke-dasharray: 6 6; }
+/* 🚀 L'EFFET SCANNER (Lkht li kaydoz mn lissr l limn f l'fond) */
+.chartContainer::before {
+  content: '';
+  position: absolute;
+  top: 100px; bottom: 30px; left: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.5), transparent);
+  animation: scan 4s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+@keyframes scan {
+  0% { left: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
 
-.dataLine { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: drawLine 2s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.2s; }
-.lineRed { stroke: #ef4444; filter: drop-shadow(0 4px 6px rgba(239, 68, 68, 0.3)); }
-.lineGreen { stroke: #10b981; filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.3)); }
+.svgChart { width: 100%; height: 280px; overflow: visible; margin-top: auto; position: relative; z-index: 1; }
+.gridLine { stroke: #e2e8f0; stroke-width: 1.5; stroke-dasharray: 4 6; }
 
-.dataArea { opacity: 0; animation: fadeArea 1.5s ease-out forwards 1s; }
+.dataLine { fill: none; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: drawLine 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s; }
+.lineRed { stroke: #ef4444; filter: drop-shadow(0 8px 12px rgba(239, 68, 68, 0.4)); }
+.lineGreen { stroke: #10b981; filter: drop-shadow(0 8px 12px rgba(16, 185, 129, 0.4)); }
+
+.dataArea { opacity: 0; animation: fadeArea 2s ease-out forwards 1s; }
 .areaRed { fill: url(#redGradient); }
 .areaGreen { fill: url(#greenGradient); }
 
-.dataPoint { fill: #ffffff; stroke-width: 3; r: 5; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); animation: popIn 0.5s ease-out forwards; }
+/* 🚀 PULSING DATA POINTS */
+.dataPoint { fill: #ffffff; stroke-width: 3.5; r: 5; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); animation: popIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards, pulsePoint 2s infinite 2s; }
 .pointRed { stroke: #ef4444; }
 .pointGreen { stroke: #10b981; }
-.dataPoint:hover { r: 8; cursor: crosshair; }
+.dataPoint:hover { r: 9; cursor: crosshair; animation: none; filter: brightness(1.1); }
 
-.axisTextY { fill: #94a3b8; font-size: 11px; font-weight: 700; }
-.axisTextX { fill: #64748b; font-size: 12px; font-weight: 700; }
+.axisTextY { fill: #94a3b8; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
+.axisTextX { fill: #64748b; font-size: 12px; font-weight: 800; }
 
-.loading { height: 280px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 15px; font-weight: 700; animation: pulse 1.5s infinite; }
+.loading { height: 280px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 15px; font-weight: 800; animation: pulse 1.5s infinite; }
 
 @keyframes drawLine { to { stroke-dashoffset: 0; } }
 @keyframes fadeArea { to { opacity: 1; } }
-@keyframes popIn { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@keyframes popIn { from { opacity: 0; transform: scale(0) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes pulsePoint { 0% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); } 50% { filter: drop-shadow(0 0 8px currentColor); } 100% { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); } }
 @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
