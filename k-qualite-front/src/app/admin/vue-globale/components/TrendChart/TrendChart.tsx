@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function TrendChart({ dataRacc, dataSav, labels, isLoading }: Props) {
-  if (isLoading) {
+  if (isLoading || !dataRacc.length) {
     return (
       <div className={styles.chartContainer}>
         <div className={styles.header}>
@@ -23,23 +23,23 @@ export default function TrendChart({ dataRacc, dataSav, labels, isLoading }: Pro
     );
   }
 
-  // Define scale (matching the 92% to 100% look in the target image)
+  // Configuration de l'échelle (Base 90 à 100%)
   const MIN_Y = 90; 
   const MAX_Y = 100;
   const RANGE = MAX_Y - MIN_Y;
 
-  // Viewbox coordinates mapping
+  // Viewbox absolu (Fix pour éviter que le chart disparaisse)
   const width = 800;
-  const height = 220;
+  const height = 240;
   
   const getX = (index: number) => (index / Math.max(labels.length - 1, 1)) * width;
   const getY = (val: number) => {
-    if(val === 0) return height; // Fallback
+    if(val === 0) return height; // Drop to bottom if 0
     const clampedVal = Math.max(MIN_Y, Math.min(MAX_Y, val));
     return height - ((clampedVal - MIN_Y) / RANGE) * height;
   };
 
-  // Helper to generate perfectly smooth horizontal bezier curves
+  // Mathématique pure pour une courbe de Bézier Horizontale (Smooth)
   const generateSmoothPath = (data: number[]) => {
     if (!data || data.length === 0) return '';
     let path = `M ${getX(0)},${getY(data[0])}`;
@@ -48,9 +48,7 @@ export default function TrendChart({ dataRacc, dataSav, labels, isLoading }: Pro
       const y0 = getY(data[i]);
       const x1 = getX(i + 1);
       const y1 = getY(data[i + 1]);
-      
-      // Control points for horizontal easing
-      const cx = (x0 + x1) / 2;
+      const cx = (x0 + x1) / 2; // Point de contrôle central
       path += ` C ${cx},${y0} ${cx},${y1} ${x1},${y1}`;
     }
     return path;
@@ -62,7 +60,6 @@ export default function TrendChart({ dataRacc, dataSav, labels, isLoading }: Pro
   const areaRacc = pathRacc ? `${pathRacc} L ${width},${height} L 0,${height} Z` : '';
   const areaSav = pathSav ? `${pathSav} L ${width},${height} L 0,${height} Z` : '';
 
-  // Grid lines
   const yAxisValues = [92, 95, 98, 100];
 
   return (
@@ -88,19 +85,20 @@ export default function TrendChart({ dataRacc, dataSav, labels, isLoading }: Pro
         </div>
       </div>
       
+      {/* viewBox Fixe bach dima yban w ma-yt9te3ch */}
       <svg className={styles.svgChart} viewBox={`-30 -10 ${width + 40} ${height + 40}`} preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="redGradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
+            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.3" />
             <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="greenGradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.1" />
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
             <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {/* Y-Axis Grid Lines & Labels */}
+        {/* Lignes de fond pointillées (Grid) */}
         {yAxisValues.map(val => {
           const y = getY(val);
           return (
@@ -111,25 +109,25 @@ export default function TrendChart({ dataRacc, dataSav, labels, isLoading }: Pro
           );
         })}
         
-        {/* Fill Areas */}
+        {/* Remplissage sous la courbe (Area) */}
         {areaSav && <path d={areaSav} className={`${styles.dataArea} ${styles.areaGreen}`} />}
         {areaRacc && <path d={areaRacc} className={`${styles.dataArea} ${styles.areaRed}`} />}
         
-        {/* Main Curves */}
+        {/* Les courbes lissées */}
         {pathSav && <path d={pathSav} className={`${styles.dataLine} ${styles.lineGreen}`} />}
         {pathRacc && <path d={pathRacc} className={`${styles.dataLine} ${styles.lineRed}`} />}
         
-        {/* Data Points - SAV */}
+        {/* Points SAV (Vert) */}
         {dataSav.map((val, i) => (
           <circle 
             key={`sav-${i}`} 
             cx={getX(i)} cy={getY(val)} 
             className={`${styles.dataPoint} ${styles.pointGreen}`} 
-            style={{ animationDelay: `${1 + i * 0.1}s` }}
+            style={{ animationDelay: `${0.8 + i * 0.1}s` }}
           />
         ))}
 
-        {/* Data Points - RACC */}
+        {/* Points RACC (Rouge) */}
         {dataRacc.map((val, i) => (
           <circle 
             key={`racc-${i}`} 
@@ -139,7 +137,7 @@ export default function TrendChart({ dataRacc, dataSav, labels, isLoading }: Pro
           />
         ))}
 
-        {/* X-Axis Labels */}
+        {/* Textes en bas (Mois) */}
         {labels.map((label, i) => (
           <text key={`label-${i}`} x={getX(i)} y={height + 25} textAnchor="middle" className={styles.axisTextX}>
             {label}

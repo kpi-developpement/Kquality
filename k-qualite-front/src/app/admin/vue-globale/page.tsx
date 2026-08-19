@@ -23,7 +23,7 @@ export default function VueGlobalePage() {
   const [chartDataRacc, setChartDataRacc] = useState<number[]>([]);
   const [chartDataSav, setChartDataSav] = useState<number[]>([]);
   const [chartLabels, setChartLabels] = useState<string[]>([]);
-  const [chartLoading, setChartLoading] = useState(false);
+  const [chartLoading, setChartLoading] = useState(true);
 
   useEffect(() => {
     getAdminPartenaires().then(setPartenaires).catch(console.error);
@@ -62,9 +62,9 @@ export default function VueGlobalePage() {
         const rData = monthData.filter(item => raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
         const sData = monthData.filter(item => !raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
         
-        // Base 90 + Bonus
-        raccScores.push(90 + rData.reduce((sum, item) => sum + item.bonus, 0));
-        savScores.push(90 + sData.reduce((sum, item) => sum + item.bonus, 0));
+        // Base 90 + Bonus (Max 100)
+        raccScores.push(Math.min(100, 90 + rData.reduce((sum, item) => sum + item.bonus, 0)));
+        savScores.push(Math.min(100, 90 + sData.reduce((sum, item) => sum + item.bonus, 0)));
       });
 
       setChartLabels(labels);
@@ -109,7 +109,7 @@ export default function VueGlobalePage() {
 
   const totalRaccBonus = raccData.reduce((sum, item) => sum + item.bonus, 0);
   const totalSavBonus = savData.reduce((sum, item) => sum + item.bonus, 0);
-  const finalScore = data.length > 0 ? 90 + totalRaccBonus + totalSavBonus : 0;
+  const finalScore = data.length > 0 ? Math.min(100, 90 + totalRaccBonus + totalSavBonus) : 0;
 
   const IconRacc = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
   const IconSav = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
@@ -118,6 +118,11 @@ export default function VueGlobalePage() {
 
   return (
     <div className={styles.pageWrapper}>
+      {/* L3IBAT BLEZREQ HNA */}
+      <div className={styles.bgBlob1}></div>
+      <div className={styles.bgBlob2}></div>
+      <div className={styles.bgBlob3}></div>
+
       <div className={styles.container}>
         
         <header className={styles.header}>
@@ -140,7 +145,6 @@ export default function VueGlobalePage() {
         </header>
 
         <div className={styles.topGrid}>
-          {/* Les cartes sont mnt enveloppées dans InteractiveCard pour l'effet 3D Hover & L3ibat blezre9 */}
           <InteractiveCard delayIndex={1}>
             <StatCard title="Bonus RACC Cumulé" value={`+${totalRaccBonus.toFixed(2)}%`} icon={IconRacc} colorBg="#fef2f2" colorIcon="#ef4444" trend="Stable" />
           </InteractiveCard>
@@ -170,7 +174,7 @@ export default function VueGlobalePage() {
 
         <div className={styles.tableWrapper}>
           {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Chargement des données...</div>
+            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des données...</div>
           ) : (
             <table className={styles.table}>
               <thead>
@@ -186,8 +190,8 @@ export default function VueGlobalePage() {
               <tbody>
                 {raccData.map(item => (
                   <tr key={item.id}>
-                    <td><span style={{color:'#ef4444', fontWeight:'700'}}>RACC</span></td>
-                    <td style={{fontWeight:'600', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
+                    <td><span style={{color:'#ef4444', fontWeight:'800'}}>RACC</span></td>
+                    <td style={{fontWeight:'700', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
                     <td>{item.num.toLocaleString()}</td>
                     <td>{item.denum.toLocaleString()}</td>
                     <td><span className={styles.badgeSuccess}>{item.resultat}%</span></td>
@@ -196,8 +200,8 @@ export default function VueGlobalePage() {
                 ))}
                 {savData.map(item => (
                   <tr key={item.id}>
-                    <td><span style={{color:'#10b981', fontWeight:'700'}}>SAV</span></td>
-                    <td style={{fontWeight:'600', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
+                    <td><span style={{color:'#10b981', fontWeight:'800'}}>SAV</span></td>
+                    <td style={{fontWeight:'700', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
                     <td>{item.num.toLocaleString()}</td>
                     <td>{item.denum.toLocaleString()}</td>
                     <td><span className={styles.badgeSuccess}>{item.resultat}%</span></td>

@@ -1,74 +1,25 @@
-.cardWrapper {
-  perspective: 1000px;
-  height: 100%;
-}
+.cardWrapper { perspective: 1200px; height: 100%; }
 
 .cardInner {
   position: relative;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 24px;
+  background: rgba(255, 255, 255, 0.85); /* Transparent bach yban l'fond lzre9 */
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  padding: 28px;
   height: 100%;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
-  transition: transform 0.1s ease-out, box-shadow 0.3s ease;
-  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.3s ease;
   transform-style: preserve-3d;
   will-change: transform;
 }
 
 .cardInner:hover {
   box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.15);
-  border-color: #bfdbfe;
+  border-color: rgba(59, 130, 246, 0.3);
   z-index: 10;
 }
 
-/* 🌀 L3ibat Blezre9 - Subtle animated blue floating blobs */
-.animatedBg {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-  border-radius: 16px;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
+.content { position: relative; z-index: 2; height: 100%; }
 
-.cardInner:hover .animatedBg {
-  opacity: 1;
-}
-
-.blob1, .blob2 {
-  position: absolute;
-  filter: blur(40px);
-  border-radius: 50%;
-  opacity: 0.15;
-  animation: float 8s infinite alternate ease-in-out;
-}
-
-.blob1 {
-  width: 150px; height: 150px;
-  background: #3b82f6; /* Blue */
-  top: -20px; left: -20px;
-}
-
-.blob2 {
-  width: 120px; height: 120px;
-  background: #0ea5e9; /* Light blue */
-  bottom: -30px; right: 10%;
-  animation-delay: -4s;
-}
-
-/* Keep the content above the background */
-.content {
-  position: relative;
-  z-index: 2;
-  height: 100%;
-}
-
-@keyframes float {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(30px, 15px) scale(1.1); }
-  100% { transform: translate(-10px, 30px) scale(0.9); }
-}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }

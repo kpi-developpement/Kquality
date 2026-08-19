@@ -1,66 +1,9 @@
-.cardContent {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-  background: transparent; /* Background is handled by InteractiveCard */
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-.iconBox {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.trend {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-
+.cardContent { display: flex; flex-direction: column; justify-content: space-between; height: 100%; background: transparent; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+.iconBox { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.trend { font-size: 13px; font-weight: 800; padding: 6px 12px; border-radius: 20px; }
 .trendPositive { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .trendNeutral { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-
-.textArea {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.title {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 600;
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  animation: slideUp 0.5s ease-out forwards 0.2s;
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.value {
-  font-size: 34px;
-  font-weight: 900;
-  color: #0f172a;
-  margin: 0;
-  letter-spacing: -1px;
-  animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.3s;
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-@keyframes slideUp {
-  to { opacity: 1; transform: translateY(0); }
-}
+.textArea { display: flex; flex-direction: column; gap: 8px; }
+.title { font-size: 13px; color: #64748b; font-weight: 700; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+.value { font-size: 38px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -1.5px; }
