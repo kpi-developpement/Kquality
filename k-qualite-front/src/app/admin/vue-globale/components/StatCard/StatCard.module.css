@@ -13,7 +13,6 @@
   margin-bottom: 24px; 
 }
 
-/* 🚀 DESIGN X100 L'ICONE */
 .iconBox { 
   width: 56px; 
   height: 56px; 
@@ -22,27 +21,24 @@
   align-items: center; 
   justify-content: center; 
   position: relative;
-  overflow: hidden;
-  /* Effet Inset 3D */
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 10px 20px rgba(0, 0, 0, 0.05);
-}
-
-/* Effet mrayya (Reflet) fog l'icon */
-.iconBox::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 60%);
-  pointer-events: none;
+  /* Glow léger */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .iconInner {
   position: relative;
-  z-index: 2;
+  z-index: 10; /* 🚀 L'FIX HNA: L'icone kaysbb9 kolchi bach yban */
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* 🚀 FIX: Forcer la couleur du SVG injecté */
+.iconInner svg {
+  stroke: currentColor;
+  width: 26px;
+  height: 26px;
 }
 
 .trend { 
@@ -66,16 +62,13 @@
   letter-spacing: 1px; 
 }
 
-/* 🚀 DESIGN X100 TEXT GRADIENT */
 .value { 
   font-size: 42px; 
   font-weight: 900; 
   margin: 0; 
-  letter-spacing: -1.5px; 
-  /* Text Gradient Premium */
+  letter-spacing: -1px; 
   background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.02));
 }

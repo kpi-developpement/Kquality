@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { getKpiGlobalAdmin, getAdminPartenaires, getAdminCqData } from '@/services/apiService';
-import { KpiArchiveDTO, PartenaireDTO, CqDataDTO } from '@/types/api';
+import { KpiArchiveDTO, PartenaireDTO } from '@/types/api';
 import InteractiveCard from './components/InteractiveCard/InteractiveCard';
 import StatCard from './components/StatCard/StatCard';
 import TrendChart from './components/TrendChart/TrendChart';
 import PenaltyPipeline from './components/PenaltyPipeline/PenaltyPipeline';
+import CustomSelect from './components/CustomSelect/CustomSelect'; // 🚀 IMPORT JDID
 import styles from './VueGlobale.module.css';
 
 const CQ_TABS = ["Audits tech", "Check-voisinage", "Expertises SAV", "Taux de coupures"];
@@ -109,16 +110,20 @@ export default function VueGlobalePage() {
   const totalSavBonus = savData.reduce((sum, item) => sum + item.bonus, 0);
   const finalScore = data.length > 0 ? Math.min(100, 90 + totalRaccBonus + totalSavBonus) : 0;
 
-  const IconRacc = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
-  const IconSav = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
-  const IconScore = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
-  const IconMoney = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>;
+  const IconRacc = <svg viewBox="0 0 24 24" fill="none"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
+  const IconSav = <svg viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
+  const IconScore = <svg viewBox="0 0 24 24" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+  const IconMoney = <svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>;
+
+  // Options pour les CustomSelects
+  const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
+  const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
+  const deptOptions = departments.map(d => ({ value: d, label: d === "GLOBAL" ? "Tous les Départements" : `DPT ${d}` }));
 
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.bgBlob1}></div>
       <div className={styles.bgBlob2}></div>
-      <div className={styles.bgBlob3}></div>
 
       <div className={styles.container}>
         
@@ -145,22 +150,10 @@ export default function VueGlobalePage() {
             </div>
 
             <div className={styles.controls}>
-              {/* 🚀 L'FIX DES DROPDOWNS: selectWrapper bach yt7kem f l'fleche SVG Custom */}
-              <div className={styles.selectWrapper}>
-                <select className={styles.select} value={month} onChange={e => setMonth(Number(e.target.value))}>
-                  {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Mois {m}</option>)}
-                </select>
-              </div>
-              <div className={styles.selectWrapper}>
-                <select className={styles.select} value={year} onChange={e => setYear(Number(e.target.value))}>
-                  {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
-              <div className={styles.selectWrapper}>
-                <select className={styles.select} value={selectedDept} onChange={e => setSelectedDept(e.target.value)}>
-                  {departments.map(d => <option key={d} value={d}>{d === "GLOBAL" ? "Tous les Départements" : `DPT ${d}`}</option>)}
-                </select>
-              </div>
+              {/* 🚀 L'FIX: Les Dropdowns Custom mriglin x100 */}
+              <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="140px" />
+              <CustomSelect value={year} options={yearOptions} onChange={setYear} width="110px" />
+              <CustomSelect value={selectedDept} options={deptOptions} onChange={setSelectedDept} width="220px" />
             </div>
           </div>
         </header>
