@@ -49,9 +49,10 @@
   backdrop-filter: blur(20px);
   border: 1px solid rgba(226, 232, 240, 0.9);
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); /* Zedt l'ombre bach yban m3zoul */
   overflow: hidden;
-  z-index: 100;
+  /* 🚀 L'FIX Z-INDEX: Dima lfo9 fo9 kolchi */
+  z-index: 99999;
   opacity: 0;
   transform: translateY(-10px);
   pointer-events: none;
@@ -72,7 +73,7 @@
 .dropdownMenu::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
 .option {
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 13px;
   font-weight: 600;
   color: #334155;
