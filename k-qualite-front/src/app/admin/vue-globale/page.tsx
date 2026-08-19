@@ -27,7 +27,6 @@ export default function VueGlobalePage() {
     getAdminPartenaires().then(setPartenaires).catch(console.error);
   }, []);
 
-  // 🛡️ L'FIX HWA HNA: Fonction bach njbdou l'historique dyal 6 mois
   const fetchTrendData = async (currentMonth: number, currentYear: number) => {
     setChartLoading(true);
     try {
@@ -131,10 +130,11 @@ export default function VueGlobalePage() {
         </header>
 
         <div className={styles.topGrid}>
-          <StatCard title="Bonus RACC Cumulé" value={`+${totalRaccBonus.toFixed(2)}%`} icon={IconRacc} colorBg="#eff6ff" colorIcon="#2563eb" trend="Stable" />
-          <StatCard title="Bonus SAV Cumulé" value={`+${totalSavBonus.toFixed(2)}%`} icon={IconSav} colorBg="#ecfdf5" colorIcon="#059669" trend="+1.2%" trendType="positive" />
-          <StatCard title="Score Global (Base 90%)" value={`${finalScore.toFixed(2)}%`} icon={IconScore} colorBg="#fffbeb" colorIcon="#d97706" />
-          <StatCard title="Pénalités Évitées" value="14 500 €" icon={IconMoney} colorBg="#fef2f2" colorIcon="#dc2626" />
+          {/* L'FIX HWA HNA: Ajout de delayIndex pour l'animation en cascade */}
+          <StatCard title="Bonus RACC Cumulé" value={`+${totalRaccBonus.toFixed(2)}%`} icon={IconRacc} colorBg="#eff6ff" colorIcon="#2563eb" trend="Stable" delayIndex={1} />
+          <StatCard title="Bonus SAV Cumulé" value={`+${totalSavBonus.toFixed(2)}%`} icon={IconSav} colorBg="#ecfdf5" colorIcon="#059669" trend="+1.2%" trendType="positive" delayIndex={2} />
+          <StatCard title="Score Global (Base 90%)" value={`${finalScore.toFixed(2)}%`} icon={IconScore} colorBg="#fffbeb" colorIcon="#d97706" delayIndex={3} />
+          <StatCard title="Pénalités Évitées" value="14 500 €" icon={IconMoney} colorBg="#fef2f2" colorIcon="#dc2626" delayIndex={4} />
         </div>
 
         <div className={styles.middleGrid}>

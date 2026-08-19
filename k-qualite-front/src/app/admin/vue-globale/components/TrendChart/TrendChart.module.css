@@ -2,74 +2,121 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
-  padding: 24px;
+  padding: 30px;
   height: 100%;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  animation: fadeIn 0.8s ease-out forwards;
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 30px;
+  gap: 12px;
+  margin-bottom: 35px;
 }
 
 .header h3 {
   color: #0f172a;
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .svgChart {
   width: 100%;
-  height: 220px;
+  height: 240px;
   overflow: visible;
 }
 
 .gridLine {
-  stroke: #f1f5f9;
-  stroke-width: 1;
+  stroke: #f8fafc;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
 }
 
 .dataLine {
   fill: none;
-  stroke: #2563eb;
-  stroke-width: 3;
+  stroke: #3b82f6;
+  stroke-width: 3.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+  filter: drop-shadow(0px 4px 6px rgba(59, 130, 246, 0.3));
+  stroke-dasharray: 300; /* Arbitrary high number for the animation */
+  stroke-dashoffset: 300;
+  animation: drawLine 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s;
 }
 
 .dataArea {
   fill: url(#blueGradient);
-  opacity: 0.2;
+  opacity: 0;
+  animation: fadeArea 1.5s ease-out forwards 0.8s;
 }
 
 .dataPoint {
   fill: #ffffff;
-  stroke: #2563eb;
-  stroke-width: 2;
-  r: 5;
-  transition: all 0.2s ease;
+  stroke: #3b82f6;
+  stroke-width: 2.5;
+  r: 4.5;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: popIn 0.4s ease-out forwards;
 }
 
 .dataPoint:hover {
-  r: 7;
-  fill: #2563eb;
+  r: 8;
+  fill: #3b82f6;
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+  cursor: crosshair;
 }
 
 .axisText {
-  fill: #64748b;
-  font-size: 11px;
-  font-weight: 500;
+  fill: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.valueText {
+  fill: #0f172a;
+  font-size: 9px;
+  font-weight: 800;
+  opacity: 0;
+  animation: popIn 0.4s ease-out forwards;
 }
 
 .loading {
-  height: 220px;
+  height: 240px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #94a3b8;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
+  animation: pulse 1.5s infinite;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes drawLine {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fadeArea {
+  to { opacity: 0.25; }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
