@@ -5,14 +5,15 @@ interface Props {
   detectees: number;
   contestees: number;
   validees: number;
+  vision: 'ADMIN' | 'PARTENAIRE';
 }
 
-export default function PenaltyPipeline({ detectees, contestees, validees }: Props) {
+export default function PenaltyPipeline({ detectees, contestees, validees, vision }: Props) {
   return (
     <div className={styles.pipelineContainer}>
       <div className={styles.header}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-        <h3>Traitement des Pénalités</h3>
+        <h3>Pénalités {vision === 'ADMIN' ? '(Montant)' : '(MT SST)'}</h3>
       </div>
       
       <div className={styles.steps}>

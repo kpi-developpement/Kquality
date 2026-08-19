@@ -1,15 +1,19 @@
-.cardWrapper { perspective: 1200px; height: 100%; }
+.cardWrapper { 
+  perspective: 1200px; 
+  height: 100%;
+  opacity: 0;
+  animation: cardEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
 
 .cardInner {
   position: relative;
-  background: rgba(255, 255, 255, 0.85); /* Transparent bach yban l'fond lzre9 */
+  background: rgba(255, 255, 255, 0.85); 
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 20px;
   padding: 28px;
   height: 100%;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-  transition: box-shadow 0.3s ease;
   transform-style: preserve-3d;
   will-change: transform;
 }
@@ -22,4 +26,7 @@
 
 .content { position: relative; z-index: 2; height: 100%; }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes cardEntrance { 
+  from { opacity: 0; transform: translateY(20px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}

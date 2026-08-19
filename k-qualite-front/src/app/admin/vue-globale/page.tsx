@@ -1,29 +1,37 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getKpiGlobalAdmin, getAdminPartenaires } from '@/services/apiService';
-import { KpiArchiveDTO, PartenaireDTO } from '@/types/api';
+import { getKpiGlobalAdmin, getAdminPartenaires, getAdminCqData } from '@/services/apiService';
+import { KpiArchiveDTO, PartenaireDTO, CqDataDTO } from '@/types/api';
 import InteractiveCard from './components/InteractiveCard/InteractiveCard';
 import StatCard from './components/StatCard/StatCard';
 import TrendChart from './components/TrendChart/TrendChart';
 import PenaltyPipeline from './components/PenaltyPipeline/PenaltyPipeline';
 import styles from './VueGlobale.module.css';
 
+const CQ_TABS = ["Audits tech", "Check-voisinage", "Expertises SAV", "Taux de coupures"];
+
 export default function VueGlobalePage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [selectedDept, setSelectedDept] = useState("GLOBAL");
+  
+  // 🛡️ L'FIX: Vision State (Admin vs Partenaire) Kima l'code dyal Contre-Qualité
+  const [visionMode, setVisionMode] = useState<'ADMIN' | 'PARTENAIRE'>('ADMIN');
   
   const [data, setData] = useState<KpiArchiveDTO[]>([]);
   const [partenaires, setPartenaires] = useState<PartenaireDTO[]>([]);
   const [departments, setDepartments] = useState<string[]>(["GLOBAL"]);
   const [loading, setLoading] = useState(false);
 
-  // States pour le graphique dynamique à 2 lignes (RACC & SAV)
+  // States Chart
   const [chartDataRacc, setChartDataRacc] = useState<number[]>([]);
   const [chartDataSav, setChartDataSav] = useState<number[]>([]);
   const [chartLabels, setChartLabels] = useState<string[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
+
+  // 🛡️ State Dynamique des Pénalités CQ
+  const [totalCqPenalties, setTotalCqPenalties] = useState<number>(0);
 
   useEffect(() => {
     getAdminPartenaires().then(setPartenaires).catch(console.error);
@@ -46,32 +54,23 @@ export default function VueGlobalePage() {
       }
 
       const results = await Promise.all(promises);
-      
       const raccScores: number[] = [];
       const savScores: number[] = [];
 
       results.forEach(monthData => {
         if (!monthData || monthData.length === 0) {
-          raccScores.push(0);
-          savScores.push(0);
-          return;
+          raccScores.push(0); savScores.push(0); return;
         }
-        
         const raccProcessus = ["SACLI_OK", "SARCLI_NOK", "GEM_NOK", "TAUX_20J", "ZMD_AMII", "ZMD_RIP", "ZTD", "TNH", "PERF_RANG_1_A", "PERF_RANG_1_B", "PERF_RANG_1_C", "HOTLINE_RANG_1_A", "HOTLINE_RANG_1_B", "HOTLINE_RANG_1_C", "CONSTRUCTION_RANG_1_A", "CONSTRUCTION_RANG_1_B", "CONSTRUCTION_RANG_1_C", "PERF_RANG_2_A", "PERF_RANG_2_B", "PERF_RANG_2_C", "INCOHERENCE_PTO", "CADRAGE", "TAUX_PLAINTE"];
-        
         const rData = monthData.filter(item => raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
         const sData = monthData.filter(item => !raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
         
-        // Base 90 + Bonus (Max 100)
         raccScores.push(Math.min(100, 90 + rData.reduce((sum, item) => sum + item.bonus, 0)));
         savScores.push(Math.min(100, 90 + sData.reduce((sum, item) => sum + item.bonus, 0)));
       });
-
-      setChartLabels(labels);
-      setChartDataRacc(raccScores);
-      setChartDataSav(savScores);
+      setChartLabels(labels); setChartDataRacc(raccScores); setChartDataSav(savScores);
     } catch (err) {
-      console.error("Erreur Trend:", err);
+      console.error(err);
     } finally {
       setChartLoading(false);
     }
@@ -80,14 +79,24 @@ export default function VueGlobalePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Fetch KPI Data
       const result = await getKpiGlobalAdmin(month, year);
       setData(result);
-
+      
       const depts = new Set<string>();
       result.forEach(item => depts.add(item.departement));
       const sortedDepts = Array.from(depts).sort((a, b) => a === "GLOBAL" ? -1 : b === "GLOBAL" ? 1 : a.localeCompare(b));
       setDepartments(sortedDepts.length > 0 ? sortedDepts : ["GLOBAL"]);
       if (!sortedDepts.includes(selectedDept)) setSelectedDept("GLOBAL");
+
+      // 🛡️ Fetch CQ Data Dynamique pour les Pénalités
+      const cqPromises = CQ_TABS.map(tab => getAdminCqData(tab, month, year));
+      const cqResults = await Promise.all(cqPromises);
+      const flatCqData = cqResults.flat();
+      
+      // Calcul du total basé sur visionMode (Admin: montant, Partenaire: mtSst)
+      const calculatedTotal = flatCqData.reduce((sum, row) => sum + (visionMode === 'ADMIN' ? (row.montant || 0) : (row.mtSst || 0)), 0);
+      setTotalCqPenalties(calculatedTotal);
 
     } catch (err) {
       console.error(err);
@@ -96,13 +105,16 @@ export default function VueGlobalePage() {
     }
   };
 
+  // Re-fetch quand Mois, Année ou Mode Vision change
   useEffect(() => { 
     fetchData(); 
+  }, [month, year, visionMode]);
+
+  useEffect(() => {
     fetchTrendData(month, year);
   }, [month, year]);
 
   const filteredData = data.filter(item => item.departement === selectedDept);
-
   const raccProcessus = ["SACLI_OK", "SARCLI_NOK", "GEM_NOK", "TAUX_20J", "ZMD_AMII", "ZMD_RIP", "ZTD", "TNH", "PERF_RANG_1_A", "PERF_RANG_1_B", "PERF_RANG_1_C", "HOTLINE_RANG_1_A", "HOTLINE_RANG_1_B", "HOTLINE_RANG_1_C", "CONSTRUCTION_RANG_1_A", "CONSTRUCTION_RANG_1_B", "CONSTRUCTION_RANG_1_C", "PERF_RANG_2_A", "PERF_RANG_2_B", "PERF_RANG_2_C", "INCOHERENCE_PTO", "CADRAGE", "TAUX_PLAINTE"];
   const raccData = filteredData.filter(item => raccProcessus.includes(item.processus));
   const savData = filteredData.filter(item => !raccProcessus.includes(item.processus));
@@ -118,7 +130,6 @@ export default function VueGlobalePage() {
 
   return (
     <div className={styles.pageWrapper}>
-      {/* L3IBAT BLEZREQ HNA */}
       <div className={styles.bgBlob1}></div>
       <div className={styles.bgBlob2}></div>
       <div className={styles.bgBlob3}></div>
@@ -131,16 +142,34 @@ export default function VueGlobalePage() {
             <p>Analyse des performances et suivi des pénalités réseau.</p>
           </div>
           
-          <div className={styles.controls}>
-            <select className={styles.select} value={month} onChange={e => setMonth(Number(e.target.value))}>
-              {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Mois {m}</option>)}
-            </select>
-            <select className={styles.select} value={year} onChange={e => setYear(Number(e.target.value))}>
-              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <select className={styles.select} value={selectedDept} onChange={e => setSelectedDept(e.target.value)}>
-              {departments.map(d => <option key={d} value={d}>{d === "GLOBAL" ? "Tous les Départements" : `DPT ${d}`}</option>)}
-            </select>
+          <div className={styles.controlsWrapper}>
+            {/* 🛡️ VISION TOGGLE ADMIN / PARTENAIRE */}
+            <div className={styles.visionToggle}>
+              <button 
+                className={`${styles.visionBtn} ${visionMode === 'ADMIN' ? styles.activeAdmin : ''}`}
+                onClick={() => setVisionMode('ADMIN')}
+              >
+                Vision Admin (Montant)
+              </button>
+              <button 
+                className={`${styles.visionBtn} ${visionMode === 'PARTENAIRE' ? styles.activePartenaire : ''}`}
+                onClick={() => setVisionMode('PARTENAIRE')}
+              >
+                Vision Partenaire (MT SST)
+              </button>
+            </div>
+
+            <div className={styles.controls}>
+              <select className={styles.select} value={month} onChange={e => setMonth(Number(e.target.value))}>
+                {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Mois {m}</option>)}
+              </select>
+              <select className={styles.select} value={year} onChange={e => setYear(Number(e.target.value))}>
+                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <select className={styles.select} value={selectedDept} onChange={e => setSelectedDept(e.target.value)}>
+                {departments.map(d => <option key={d} value={d}>{d === "GLOBAL" ? "Tous les Départements" : `DPT ${d}`}</option>)}
+              </select>
+            </div>
           </div>
         </header>
 
@@ -158,7 +187,8 @@ export default function VueGlobalePage() {
           </InteractiveCard>
           
           <InteractiveCard delayIndex={4}>
-            <StatCard title="Pénalités Évitées" value="14 500 €" icon={IconMoney} colorBg="#eff6ff" colorIcon="#3b82f6" />
+            {/* 🛡️ Affiche dynamiquement le total des pénalités selon la Vision (Backend) */}
+            <StatCard title={`Pénalités Évitées (${visionMode})`} value={`${totalCqPenalties.toLocaleString('fr-FR')} €`} icon={IconMoney} colorBg="#eff6ff" colorIcon="#3b82f6" />
           </InteractiveCard>
         </div>
 
@@ -168,7 +198,13 @@ export default function VueGlobalePage() {
           </InteractiveCard>
           
           <InteractiveCard delayIndex={6}>
-            <PenaltyPipeline detectees={24500} contestees={10000} validees={7316} />
+            {/* 🛡️ Pipeline Dynamique basé sur l'API CQ Backend */}
+            <PenaltyPipeline 
+              detectees={totalCqPenalties} 
+              contestees={Math.floor(totalCqPenalties * 0.4)} // Estimation contestation 40%
+              validees={Math.floor(totalCqPenalties * 0.25)}  // Estimation validée 25%
+              vision={visionMode}
+            />
           </InteractiveCard>
         </div>
 
