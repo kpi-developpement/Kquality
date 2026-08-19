@@ -165,7 +165,10 @@ public class CqPartenaireImportService {
         try {
             if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) counts = processExcelSav(file, statsMap, techMap, inconnu);
             else counts = processCsvSav(file, statsMap, techMap, inconnu);
-        } catch (Exception e) { throw new RuntimeException(e.getMessage()); }
+        } catch (Exception e) {
+            log.error("❌ Erreur CRITIQUE Import SAV: ", e);
+            throw new RuntimeException(e.getMessage());
+        }
 
         List<CqPartenaireKpi> archivesToSave = new ArrayList<>();
         for (Map.Entry<Partenaire, Stats> entry : statsMap.entrySet()) {
@@ -182,7 +185,7 @@ public class CqPartenaireImportService {
     }
 
     // ==========================================
-    // 🛠️ MOTEURS DE LECTURE
+    // 🛠️ MOTEURS DE LECTURE (Fichier 2)
     // ==========================================
     private int[] processExcelFichier2(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) throws Exception {
         int total = 0, success = 0, rejected = 0;
@@ -194,7 +197,7 @@ public class CqPartenaireImportService {
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
 
-            Integer colKyn = findColumnIndex(headerMap, "id_tech", "id tech", "idtech", "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
+            Integer colKyn = findColumnIndex(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
             Integer colZone = findColumnIndex(headerMap, "zone_statut prise", "zone");
             Integer colRang = findColumnIndex(headerMap, "rang_rdv", "rang");
             Integer colStatut = findColumnIndex(headerMap, "grp_statut_crinstall_mnt", "statut");
@@ -231,7 +234,7 @@ public class CqPartenaireImportService {
              CSVParser parser = new CSVParser(br, format)) {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
-            String colKyn = findColumnName(headerMap, "id_tech", "id tech", "idtech", "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
+            String colKyn = findColumnName(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
             String colZone = findColumnName(headerMap, "zone_statut prise", "zone");
             String colRang = findColumnName(headerMap, "rang_rdv", "rang");
             String colStatut = findColumnName(headerMap, "grp_statut_crinstall_mnt", "statut");
@@ -256,6 +259,9 @@ public class CqPartenaireImportService {
         return new int[]{total, success, rejected};
     }
 
+    // ==========================================
+    // 🛠️ MOTEURS DE LECTURE (SACLI / SARCLI)
+    // ==========================================
     private int[] processExcelSacliSarcli(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu, boolean isSacli) throws Exception {
         int total = 0, success = 0, rejected = 0;
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
@@ -266,7 +272,7 @@ public class CqPartenaireImportService {
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
 
-            Integer colKyn = findColumnIndex(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
+            Integer colKyn = findColumnIndex(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
             Integer colValr = findColumnIndex(headerMap, "valr not glbl", "valeur", "note");
 
             if (colValr == null) throw new RuntimeException("Colonne valeur introuvable.");
@@ -295,7 +301,7 @@ public class CqPartenaireImportService {
              CSVParser parser = new CSVParser(br, format)) {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
-            String colKyn = findColumnName(headerMap, "id_tech", "id tech", "idtech", "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
+            String colKyn = findColumnName(headerMap, "nom_technicien", "nomtechnicien", "prv_tcnw_id_tech", "kyn", "tech", "utilisateur");
             String colValr = findColumnName(headerMap, "valr not glbl", "valeur", "note");
 
             if (colValr == null) throw new RuntimeException("Colonne valeur introuvable.");
@@ -312,6 +318,9 @@ public class CqPartenaireImportService {
         return new int[]{total, success, rejected};
     }
 
+    // ==========================================
+    // 🛠️ MOTEURS DE LECTURE (SAV)
+    // ==========================================
     private int[] processExcelSav(MultipartFile file, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) throws Exception {
         int total = 0, success = 0, rejected = 0;
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
@@ -326,8 +335,8 @@ public class CqPartenaireImportService {
             Integer colSatcli = findColumnIndex(headerMap, "note satcli ftth", "note_satcli", "satcli");
             Integer colSecu = findColumnIndex(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv", "secu");
 
-            // 🛡️ L'FIX HWA HNA: 7iydna "cloture" mn l'recherche dyal TNH SAV
-            Integer colTnh = findColumnIndex(headerMap, "cod cltr main", "cod_cltr", "cod cltr");
+            // 🛡️ L'FIX HWA HNA: Recherche EXACTE dyal "cod cltr main"
+            Integer colTnh = findColumnIndexExact(headerMap, "cod cltr main");
 
             if (colSatcli == null && colSecu == null && colTnh == null) {
                 throw new RuntimeException("Aucune colonne SAV trouvée. Headers: " + headerMap.keySet());
@@ -364,8 +373,8 @@ public class CqPartenaireImportService {
             String colSatcli = findColumnName(headerMap, "note satcli ftth", "note_satcli", "satcli");
             String colSecu = findColumnName(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv", "secu");
 
-            // 🛡️ L'FIX HWA HNA: 7iydna "cloture" mn l'recherche dyal TNH SAV
-            String colTnh = findColumnName(headerMap, "cod cltr main", "cod_cltr", "cod cltr");
+            // 🛡️ L'FIX HWA HNA: Recherche EXACTE dyal "cod cltr main"
+            String colTnh = findColumnNameExact(headerMap, "cod cltr main");
 
             if (colSatcli == null && colSecu == null && colTnh == null) {
                 throw new RuntimeException("Aucune colonne SAV trouvée. Headers: " + headerMap.keySet());
@@ -386,11 +395,9 @@ public class CqPartenaireImportService {
     }
 
     // ==========================================
-    // ⚙️ LOGIQUE METIER (AVEC 100% INCONNU FALLBACK)
+    // ⚙️ LOGIQUE METIER
     // ==========================================
     private void processRowLogicFichier2(String rawKyn, String rawZone, String rawRang, String rawStatut, String cohorte, String motif, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) {
-
-        // 🛡️ L'FIX HWA HNA: Ay ligne dakhla katmchi l INCONNU par défaut
         Partenaire partenaire = inconnu;
 
         if (rawKyn != null && !rawKyn.trim().isEmpty()) {
@@ -437,8 +444,6 @@ public class CqPartenaireImportService {
     }
 
     private void processRowLogicSacliSarcli(String rawKyn, String rawValr, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu, boolean isSacli) {
-
-        // 🛡️ L'FIX HWA HNA: Ay ligne dakhla katmchi l INCONNU par défaut
         Partenaire partenaire = inconnu;
 
         if (rawKyn != null && !rawKyn.trim().isEmpty()) {
@@ -464,8 +469,6 @@ public class CqPartenaireImportService {
     }
 
     private void processRowLogicSav(String rawKyn, String rawSatcli, String rawSecu, String rawTnh, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) {
-
-        // 🛡️ L'FIX HWA HNA: Ay ligne dakhla katmchi l INCONNU par défaut
         Partenaire partenaire = inconnu;
 
         if (rawKyn != null && !rawKyn.trim().isEmpty()) {
@@ -578,6 +581,24 @@ public class CqPartenaireImportService {
 
     private Integer findColumnIndex(Map<String, Integer> headers, String... keywords) {
         String colName = findColumnName(headers, keywords);
+        return colName != null ? headers.get(colName) : null;
+    }
+
+    // 🛡️ L'FIX HWA HNA: Fonction jdida l'Match Exact 100% (Bla Contains)
+    private String findColumnNameExact(Map<String, Integer> headers, String... keywords) {
+        if (headers == null) return null;
+        for (String kw : keywords) {
+            String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
+            for (String header : headers.keySet()) {
+                String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
+                if (clean.equals(cleanKw)) return header;
+            }
+        }
+        return null;
+    }
+
+    private Integer findColumnIndexExact(Map<String, Integer> headers, String... keywords) {
+        String colName = findColumnNameExact(headers, keywords);
         return colName != null ? headers.get(colName) : null;
     }
 }
