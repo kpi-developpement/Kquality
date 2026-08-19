@@ -115,6 +115,8 @@ public class KpiIsoleImportService {
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
 
+            log.info("📊 Headers Excel détectés pour {}: {}", indicateur, headerMap.keySet());
+
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
@@ -139,6 +141,8 @@ public class KpiIsoleImportService {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
              CSVParser parser = new CSVParser(br, format)) {
 
+            log.info("📊 Headers CSV détectés pour {}: {}", indicateur, parser.getHeaderMap().keySet());
+
             for (CSVRecord record : parser) {
                 total++;
                 Map<String, String> rowData = new HashMap<>();
@@ -159,7 +163,8 @@ public class KpiIsoleImportService {
             String idRacc = findValue(rowData, "id racc", "id_racc", "idrdv", "id_rdv");
             String ptoMagouille = findValue(rowData, "pto magouille", "pto_magouille", "ptomagouille", "magouille");
 
-            if (idRacc.isEmpty()) return false;
+            // 🛡️ L'FIX HWA HNA: Ila mal9ach ID RDV, kay-dir SANS_REF w kay-kml l'calcul
+            if (idRacc.isEmpty()) idRacc = "SANS_REF";
 
             Partenaire p = getPartenaire(kyn, techMap, inconnu);
             statsMap.putIfAbsent(p, new Stats());
@@ -186,6 +191,7 @@ public class KpiIsoleImportService {
             String cleanFlgGem = flgGem.trim().toLowerCase();
             boolean isFlgGem1 = cleanFlgGem.equals("1") || cleanFlgGem.equals("1.0") || cleanFlgGem.equals("1,0") || cleanFlgGem.equals("true") || cleanFlgGem.equals("vrai");
 
+            // Hada filtre métier: Ila makantch OUI w 1, l'ligne kat-trejta (Ignorée)
             if (!tvc.equalsIgnoreCase("OUI") || !isFlgGem1) return false;
             if (cohorte.isEmpty()) return false;
 
@@ -209,6 +215,7 @@ public class KpiIsoleImportService {
             boolean is0 = cleanMalCadree.equals("0") || cleanMalCadree.equals("0.0") || cleanMalCadree.equals("0,0") || cleanMalCadree.equals("false") || cleanMalCadree.equals("faux");
             boolean is1 = cleanMalCadree.equals("1") || cleanMalCadree.equals("1.0") || cleanMalCadree.equals("1,0") || cleanMalCadree.equals("true") || cleanMalCadree.equals("vrai");
 
+            // Filtre métier: Ila makantch 0 wla 1, l'ligne kat-trejta
             if (!is0 && !is1) return false;
 
             Partenaire p = getPartenaire(kyn, techMap, inconnu);
@@ -222,19 +229,19 @@ public class KpiIsoleImportService {
                     .kyn(kyn).reference(idRdv).champ1(malCadree).build());
             return true;
         }
-        // 🛡️ L'FIX HWA HNA: TAUX DE PLAINTE (Recherche ultra-flexible)
         else if (indicateur.equals("TAUX_PLAINTE")) {
             String kyn = findValue(rowData, "id_tech", "id tech", "idtech", "kyn", "prv_tcnw_id_tech", "tech", "nom_technicien");
             String idRdv = findValue(rowData, "id_rdv", "id rdv", "idrdv", "idnt_rdv");
             String ticket = findValue(rowData, "volume ticket qualité", "volume ticket qualite", "volume ticket", "ticket", "volume");
 
-            if (idRdv.isEmpty()) return false;
+            // 🛡️ L'FIX HWA HNA: Ila mal9ach ID RDV, kay-dir SANS_REF w kay-kml l'calcul
+            if (idRdv.isEmpty()) idRdv = "SANS_REF";
 
             Partenaire p = getPartenaire(kyn, techMap, inconnu);
             statsMap.putIfAbsent(p, new Stats());
             Stats s = statsMap.get(p);
 
-            s.denum = 0;
+            s.denum = 0; // L'DENUM kay-t7seb f l'Frontend
 
             String cleanTicket = ticket.trim().toLowerCase();
             if (cleanTicket.equals("1") || cleanTicket.equals("1.0") || cleanTicket.equals("1,0") || cleanTicket.equals("true") || cleanTicket.equals("vrai")) {
@@ -243,7 +250,8 @@ public class KpiIsoleImportService {
 
             details.add(CqLigneDetail.builder().mois(month).annee(year).indicateur(indicateur).partenaire(p)
                     .kyn(kyn).reference(idRdv).champ1(ticket).build());
-            return true;
+
+            return true; // L'ligne dima kat-douz!
         }
         return false;
     }
