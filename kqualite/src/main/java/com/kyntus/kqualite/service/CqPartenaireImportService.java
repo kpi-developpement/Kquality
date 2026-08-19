@@ -40,7 +40,6 @@ public class CqPartenaireImportService {
         long sarcliNum = 0, sarcliDenum = 0;
         long tnhNum = 0, tnhDenum = 0;
 
-        // 🛡️ JDID: Les compteurs dyal SAV
         long savSatcliNum = 0, savSatcliDenum = 0;
         long secuNum = 0, secuDenum = 0;
         long savTnhNum = 0, savTnhDenum = 0;
@@ -142,7 +141,7 @@ public class CqPartenaireImportService {
     }
 
     // ==========================================
-    // 3. 🛡️ JDID: IMPORT SAV (SATCLI, SECU, TNH SAV)
+    // 3. IMPORT SAV (SATCLI, SECU, TNH SAV)
     // ==========================================
     @Transactional
     public ImportSummaryDTO importSav(MultipartFile file, int month, int year) {
@@ -179,7 +178,7 @@ public class CqPartenaireImportService {
         }
 
         cqPartenaireKpiRepository.saveAll(archivesToSave);
-        return ImportSummaryDTO.builder().totalLignes(counts[0]).lignesInserees(counts[1]).lignesRejetees(counts[2]).message("Calculs SAV (SATCLI, SECU, TNH) terminés").build();
+        return ImportSummaryDTO.builder().totalLignes(counts[0]).lignesInserees(counts[1]).lignesRejetees(counts[2]).message("Calculs SAV terminés").build();
     }
 
     // ==========================================
@@ -329,10 +328,15 @@ public class CqPartenaireImportService {
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
 
-            Integer colKyn = findColumnIndex(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech");
-            Integer colSatcli = findColumnIndex(headerMap, "note satcli ftth", "note_satcli");
-            Integer colSecu = findColumnIndex(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv");
-            Integer colTnh = findColumnIndex(headerMap, "cod cltr main", "cod_cltr");
+            // 🛡️ L'FIX HWA HNA: Recherche ultra-flexible dyal les colonnes SAV
+            Integer colKyn = findColumnIndex(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
+            Integer colSatcli = findColumnIndex(headerMap, "note satcli ftth", "note_satcli", "satcli");
+            Integer colSecu = findColumnIndex(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv", "secu");
+            Integer colTnh = findColumnIndex(headerMap, "cod cltr main", "cod_cltr", "cod cltr");
+
+            if (colSatcli == null && colSecu == null && colTnh == null) {
+                throw new RuntimeException("Aucune colonne SAV trouvée. Headers: " + headerMap.keySet());
+            }
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -360,10 +364,16 @@ public class CqPartenaireImportService {
              CSVParser parser = new CSVParser(br, format)) {
 
             Map<String, Integer> headerMap = parser.getHeaderMap();
-            String colKyn = findColumnName(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech");
-            String colSatcli = findColumnName(headerMap, "note satcli ftth", "note_satcli");
-            String colSecu = findColumnName(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv");
-            String colTnh = findColumnName(headerMap, "cod cltr main", "cod_cltr");
+
+            // 🛡️ L'FIX HWA HNA: Recherche ultra-flexible dyal les colonnes SAV
+            String colKyn = findColumnName(headerMap, "prv_tcnw_id_tech", "idtecnow", "matricule", "kyn", "tech", "nom_technicien");
+            String colSatcli = findColumnName(headerMap, "note satcli ftth", "note_satcli", "satcli");
+            String colSecu = findColumnName(headerMap, "flag_secu_interv_cq2024", "flag secu", "secu_interv", "secu");
+            String colTnh = findColumnName(headerMap, "cod cltr main", "cod_cltr", "cod cltr");
+
+            if (colSatcli == null && colSecu == null && colTnh == null) {
+                throw new RuntimeException("Aucune colonne SAV trouvée. Headers: " + headerMap.keySet());
+            }
 
             for (CSVRecord record : parser) {
                 total++;
@@ -446,8 +456,8 @@ public class CqPartenaireImportService {
         Stats s = statsMap.get(partenaire);
 
         String valr = rawValr != null ? rawValr.trim() : "";
-        boolean isValr5 = valr.equals("5") || valr.equals("5.0") || valr.equals("5,0");
-        boolean isValr4 = valr.equals("4") || valr.equals("4.0") || valr.equals("4,0");
+        boolean isValr5 = isNumericValue(valr, 5.0);
+        boolean isValr4 = isNumericValue(valr, 4.0);
 
         if (isSacli) {
             s.sacliDenum++;
@@ -458,7 +468,6 @@ public class CqPartenaireImportService {
         }
     }
 
-    // 🛡️ JDID: Logique SAV (SATCLI, SECU, TNH)
     private void processRowLogicSav(String rawKyn, String rawSatcli, String rawSecu, String rawTnh, Map<Partenaire, Stats> statsMap, Map<String, Technicien> techMap, Partenaire inconnu) {
         Partenaire partenaire = inconnu;
 
