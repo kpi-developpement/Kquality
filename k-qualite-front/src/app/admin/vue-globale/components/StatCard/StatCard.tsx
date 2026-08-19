@@ -9,12 +9,11 @@ interface Props {
   colorIcon: string;
   trend?: string;
   trendType?: 'positive' | 'neutral';
-  delayIndex?: number; // Pour l'effet cascade
 }
 
-export default function StatCard({ title, value, icon, colorBg, colorIcon, trend, trendType = 'neutral', delayIndex = 0 }: Props) {
+export default function StatCard({ title, value, icon, colorBg, colorIcon, trend, trendType = 'neutral' }: Props) {
   return (
-    <div className={styles.card} style={{ animationDelay: `${delayIndex * 0.1}s` }}>
+    <div className={styles.cardContent}>
       <div className={styles.header}>
         <div className={styles.iconBox} style={{ background: colorBg, color: colorIcon }}>
           {icon}
@@ -25,7 +24,7 @@ export default function StatCard({ title, value, icon, colorBg, colorIcon, trend
           </div>
         )}
       </div>
-      <div>
+      <div className={styles.textArea}>
         <h3 className={styles.title}>{title}</h3>
         <p className={styles.value}>{value}</p>
       </div>

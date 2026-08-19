@@ -1,92 +1,149 @@
 .chartContainer {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 30px;
   height: 100%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  animation: fadeIn 0.8s ease-out forwards;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 35px;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
 }
 
-.header h3 {
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.subtitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.titleArea h3 {
   color: #0f172a;
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
 
+.legendArea {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dotRed { background: #ef4444; }
+.dotGreen { background: #10b981; }
+
+.timeSelect {
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  outline: none;
+  cursor: pointer;
+}
+
 .svgChart {
   width: 100%;
-  height: 240px;
+  height: 260px;
   overflow: visible;
+  margin-top: auto;
 }
 
 .gridLine {
-  stroke: #f8fafc;
-  stroke-width: 1.5;
+  stroke: #e2e8f0;
+  stroke-width: 1;
   stroke-dasharray: 4 4;
 }
 
+.dashedAverage {
+  stroke-dasharray: 6 6;
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.dashedAverageRed { stroke: #ef4444; }
+.dashedAverageGreen { stroke: #10b981; }
+
+/* The Smooth Curves */
 .dataLine {
   fill: none;
-  stroke: #3b82f6;
   stroke-width: 3.5;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0px 4px 6px rgba(59, 130, 246, 0.3));
-  stroke-dasharray: 300; /* Arbitrary high number for the animation */
-  stroke-dashoffset: 300;
-  animation: drawLine 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawLine 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s;
 }
 
+.lineRed { stroke: #ef4444; }
+.lineGreen { stroke: #10b981; }
+
 .dataArea {
-  fill: url(#blueGradient);
   opacity: 0;
-  animation: fadeArea 1.5s ease-out forwards 0.8s;
+  animation: fadeArea 1.5s ease-out forwards 1s;
 }
+
+.areaRed { fill: url(#redGradient); }
+.areaGreen { fill: url(#greenGradient); }
 
 .dataPoint {
   fill: #ffffff;
-  stroke: #3b82f6;
   stroke-width: 2.5;
-  r: 4.5;
+  r: 4;
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  animation: popIn 0.4s ease-out forwards;
+  animation: popIn 0.5s ease-out forwards;
 }
 
+.pointRed { stroke: #ef4444; }
+.pointGreen { stroke: #10b981; }
+
 .dataPoint:hover {
-  r: 8;
-  fill: #3b82f6;
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+  r: 7;
   cursor: crosshair;
 }
 
-.axisText {
+.axisTextY {
   fill: #94a3b8;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
-.valueText {
-  fill: #0f172a;
-  font-size: 9px;
-  font-weight: 800;
-  opacity: 0;
-  animation: popIn 0.4s ease-out forwards;
+.axisTextX {
+  fill: #64748b;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .loading {
-  height: 240px;
+  height: 260px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,26 +154,7 @@
 }
 
 /* --- ANIMATIONS --- */
-@keyframes drawLine {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes fadeArea {
-  to { opacity: 0.25; }
-}
-
-@keyframes popIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
-}
+@keyframes drawLine { to { stroke-dashoffset: 0; } }
+@keyframes fadeArea { to { opacity: 0.15; } }
+@keyframes popIn { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }

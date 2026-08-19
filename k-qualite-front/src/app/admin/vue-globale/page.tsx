@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getKpiGlobalAdmin, getAdminPartenaires } from '@/services/apiService';
 import { KpiArchiveDTO, PartenaireDTO } from '@/types/api';
+import InteractiveCard from './components/InteractiveCard/InteractiveCard';
 import StatCard from './components/StatCard/StatCard';
 import TrendChart from './components/TrendChart/TrendChart';
 import PenaltyPipeline from './components/PenaltyPipeline/PenaltyPipeline';
@@ -18,8 +19,9 @@ export default function VueGlobalePage() {
   const [departments, setDepartments] = useState<string[]>(["GLOBAL"]);
   const [loading, setLoading] = useState(false);
 
-  // States pour le graphique dynamique
-  const [chartData, setChartData] = useState<number[]>([]);
+  // States pour le graphique dynamique à 2 lignes (RACC & SAV)
+  const [chartDataRacc, setChartDataRacc] = useState<number[]>([]);
+  const [chartDataSav, setChartDataSav] = useState<number[]>([]);
   const [chartLabels, setChartLabels] = useState<string[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
 
@@ -39,26 +41,35 @@ export default function VueGlobalePage() {
         if (m <= 0) { m += 12; y -= 1; }
         
         const date = new Date(y, m - 1);
-        labels.push(date.toLocaleString('fr-FR', { month: 'short' }).toUpperCase());
+        labels.push(date.toLocaleString('fr-FR', { month: 'short' }).charAt(0).toUpperCase() + date.toLocaleString('fr-FR', { month: 'short' }).slice(1) + '.');
         promises.push(getKpiGlobalAdmin(m, y));
       }
 
       const results = await Promise.all(promises);
-      const scores = results.map(monthData => {
-        if (!monthData || monthData.length === 0) return 0; // Pas de data
+      
+      const raccScores: number[] = [];
+      const savScores: number[] = [];
+
+      results.forEach(monthData => {
+        if (!monthData || monthData.length === 0) {
+          raccScores.push(0);
+          savScores.push(0);
+          return;
+        }
         
-        // Calcul du score du mois
         const raccProcessus = ["SACLI_OK", "SARCLI_NOK", "GEM_NOK", "TAUX_20J", "ZMD_AMII", "ZMD_RIP", "ZTD", "TNH", "PERF_RANG_1_A", "PERF_RANG_1_B", "PERF_RANG_1_C", "HOTLINE_RANG_1_A", "HOTLINE_RANG_1_B", "HOTLINE_RANG_1_C", "CONSTRUCTION_RANG_1_A", "CONSTRUCTION_RANG_1_B", "CONSTRUCTION_RANG_1_C", "PERF_RANG_2_A", "PERF_RANG_2_B", "PERF_RANG_2_C", "INCOHERENCE_PTO", "CADRAGE", "TAUX_PLAINTE"];
-        const raccData = monthData.filter(item => raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
-        const savData = monthData.filter(item => !raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
         
-        const bonusRacc = raccData.reduce((sum, item) => sum + item.bonus, 0);
-        const bonusSav = savData.reduce((sum, item) => sum + item.bonus, 0);
-        return 90 + bonusRacc + bonusSav;
+        const rData = monthData.filter(item => raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
+        const sData = monthData.filter(item => !raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
+        
+        // Base 90 + Bonus
+        raccScores.push(90 + rData.reduce((sum, item) => sum + item.bonus, 0));
+        savScores.push(90 + sData.reduce((sum, item) => sum + item.bonus, 0));
       });
 
       setChartLabels(labels);
-      setChartData(scores);
+      setChartDataRacc(raccScores);
+      setChartDataSav(savScores);
     } catch (err) {
       console.error("Erreur Trend:", err);
     } finally {
@@ -100,7 +111,6 @@ export default function VueGlobalePage() {
   const totalSavBonus = savData.reduce((sum, item) => sum + item.bonus, 0);
   const finalScore = data.length > 0 ? 90 + totalRaccBonus + totalSavBonus : 0;
 
-  // Icons SVG Clean
   const IconRacc = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
   const IconSav = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
   const IconScore = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
@@ -130,16 +140,32 @@ export default function VueGlobalePage() {
         </header>
 
         <div className={styles.topGrid}>
-          {/* L'FIX HWA HNA: Ajout de delayIndex pour l'animation en cascade */}
-          <StatCard title="Bonus RACC Cumulé" value={`+${totalRaccBonus.toFixed(2)}%`} icon={IconRacc} colorBg="#eff6ff" colorIcon="#2563eb" trend="Stable" delayIndex={1} />
-          <StatCard title="Bonus SAV Cumulé" value={`+${totalSavBonus.toFixed(2)}%`} icon={IconSav} colorBg="#ecfdf5" colorIcon="#059669" trend="+1.2%" trendType="positive" delayIndex={2} />
-          <StatCard title="Score Global (Base 90%)" value={`${finalScore.toFixed(2)}%`} icon={IconScore} colorBg="#fffbeb" colorIcon="#d97706" delayIndex={3} />
-          <StatCard title="Pénalités Évitées" value="14 500 €" icon={IconMoney} colorBg="#fef2f2" colorIcon="#dc2626" delayIndex={4} />
+          {/* Les cartes sont mnt enveloppées dans InteractiveCard pour l'effet 3D Hover & L3ibat blezre9 */}
+          <InteractiveCard delayIndex={1}>
+            <StatCard title="Bonus RACC Cumulé" value={`+${totalRaccBonus.toFixed(2)}%`} icon={IconRacc} colorBg="#fef2f2" colorIcon="#ef4444" trend="Stable" />
+          </InteractiveCard>
+          
+          <InteractiveCard delayIndex={2}>
+            <StatCard title="Bonus SAV Cumulé" value={`+${totalSavBonus.toFixed(2)}%`} icon={IconSav} colorBg="#ecfdf5" colorIcon="#10b981" trend="+1.2%" trendType="positive" />
+          </InteractiveCard>
+          
+          <InteractiveCard delayIndex={3}>
+            <StatCard title="Score Global (Base 90%)" value={`${finalScore.toFixed(2)}%`} icon={IconScore} colorBg="#fffbeb" colorIcon="#d97706" />
+          </InteractiveCard>
+          
+          <InteractiveCard delayIndex={4}>
+            <StatCard title="Pénalités Évitées" value="14 500 €" icon={IconMoney} colorBg="#eff6ff" colorIcon="#3b82f6" />
+          </InteractiveCard>
         </div>
 
         <div className={styles.middleGrid}>
-          <TrendChart data={chartData} labels={chartLabels} isLoading={chartLoading} />
-          <PenaltyPipeline detectees={24500} contestees={10000} validees={7316} />
+          <InteractiveCard delayIndex={5}>
+            <TrendChart dataRacc={chartDataRacc} dataSav={chartDataSav} labels={chartLabels} isLoading={chartLoading} />
+          </InteractiveCard>
+          
+          <InteractiveCard delayIndex={6}>
+            <PenaltyPipeline detectees={24500} contestees={10000} validees={7316} />
+          </InteractiveCard>
         </div>
 
         <div className={styles.tableWrapper}>
@@ -160,7 +186,7 @@ export default function VueGlobalePage() {
               <tbody>
                 {raccData.map(item => (
                   <tr key={item.id}>
-                    <td><span style={{color:'#2563eb', fontWeight:'700'}}>RACC</span></td>
+                    <td><span style={{color:'#ef4444', fontWeight:'700'}}>RACC</span></td>
                     <td style={{fontWeight:'600', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
                     <td>{item.num.toLocaleString()}</td>
                     <td>{item.denum.toLocaleString()}</td>
@@ -170,7 +196,7 @@ export default function VueGlobalePage() {
                 ))}
                 {savData.map(item => (
                   <tr key={item.id}>
-                    <td><span style={{color:'#059669', fontWeight:'700'}}>SAV</span></td>
+                    <td><span style={{color:'#10b981', fontWeight:'700'}}>SAV</span></td>
                     <td style={{fontWeight:'600', color:'#0f172a'}}>{item.processus.replace(/_/g, ' ')}</td>
                     <td>{item.num.toLocaleString()}</td>
                     <td>{item.denum.toLocaleString()}</td>

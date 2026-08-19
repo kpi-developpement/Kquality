@@ -1,24 +1,9 @@
-.card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 24px;
+.cardContent {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  position: relative;
-  overflow: hidden;
-  animation: cardEntrance 0.6s ease-out forwards;
-  opacity: 0;
-  transform: translateY(15px);
-}
-
-.card:hover {
-  box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-  transform: translateY(-5px);
-  border-color: #bfdbfe;
+  height: 100%;
+  background: transparent; /* Background is handled by InteractiveCard */
 }
 
 .header {
@@ -35,11 +20,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.4s ease;
-}
-
-.card:hover .iconBox {
-  transform: scale(1.1) rotate(5deg);
 }
 
 .trend {
@@ -47,22 +27,27 @@
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 20px;
-  animation: fadeIn 0.8s ease-in-out 0.3s forwards;
-  opacity: 0;
 }
 
 .trendPositive { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 .trendNeutral { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 
+.textArea {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .title {
   font-size: 13px;
   color: #64748b;
   font-weight: 600;
-  margin: 0 0 8px 0;
+  margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  animation: slideUpFade 0.5s ease-out 0.2s forwards;
+  animation: slideUp 0.5s ease-out forwards 0.2s;
   opacity: 0;
+  transform: translateY(10px);
 }
 
 .value {
@@ -71,21 +56,11 @@
   color: #0f172a;
   margin: 0;
   letter-spacing: -1px;
-  animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s forwards;
+  animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.3s;
   opacity: 0;
+  transform: translateY(10px);
 }
 
-/* --- ANIMATIONS --- */
-@keyframes cardEntrance {
+@keyframes slideUp {
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUpFade {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }

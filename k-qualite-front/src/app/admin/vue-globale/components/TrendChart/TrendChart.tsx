@@ -2,96 +2,149 @@ import React from 'react';
 import styles from './TrendChart.module.css';
 
 interface Props {
-  data: number[];
+  dataRacc: number[];
+  dataSav: number[];
   labels: string[];
   isLoading: boolean;
 }
 
-export default function TrendChart({ data, labels, isLoading }: Props) {
+export default function TrendChart({ dataRacc, dataSav, labels, isLoading }: Props) {
   if (isLoading) {
     return (
       <div className={styles.chartContainer}>
         <div className={styles.header}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-          <h3>Évolution du Score Global</h3>
+          <div className={styles.titleArea}>
+            <span className={styles.subtitle}>PERFORMANCE</span>
+            <h3>Évolution du CQ</h3>
+          </div>
         </div>
-        <div className={styles.loading}>Calcul de l'historique premium en cours...</div>
+        <div className={styles.loading}>Calcul des courbes premium en cours...</div>
       </div>
     );
   }
 
-  // Calcul des coordonnées
-  const minVal = Math.min(...data.filter(d => d > 0), 80) - 5; 
-  const maxVal = Math.max(...data, 100);
-  const range = maxVal - minVal || 1;
+  // Define scale (matching the 92% to 100% look in the target image)
+  const MIN_Y = 90; 
+  const MAX_Y = 100;
+  const RANGE = MAX_Y - MIN_Y;
 
-  const getX = (index: number) => (index / Math.max(data.length - 1, 1)) * 100;
-  const getY = (val: number) => val === 0 ? 100 : 100 - ((val - minVal) / range) * 100;
+  // Viewbox coordinates mapping
+  const width = 800;
+  const height = 220;
+  
+  const getX = (index: number) => (index / Math.max(labels.length - 1, 1)) * width;
+  const getY = (val: number) => {
+    if(val === 0) return height; // Fallback
+    const clampedVal = Math.max(MIN_Y, Math.min(MAX_Y, val));
+    return height - ((clampedVal - MIN_Y) / RANGE) * height;
+  };
 
-  // 🛡️ L'FIX HWA HNA: Transformation de Polyline en Courbe de Bézier Cubique (Smooth Path)
-  let smoothPath = '';
-  if (data.length > 0) {
-    smoothPath = `M ${getX(0)},${getY(data[0])}`;
+  // Helper to generate perfectly smooth horizontal bezier curves
+  const generateSmoothPath = (data: number[]) => {
+    if (!data || data.length === 0) return '';
+    let path = `M ${getX(0)},${getY(data[0])}`;
     for (let i = 0; i < data.length - 1; i++) {
       const x0 = getX(i);
       const y0 = getY(data[i]);
       const x1 = getX(i + 1);
       const y1 = getY(data[i + 1]);
       
-      // Points de contrôle pour courber la ligne mathématiquement
+      // Control points for horizontal easing
       const cx = (x0 + x1) / 2;
-      smoothPath += ` C ${cx},${y0} ${cx},${y1} ${x1},${y1}`;
+      path += ` C ${cx},${y0} ${cx},${y1} ${x1},${y1}`;
     }
-  }
+    return path;
+  };
 
-  // Zone d'ombre sous la courbe
-  const areaPath = smoothPath ? `${smoothPath} L 100,100 L 0,100 Z` : '';
+  const pathRacc = generateSmoothPath(dataRacc);
+  const pathSav = generateSmoothPath(dataSav);
+
+  const areaRacc = pathRacc ? `${pathRacc} L ${width},${height} L 0,${height} Z` : '';
+  const areaSav = pathSav ? `${pathSav} L ${width},${height} L 0,${height} Z` : '';
+
+  // Grid lines
+  const yAxisValues = [92, 95, 98, 100];
 
   return (
     <div className={styles.chartContainer}>
+      
       <div className={styles.header}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" style={{ filter: 'drop-shadow(0 2px 4px rgba(59,130,246,0.4))' }}>
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-        </svg>
-        <h3>Évolution du Score Global (6 derniers mois)</h3>
+        <div className={styles.titleArea}>
+          <span className={styles.subtitle}>PERFORMANCE</span>
+          <h3>Évolution du CQ</h3>
+        </div>
+        
+        <div className={styles.legendArea}>
+          <div className={styles.legendItem}>
+            <div className={`${styles.dot} ${styles.dotRed}`}></div> RACC
+          </div>
+          <div className={styles.legendItem}>
+            <div className={`${styles.dot} ${styles.dotGreen}`}></div> SAV
+          </div>
+          <select className={styles.timeSelect}>
+            <option>6 mois</option>
+            <option>1 an</option>
+          </select>
+        </div>
       </div>
       
-      <svg className={styles.svgChart} viewBox="0 -10 100 125" preserveAspectRatio="none">
+      <svg className={styles.svgChart} viewBox={`-30 -10 ${width + 40} ${height + 40}`} preserveAspectRatio="xMidYMid meet">
         <defs>
-          <linearGradient id="blueGradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#3b82f6" />
-            <stop offset="100%" stopColor="#eff6ff" stopOpacity="0" />
+          <linearGradient id="redGradient" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="greenGradient" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {/* Lignes de fond pointillées */}
-        {[0, 25, 50, 75, 100].map(line => (
-          <line key={line} x1="0" y1={line} x2="100" y2={line} className={styles.gridLine} />
-        ))}
-        
-        {/* Zone dégradée fluide */}
-        {areaPath && <path d={areaPath} className={styles.dataArea} />}
-        
-        {/* Ligne courbe principale */}
-        {smoothPath && <path d={smoothPath} className={styles.dataLine} />}
-        
-        {/* Points et Textes */}
-        {data.map((val, i) => {
-          const x = getX(i);
+        {/* Y-Axis Grid Lines & Labels */}
+        {yAxisValues.map(val => {
           const y = getY(val);
-          // Délai d'apparition des points proportionnel à leur position
-          const animDelay = `${0.8 + (i * 0.1)}s`; 
-
           return (
-            <g key={i}>
-              <circle cx={x} cy={y} className={styles.dataPoint} style={{ animationDelay: animDelay }} />
-              <text x={x} y="118" textAnchor="middle" className={styles.axisText}>{labels[i]}</text>
-              <text x={x} y={y - 8} textAnchor="middle" className={styles.valueText} style={{ animationDelay: animDelay }}>
-                {val > 0 ? `${val.toFixed(1)}%` : '-'}
-              </text>
+            <g key={`grid-${val}`}>
+              <line x1="0" y1={y} x2={width} y2={y} className={styles.gridLine} />
+              <text x="-25" y={y + 4} className={styles.axisTextY}>{val}%</text>
             </g>
           );
         })}
+        
+        {/* Fill Areas */}
+        {areaSav && <path d={areaSav} className={`${styles.dataArea} ${styles.areaGreen}`} />}
+        {areaRacc && <path d={areaRacc} className={`${styles.dataArea} ${styles.areaRed}`} />}
+        
+        {/* Main Curves */}
+        {pathSav && <path d={pathSav} className={`${styles.dataLine} ${styles.lineGreen}`} />}
+        {pathRacc && <path d={pathRacc} className={`${styles.dataLine} ${styles.lineRed}`} />}
+        
+        {/* Data Points - SAV */}
+        {dataSav.map((val, i) => (
+          <circle 
+            key={`sav-${i}`} 
+            cx={getX(i)} cy={getY(val)} 
+            className={`${styles.dataPoint} ${styles.pointGreen}`} 
+            style={{ animationDelay: `${1 + i * 0.1}s` }}
+          />
+        ))}
+
+        {/* Data Points - RACC */}
+        {dataRacc.map((val, i) => (
+          <circle 
+            key={`racc-${i}`} 
+            cx={getX(i)} cy={getY(val)} 
+            className={`${styles.dataPoint} ${styles.pointRed}`} 
+            style={{ animationDelay: `${1.2 + i * 0.1}s` }}
+          />
+        ))}
+
+        {/* X-Axis Labels */}
+        {labels.map((label, i) => (
+          <text key={`label-${i}`} x={getX(i)} y={height + 25} textAnchor="middle" className={styles.axisTextX}>
+            {label}
+          </text>
+        ))}
       </svg>
     </div>
   );
