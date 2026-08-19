@@ -1,13 +1,13 @@
 .cardWrapper { 
-  perspective: 1500px; 
   height: 100%;
   opacity: 0;
   animation: cardEntrance 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  will-change: transform, opacity;
 }
 
 .cardInner {
   position: relative;
-  background: rgba(255, 255, 255, 0.7); 
+  background: rgba(255, 255, 255, 0.75); 
   backdrop-filter: blur(25px);
   border: 1px solid rgba(255, 255, 255, 0.95);
   border-radius: 24px;
@@ -16,22 +16,23 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   transform-style: preserve-3d;
   will-change: transform;
-  overflow: hidden; /* Important for the glare */
+  overflow: hidden; 
+  transform: perspective(1200px) translate3d(0, 0, 0);
 }
 
-/* 🚀 L'EFFET GLARE (Lma3an dyal Zlaj) */
 .glare {
   position: absolute;
   inset: 0;
   background: radial-gradient(
-    circle 250px at var(--mouse-x, 0) var(--mouse-y, 0), 
-    rgba(255, 255, 255, 0.8), 
+    circle 300px at var(--mouse-x, 0) var(--mouse-y, 0), 
+    rgba(255, 255, 255, 0.9), 
     transparent 80%
   );
   opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none; /* Mouse ignores this layer */
+  transition: opacity 0.4s ease;
+  pointer-events: none; 
   z-index: 1;
+  will-change: opacity;
 }
 
 .cardInner:hover .glare {
@@ -39,7 +40,7 @@
 }
 
 .cardInner:hover {
-  box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 30px 60px -15px rgba(37, 99, 235, 0.2);
   border-color: rgba(255, 255, 255, 1);
   z-index: 10;
 }
@@ -47,6 +48,6 @@
 .content { position: relative; z-index: 2; height: 100%; }
 
 @keyframes cardEntrance { 
-  from { opacity: 0; transform: translateY(30px) scale(0.95); } 
-  to { opacity: 1; transform: translateY(0) scale(1); } 
+  from { opacity: 0; transform: translate3d(0, 30px, 0) scale(0.95); } 
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } 
 }

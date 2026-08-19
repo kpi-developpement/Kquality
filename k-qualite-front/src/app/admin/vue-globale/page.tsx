@@ -145,15 +145,22 @@ export default function VueGlobalePage() {
             </div>
 
             <div className={styles.controls}>
-              <select className={styles.select} value={month} onChange={e => setMonth(Number(e.target.value))}>
-                {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Mois {m}</option>)}
-              </select>
-              <select className={styles.select} value={year} onChange={e => setYear(Number(e.target.value))}>
-                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-              <select className={styles.select} value={selectedDept} onChange={e => setSelectedDept(e.target.value)}>
-                {departments.map(d => <option key={d} value={d}>{d === "GLOBAL" ? "Tous les Départements" : `DPT ${d}`}</option>)}
-              </select>
+              {/* 🚀 L'FIX DES DROPDOWNS: selectWrapper bach yt7kem f l'fleche SVG Custom */}
+              <div className={styles.selectWrapper}>
+                <select className={styles.select} value={month} onChange={e => setMonth(Number(e.target.value))}>
+                  {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Mois {m}</option>)}
+                </select>
+              </div>
+              <div className={styles.selectWrapper}>
+                <select className={styles.select} value={year} onChange={e => setYear(Number(e.target.value))}>
+                  {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              <div className={styles.selectWrapper}>
+                <select className={styles.select} value={selectedDept} onChange={e => setSelectedDept(e.target.value)}>
+                  {departments.map(d => <option key={d} value={d}>{d === "GLOBAL" ? "Tous les Départements" : `DPT ${d}`}</option>)}
+                </select>
+              </div>
             </div>
           </div>
         </header>
