@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getAdminUsers, getAdminPartenaires, createAdminUser, updateAdminUser, deleteAdminUser } from '@/services/apiService';
 import { UtilisateurDTO, PartenaireDTO } from '@/types/api';
 import styles from './Utilisateurs.module.css';
@@ -11,11 +11,16 @@ const AVAILABLE_PERMISSIONS = [
   "READ_CONTESTATIONS", "TRAITER_CONTESTATION"
 ];
 
+const ITEMS_PER_PAGE = 8; // 🚀 Nombre d'utilisateurs par page
+
 export default function UtilisateursPage() {
   const [users, setUsers] = useState<UtilisateurDTO[]>([]);
   const [partenaires, setPartenaires] = useState<PartenaireDTO[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<UtilisateurDTO>({
@@ -62,11 +67,11 @@ export default function UtilisateursPage() {
     try {
       if (editingId) {
         await updateAdminUser(editingId, formData);
-        alert("Utilisateur mis à jour !");
+        alert("Utilisateur mis à jour avec succès !");
       } else {
         if (!formData.motDePasse) return alert("Mot de passe obligatoire pour la création");
         await createAdminUser(formData);
-        alert("Utilisateur créé !");
+        alert("Utilisateur créé avec succès !");
       }
       setIsModalOpen(false);
       fetchData();
@@ -76,13 +81,20 @@ export default function UtilisateursPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) {
+    if (confirm("Action irréversible : Voulez-vous vraiment révoquer cet utilisateur ?")) {
       try {
         await deleteAdminUser(id);
         fetchData();
-      } catch (err) { alert("Erreur lors de la suppression"); }
+      } catch (err) { alert("Erreur lors de la révocation."); }
     }
   };
+
+  // 🚀 LOGIQUE PAGINATION
+  const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return users.slice(start, start + ITEMS_PER_PAGE);
+  }, [users, currentPage]);
 
   return (
     <div className={styles.pageWrapper}>
@@ -104,7 +116,7 @@ export default function UtilisateursPage() {
 
         <div className={styles.tableWrapper}>
           {loading ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des accès...</div>
+            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des accès en cours...</div>
           ) : (
             <table className={styles.table}>
               <thead>
@@ -118,8 +130,8 @@ export default function UtilisateursPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u, index) => (
-                  <tr key={u.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
+                {paginatedUsers.map((u, index) => (
+                  <tr key={`${u.id}-${currentPage}`} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
                     <td style={{ fontWeight: '900', color: '#0f172a' }}>{u.email}</td>
                     <td><span className={`${styles.roleBadge} ${styles['role' + u.role]}`}>{u.role.replace('_', ' ')}</span></td>
                     <td style={{ fontWeight: '700', color: '#475569' }}>{u.partenaireNom || 'Non Affilié (Interne)'}</td>
@@ -142,7 +154,7 @@ export default function UtilisateursPage() {
                     </td>
                   </tr>
                 ))}
-                {users.length === 0 && (
+                {paginatedUsers.length === 0 && (
                   <tr>
                     <td colSpan={6} style={{ textAlign: 'center', padding: '60px', color: '#94a3b8', fontStyle: 'italic', fontWeight: '800' }}>Aucun utilisateur configuré.</td>
                   </tr>
@@ -152,7 +164,52 @@ export default function UtilisateursPage() {
           )}
         </div>
 
-        {/* 🚀 MODAL SECURE GATEWAY */}
+        {/* 🚀 PAGINATION BAR LUXE */}
+        {!loading && totalPages > 1 && (
+          <div className={styles.paginationWrapper}>
+            <span className={styles.pageInfo}>
+              Affichage {((currentPage - 1) * ITEMS_PER_PAGE) + 1} à {Math.min(currentPage * ITEMS_PER_PAGE, users.length)} sur {users.length}
+            </span>
+            <div className={styles.pageControls}>
+              <button 
+                className={styles.pageBtn} 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                &lt;
+              </button>
+              
+              {Array.from({ length: totalPages }).map((_, i) => {
+                const page = i + 1;
+                if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                  return (
+                    <button 
+                      key={page}
+                      className={`${styles.pageBtn} ${currentPage === page ? styles.activePage : ''}`}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                if (page === currentPage - 2 || page === currentPage + 2) {
+                  return <span key={page} style={{ color: '#94a3b8', padding: '0 5px' }}>...</span>;
+                }
+                return null;
+              })}
+
+              <button 
+                className={styles.pageBtn} 
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                &gt;
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL SECURE GATEWAY */}
         {isModalOpen && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
