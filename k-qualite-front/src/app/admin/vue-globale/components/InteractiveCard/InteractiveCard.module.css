@@ -7,20 +7,50 @@
 
 .cardInner {
   position: relative;
-  background: rgba(255, 255, 255, 0.65); 
-  backdrop-filter: blur(30px);
-  /* 🚀 Border w Inner Box Shadow dyal Apple Premium */
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.75); 
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
   border-radius: 24px;
   padding: 30px;
   height: 100%;
-  box-shadow: 
-    inset 0 0 20px rgba(255, 255, 255, 0.6), 
-    0 4px 20px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   transform-style: preserve-3d;
   will-change: transform;
   overflow: hidden; 
   transform: perspective(1200px) translate3d(0, 0, 0);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* 🚀 DESIGN X300: L'CADER (BORDER) ANIMÉ F L'HOVER */
+.cardInner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 2.5px; /* L'ghold dyal l'cader */
+  /* Gradient li kaydor */
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #0ea5e9, #3b82f6);
+  background-size: 300% 100%;
+  /* Mask bach nkhwiw l'west w nkhliw gher l'cader */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: borderSpin 3s linear infinite;
+  pointer-events: none;
+  z-index: 10;
+  will-change: opacity, background-position;
+}
+
+.cardInner:hover::before {
+  opacity: 1; /* Kan-biyenou l'cader f l'hover */
+}
+
+.cardInner:hover {
+  border-color: transparent; /* Kan-khebiw l'cader l9dim */
+  box-shadow: 0 30px 60px -15px rgba(59, 130, 246, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.8);
+  z-index: 10;
 }
 
 .glare {
@@ -28,7 +58,7 @@
   inset: 0;
   background: radial-gradient(
     circle 300px at var(--mouse-x, 0) var(--mouse-y, 0), 
-    rgba(255, 255, 255, 0.95), 
+    rgba(255, 255, 255, 0.9), 
     transparent 80%
   );
   opacity: 0;
@@ -38,14 +68,8 @@
   will-change: opacity;
 }
 
-.cardInner:hover .glare { opacity: 1; }
-
-.cardInner:hover {
-  box-shadow: 
-    inset 0 0 30px rgba(255, 255, 255, 0.8), 
-    0 30px 60px -15px rgba(37, 99, 235, 0.15);
-  border-color: rgba(255, 255, 255, 1);
-  z-index: 10;
+.cardInner:hover .glare {
+  opacity: 1;
 }
 
 .content { position: relative; z-index: 2; height: 100%; }
@@ -53,4 +77,9 @@
 @keyframes cardEntrance { 
   from { opacity: 0; transform: translate3d(0, 30px, 0) scale(0.95); } 
   to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } 
+}
+
+@keyframes borderSpin {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }

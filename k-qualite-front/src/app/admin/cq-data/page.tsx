@@ -3,16 +3,15 @@
 import { useEffect, useState } from 'react';
 import { getAdminCqData, getActivePartenairesForCq } from '@/services/apiService';
 import { CqDataDTO, PartenaireDTO } from '@/types/api';
-import CustomSelect from '../vue-globale/components/CustomSelect/CustomSelect'; // 🚀 Utilisation du composant Luxe
-import InteractiveCard from '../vue-globale/components/InteractiveCard/InteractiveCard'; // 🚀 Utilisation du 3D wrapper
+import CustomSelect from '../vue-globale/components/CustomSelect/CustomSelect'; 
+import InteractiveCard from '../vue-globale/components/InteractiveCard/InteractiveCard'; 
 import styles from './AdminCqData.module.css';
 
-// 🚀 Configuration Premium dyal les Tabs m3a Icons w Colors
 const TABS_CONFIG = [
-  { id: "Audits tech", title: "Audits Tech", color: "#3b82f6", bg: "#eff6ff", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg> },
-  { id: "Check-voisinage", title: "Voisinage", color: "#f59e0b", bg: "#fffbeb", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> },
-  { id: "Expertises SAV", title: "Expertises SAV", color: "#8b5cf6", bg: "#f5f3ff", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg> },
-  { id: "Taux de coupures", title: "Coupures", color: "#10b981", bg: "#ecfdf5", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> }
+  { id: "Audits tech", title: "Audits Tech", color: "#3b82f6", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg> },
+  { id: "Check-voisinage", title: "Voisinage", color: "#f59e0b", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> },
+  { id: "Expertises SAV", title: "Expertises SAV", color: "#8b5cf6", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg> },
+  { id: "Taux de coupures", title: "Coupures", color: "#10b981", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> }
 ];
 
 export default function AdminCqDataPage() {
@@ -67,7 +66,6 @@ export default function AdminCqDataPage() {
 
   const totalGlobal = calculateTotal();
 
-  // Mapping options pour les CustomSelects
   const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
   const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
   const partenaireOptions = [
@@ -89,6 +87,7 @@ export default function AdminCqDataPage() {
           </div>
         </header>
 
+        {/* 🚀 L'FIX Z-INDEX HNA: L'filtersWrapper rah z-index: 1000 f CSS */}
         <div className={styles.filtersWrapper}>
           <div className={styles.filterGroup}>
             <label>Période Cible</label>
@@ -105,8 +104,8 @@ export default function AdminCqDataPage() {
         </div>
 
         <div className={styles.dashboardGrid}>
-          {/* 🚀 CARTE ESTIMATION 3D LUXE */}
           <div>
+            {/* 🚀 L'CARTE F L'HOVER GHA YTBEDEL L'CADER DYALHA (ANIMATED BORDER) */}
             <InteractiveCard delayIndex={1}>
               <div className={styles.estimationContent}>
                 <div className={styles.estHeader}>
@@ -133,7 +132,7 @@ export default function AdminCqDataPage() {
                             style={{ 
                               width: `${percentage}%`, 
                               backgroundColor: tab.color,
-                              boxShadow: `0 0 10px ${tab.color}80` 
+                              boxShadow: `0 0 12px ${tab.color}90` 
                             }}
                           ></div>
                         </div>
@@ -161,14 +160,13 @@ export default function AdminCqDataPage() {
               </button>
             </div>
 
-            {/* 🚀 TABS PREMIUM */}
             <div className={styles.tabs}>
               {TABS_CONFIG.map(tab => (
                 <button 
                   key={tab.id} 
                   className={`${styles.tabBtn} ${activeTab === tab.id ? styles.active : ''}`} 
                   onClick={() => setActiveTab(tab.id)}
-                  style={activeTab === tab.id ? { color: tab.color, border: `1px solid ${tab.color}` } : {}}
+                  style={activeTab === tab.id ? { border: `2px solid ${tab.color}`, color: tab.color } : {}}
                 >
                   <span style={{ width: '18px', height: '18px', display: 'flex' }}>{tab.icon}</span>
                   {tab.title}
@@ -196,7 +194,7 @@ export default function AdminCqDataPage() {
                       return (
                         <tr key={row.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
                           <td className={styles.partenaireName}>
-                            <span style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#3b82f6', display:'inline-block' }}></span>
+                            <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#3b82f6', display:'inline-block', boxShadow: '0 0 8px rgba(59,130,246,0.5)' }}></span>
                             {row.partenaireNom}
                           </td>
                           {activeTab === "Audits tech" && <><td style={{fontWeight:'900', color:'#334155'}}>{row.reference}</td><td>DPT {row.departement}</td><td><span className={styles.badgeSst}>{montantToDisplay || 0} €</span></td><td><span className={styles.kynBadge}>{row.kyn}</span></td></>}
