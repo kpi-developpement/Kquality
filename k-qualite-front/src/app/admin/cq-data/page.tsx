@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getAdminCqData, getActivePartenairesForCq } from '@/services/apiService';
 import { CqDataDTO, PartenaireDTO } from '@/types/api';
 import CustomSelect from '../vue-globale/components/CustomSelect/CustomSelect'; 
@@ -14,6 +14,8 @@ const TABS_CONFIG = [
   { id: "Taux de coupures", title: "Coupures", color: "#10b981", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> }
 ];
 
+const ITEMS_PER_PAGE = 8; // 🚀 Nombre d'éléments par page
+
 export default function AdminCqDataPage() {
   const [activeTab, setActiveTab] = useState(TABS_CONFIG[0].id);
   const [data, setData] = useState<CqDataDTO[]>([]);
@@ -26,6 +28,14 @@ export default function AdminCqDataPage() {
   
   const [visionMode, setVisionMode] = useState<'ADMIN' | 'PARTENAIRE'>('ADMIN');
   const [loading, setLoading] = useState(false);
+
+  // 🚀 STATE PAGINATION
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset pagination quand on change les filtres
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, month, year, selectedPartenaire, visionMode]);
 
   useEffect(() => {
     getActivePartenairesForCq(month, year)
@@ -55,16 +65,20 @@ export default function AdminCqDataPage() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [activeTab, month, year, selectedPartenaire]);
+  useEffect(() => { fetchData(); }, [activeTab, month, year, selectedPartenaire]);
 
   const calculateTotal = (sheetName?: string) => {
     const targetData = sheetName ? allData.filter(d => d.typeFeuille === sheetName) : allData;
     return targetData.reduce((sum, row) => sum + (visionMode === 'ADMIN' ? (row.montant || 0) : (row.mtSst || 0)), 0);
   };
-
   const totalGlobal = calculateTotal();
+
+  // 🚀 LOGIQUE PAGINATION
+  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return data.slice(start, start + ITEMS_PER_PAGE);
+  }, [data, currentPage]);
 
   const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
   const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
@@ -104,9 +118,7 @@ export default function AdminCqDataPage() {
 
         <div className={styles.dashboardGrid}>
           <div>
-            {/* 🚀 L'CARTE F L'HOVER GHA YTBEDEL L'CADER DYALHA (ANIMATED BORDER) */}
             <InteractiveCard delayIndex={1}>
-              {/* 🚀 IMPACT VAULT - CONCEPT X300 */}
               <div className={styles.impactVault}>
                 <div className={styles.vaultHeader}>
                   <h3 className={styles.vaultTitle}>Impact Financier</h3>
@@ -136,11 +148,7 @@ export default function AdminCqDataPage() {
                         <div className={styles.energyTrack}>
                           <div 
                             className={styles.energyFill} 
-                            style={{ 
-                              width: `${percentage}%`, 
-                              backgroundColor: tab.color,
-                              boxShadow: `0 0 15px ${tab.color}90` 
-                            }}
+                            style={{ width: `${percentage}%`, backgroundColor: tab.color, boxShadow: `0 0 15px ${tab.color}90` }}
                           >
                             <div className={styles.energySpark} style={{ color: tab.color }}></div>
                           </div>
@@ -154,6 +162,7 @@ export default function AdminCqDataPage() {
           </div>
 
           <div>
+            {/* 🚀 UPGRADED VISION BUTTONS */}
             <div className={styles.visionToggle}>
               <button 
                 className={`${styles.visionBtn} ${visionMode === 'ADMIN' ? styles.active : ''}`}
@@ -169,6 +178,7 @@ export default function AdminCqDataPage() {
               </button>
             </div>
 
+            {/* 🚀 UPGRADED TABS */}
             <div className={styles.tabs}>
               {TABS_CONFIG.map(tab => (
                 <button 
@@ -183,6 +193,7 @@ export default function AdminCqDataPage() {
               ))}
             </div>
 
+            {/* 🚀 TABLE M3A PAGINATION */}
             <div className={styles.tableWrapper}>
               {loading ? (
                 <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Récupération des anomalies...</div>
@@ -198,10 +209,10 @@ export default function AdminCqDataPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.map((row, index) => {
+                    {paginatedData.map((row, index) => {
                       const montantToDisplay = visionMode === 'ADMIN' ? row.montant : row.mtSst;
                       return (
-                        <tr key={row.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05 + 0.8}s` }}>
+                        <tr key={`${row.id}-${currentPage}`} className={styles.tableRow} style={{ animationDelay: `${index * 0.04}s` }}>
                           <td className={styles.partenaireName}>
                             <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#3b82f6', display:'inline-block', boxShadow: '0 0 8px rgba(59,130,246,0.5)' }}></span>
                             {row.partenaireNom}
@@ -213,7 +224,7 @@ export default function AdminCqDataPage() {
                         </tr>
                       );
                     })}
-                    {data.length === 0 && (
+                    {paginatedData.length === 0 && (
                       <tr>
                         <td colSpan={6} className={styles.empty}>Aucune anomalie trouvée dans cette catégorie.</td>
                       </tr>
@@ -222,6 +233,53 @@ export default function AdminCqDataPage() {
                 </table>
               )}
             </div>
+
+            {/* 🚀 PAGINATION BAR LUXE */}
+            {!loading && totalPages > 1 && (
+              <div className={styles.paginationWrapper}>
+                <span className={styles.pageInfo}>
+                  Affichage {((currentPage - 1) * ITEMS_PER_PAGE) + 1} à {Math.min(currentPage * ITEMS_PER_PAGE, data.length)} sur {data.length}
+                </span>
+                <div className={styles.pageControls}>
+                  <button 
+                    className={styles.pageBtn} 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => prev - 1)}
+                  >
+                    &lt;
+                  </button>
+                  
+                  {Array.from({ length: totalPages }).map((_, i) => {
+                    const page = i + 1;
+                    // Logique pour n'afficher que quelques boutons si on a trop de pages
+                    if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                      return (
+                        <button 
+                          key={page}
+                          className={`${styles.pageBtn} ${currentPage === page ? styles.activePage : ''}`}
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </button>
+                      );
+                    }
+                    if (page === currentPage - 2 || page === currentPage + 2) {
+                      return <span key={page} style={{ color: '#94a3b8', padding: '0 5px' }}>...</span>;
+                    }
+                    return null;
+                  })}
+
+                  <button 
+                    className={styles.pageBtn} 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                  >
+                    &gt;
+                  </button>
+                </div>
+              </div>
+            )}
+            
           </div>
         </div>
       </div>
