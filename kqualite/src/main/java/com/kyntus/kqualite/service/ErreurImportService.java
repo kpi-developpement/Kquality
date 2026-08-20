@@ -56,13 +56,16 @@ public class ErreurImportService {
 
             Map<String, Integer> headerMap = new HashMap<>();
             for (Cell cell : headerRow) {
-                headerMap.put(getCellValue(cell).trim(), cell.getColumnIndex());
+                headerMap.put(getCellValue(cell).trim().toLowerCase(), cell.getColumnIndex());
             }
 
             Integer colRdv = findColumnIndex(headerMap, "idrdv", "dossier", "rdv");
-            // 🛡️ L'FIX HWA HNA: Zedt prv_tcnw_id_tech
             Integer colKyn = findColumnIndex(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
-            Integer colCat = findColumnIndex(headerMap, "categorie", "souscategorie", "regle");
+
+            // 🛡️ L'FIX HWA HNA: Séparation bin Categorie w Sous Categorie
+            Integer colCat = findColumnIndexExact(headerMap, "categorie");
+            Integer colSousCat = findColumnIndex(headerMap, "sous categorie", "souscategorie", "regle", "description");
+
             Integer colImpact = findColumnIndex(headerMap, "impact", "montant");
 
             if (colRdv == null || colKyn == null) {
@@ -77,7 +80,8 @@ public class ErreurImportService {
                 try {
                     String rdv = getCellValue(row.getCell(colRdv));
                     String kyn = getCellValue(row.getCell(colKyn));
-                    String categorie = colCat != null ? getCellValue(row.getCell(colCat)) : "Erreur Qualité";
+                    String categorie = colCat != null ? getCellValue(row.getCell(colCat)) : "Non Catégorisée";
+                    String sousCategorie = colSousCat != null ? getCellValue(row.getCell(colSousCat)) : "Erreur Qualité";
                     String impactStr = colImpact != null ? getCellValue(row.getCell(colImpact)) : "0";
 
                     if (rdv.isEmpty() || kyn.isEmpty()) {
@@ -87,8 +91,8 @@ public class ErreurImportService {
                     impactStr = impactStr.replaceAll("[^\\d.,-]", "").replace(",", ".");
                     double impact = impactStr.isEmpty() ? 0.0 : Double.parseDouble(impactStr);
 
-                    boolean isProcessed = processRow(rdv, kyn, categorie, impact);
-                    if (isProcessed) success++; else rejected++;
+                    processRow(rdv, kyn, categorie, sousCategorie, impact);
+                    success++;
                 } catch (Exception e) {
                     log.error("Erreur ligne {} : {}", total, e.getMessage());
                     rejected++;
@@ -118,13 +122,16 @@ public class ErreurImportService {
             Map<String, Integer> headerMap = parser.getHeaderMap();
 
             String colRdv = findColumnName(headerMap, "idrdv", "dossier", "rdv");
-            // 🛡️ L'FIX HWA HNA: Zedt prv_tcnw_id_tech
             String colKyn = findColumnName(headerMap, "kyn", "idtecnow", "tech", "matricule", "prv_tcnw_id_tech");
-            String colCat = findColumnName(headerMap, "categorie", "souscategorie", "regle");
+
+            // 🛡️ L'FIX HWA HNA
+            String colCat = findColumnNameExact(headerMap, "categorie");
+            String colSousCat = findColumnName(headerMap, "sous categorie", "souscategorie", "regle", "description");
+
             String colImpact = findColumnName(headerMap, "impact", "montant");
 
             if (colRdv == null || colKyn == null) {
-                throw new RuntimeException("Colonnes obligatoires introuvables (ID RDV ou KYN). Délimiteur détecté: '" + delimiter + "'");
+                throw new RuntimeException("Colonnes obligatoires introuvables (ID RDV ou KYN).");
             }
 
             for (CSVRecord record : parser) {
@@ -132,7 +139,8 @@ public class ErreurImportService {
                 try {
                     String rdv = record.get(colRdv);
                     String kyn = record.get(colKyn);
-                    String categorie = colCat != null && record.isMapped(colCat) ? record.get(colCat) : "Erreur Qualité";
+                    String categorie = colCat != null && record.isMapped(colCat) ? record.get(colCat) : "Non Catégorisée";
+                    String sousCategorie = colSousCat != null && record.isMapped(colSousCat) ? record.get(colSousCat) : "Erreur Qualité";
                     String impactStr = colImpact != null && record.isMapped(colImpact) ? record.get(colImpact) : "0";
 
                     if (rdv == null || rdv.trim().isEmpty() || kyn == null || kyn.trim().isEmpty()) {
@@ -142,8 +150,8 @@ public class ErreurImportService {
                     impactStr = impactStr.replaceAll("[^\\d.,-]", "").replace(",", ".");
                     double impact = impactStr.isEmpty() ? 0.0 : Double.parseDouble(impactStr);
 
-                    boolean isProcessed = processRow(rdv.trim(), kyn.trim(), categorie.trim(), impact);
-                    if (isProcessed) success++; else rejected++;
+                    processRow(rdv.trim(), kyn.trim(), categorie.trim(), sousCategorie.trim(), impact);
+                    success++;
                 } catch (Exception e) {
                     log.error("Erreur ligne {} : {}", total, e.getMessage());
                     rejected++;
@@ -153,22 +161,17 @@ public class ErreurImportService {
         return ImportSummaryDTO.builder().totalLignes(total).lignesInserees(success).lignesRejetees(rejected).message("Importation CSV terminée avec succès.").build();
     }
 
-    private boolean processRow(String rdv, String rawKyn, String categorie, double impact) {
+    private void processRow(String rdv, String rawKyn, String categorie, String sousCategorie, double impact) {
         String kyn = rawKyn.trim().toUpperCase();
         if (kyn.endsWith(".0")) kyn = kyn.substring(0, kyn.length() - 2);
         if (!kyn.startsWith("KYN")) kyn = "KYN" + kyn;
 
         Optional<Technicien> techOpt = technicienRepository.findByMatricule(kyn);
+        if (techOpt.isEmpty()) techOpt = technicienRepository.findByMatricule(rawKyn.trim());
 
         if (techOpt.isEmpty()) {
-            techOpt = technicienRepository.findByMatricule(rawKyn.trim());
+            throw new RuntimeException("Technicien KYN " + kyn + " introuvable dans la base de données.");
         }
-
-        if (techOpt.isEmpty()) {
-            log.warn("Technicien KYN [{}] introuvable dans la base de données.", kyn);
-            return false;
-        }
-
         Technicien technicien = techOpt.get();
 
         Dossier dossier = dossierRepository.findByReferenceID(rdv)
@@ -178,10 +181,12 @@ public class ErreurImportService {
                         .technicien(technicien)
                         .build()));
 
-        RegleQualite regle = regleQualiteRepository.findByCodeRegle(categorie)
+        // 🛡️ L'FIX HWA HNA: Sauvegarde dyal Categorie w Sous Categorie
+        RegleQualite regle = regleQualiteRepository.findByCodeRegle(sousCategorie)
                 .orElseGet(() -> regleQualiteRepository.save(RegleQualite.builder()
-                        .codeRegle(categorie)
-                        .description(categorie)
+                        .codeRegle(sousCategorie)
+                        .description(sousCategorie)
+                        .categorie(categorie)
                         .penaliteUnitaire(impact)
                         .build()));
 
@@ -195,7 +200,6 @@ public class ErreurImportService {
                 .build();
 
         erreurRepository.save(erreur);
-        return true;
     }
 
     private String getCellValue(Cell cell) {
@@ -210,10 +214,17 @@ public class ErreurImportService {
 
     private String findColumnName(Map<String, Integer> headers, String... keywords) {
         if (headers == null) return null;
-        for (String header : headers.keySet()) {
-            String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
-            for (String kw : keywords) {
-                String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
+        for (String kw : keywords) {
+            String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
+            for (String header : headers.keySet()) {
+                String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
+                if (clean.equals(cleanKw)) return header;
+            }
+        }
+        for (String kw : keywords) {
+            String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
+            for (String header : headers.keySet()) {
+                String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
                 if (clean.contains(cleanKw)) return header;
             }
         }
@@ -222,6 +233,24 @@ public class ErreurImportService {
 
     private Integer findColumnIndex(Map<String, Integer> headers, String... keywords) {
         String colName = findColumnName(headers, keywords);
+        return colName != null ? headers.get(colName) : null;
+    }
+
+    // 🛡️ JDID: Fonction bach n-jbdou Categorie b Match Exact (bach mat-tkhletch m3a Sous Categorie)
+    private String findColumnNameExact(Map<String, Integer> headers, String... keywords) {
+        if (headers == null) return null;
+        for (String kw : keywords) {
+            String cleanKw = kw.toLowerCase().replaceAll("[^a-z0-9]", "");
+            for (String header : headers.keySet()) {
+                String clean = header.toLowerCase().replaceAll("[^a-z0-9]", "");
+                if (clean.equals(cleanKw)) return header;
+            }
+        }
+        return null;
+    }
+
+    private Integer findColumnIndexExact(Map<String, Integer> headers, String... keywords) {
+        String colName = findColumnNameExact(headers, keywords);
         return colName != null ? headers.get(colName) : null;
     }
 }

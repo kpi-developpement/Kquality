@@ -20,7 +20,11 @@ public class RegleQualite {
     private String codeRegle;
 
     @Column(nullable = false)
-    private String description;
+    private String description; // Hadi hya Sous Catégorie
+
+    // 🛡️ L'FIX HWA HNA: Zedt Categorie
+    @Column(name = "categorie")
+    private String categorie;
 
     @Column(name = "penalite_unitaire", nullable = false)
     private Double penaliteUnitaire;

@@ -16,6 +16,7 @@ export interface DashboardPartenaireDTO {
   statutPenalites: string;
 }
 
+// ... (Khlli dakchi l9dim) ...
 export interface ErreurResponseDTO {
   id: number;
   dateDetection: string;
@@ -29,9 +30,11 @@ export interface ErreurResponseDTO {
   technicienMatricule: string;
   regleCode: string;
   regleDescription: string;
+  categorie?: string; // 🛡️ L'FIX HWA HNA
   aContestation: boolean;
   partenaireNom?: string;
 }
+// ...
 
 export interface ContestationResponseDTO {
   id: number;

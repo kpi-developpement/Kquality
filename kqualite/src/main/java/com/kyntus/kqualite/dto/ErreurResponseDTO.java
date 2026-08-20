@@ -25,9 +25,8 @@ public class ErreurResponseDTO {
     private String technicienNomComplet;
     private String technicienMatricule;
     private String regleCode;
-    private String regleDescription;
+    private String regleDescription; // Sous Categorie
+    private String categorie; // 🛡️ JDID
     private Boolean aContestation;
-
-    // 🛡️ L'FIX HWA HNA: Zedt smyt l'partenaire l'Admin
     private String partenaireNom;
 }

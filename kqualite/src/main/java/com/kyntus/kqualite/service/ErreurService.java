@@ -23,7 +23,6 @@ public class ErreurService {
                 .collect(Collectors.toList());
     }
 
-    // 🛡️ L'FIX HWA HNA: Fonction jdida l'Admin bach y-jbed kolchi wla y-filtri
     @Transactional(readOnly = true)
     public List<ErreurResponseDTO> getAllErreursAdmin(Long partenaireId) {
         List<Erreur> erreurs;
@@ -51,8 +50,9 @@ public class ErreurService {
                 .technicienMatricule(erreur.getDossier().getTechnicien().getMatricule())
                 .regleCode(erreur.getRegleQualite().getCodeRegle())
                 .regleDescription(erreur.getRegleQualite().getDescription())
+                .categorie(erreur.getRegleQualite().getCategorie()) // 🛡️ JDID
                 .aContestation(erreur.getContestation() != null)
-                .partenaireNom(erreur.getDossier().getTechnicien().getPartenaire().getNomEntreprise()) // 🛡️ JDID
+                .partenaireNom(erreur.getDossier().getTechnicien().getPartenaire().getNomEntreprise())
                 .build();
     }
 }
