@@ -3,9 +3,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import { getAdminCqPartenaire, getAdminPartenaires } from '@/services/apiService';
 import { CqPartenaireKpiDTO, PartenaireDTO } from '@/types/api';
-import CustomSelect from '../vue-globale/components/CustomSelect/CustomSelect'; 
-import InteractiveCard from '../vue-globale/components/InteractiveCard/InteractiveCard'; 
-import styles from './AdminCqPartenaire.module.css'; // 🚀 L'CSS JDID KHASS B CQ PARTENAIRE
+
+// 🚀 L'FIX HWA HNA: Chemin relatif m9ad l'dossier admin
+import CustomSelect from '../admin/vue-globale/components/CustomSelect/CustomSelect'; 
+import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; 
+import styles from './AdminCqPartenaire.module.css';
 
 const ITEMS_PER_PAGE = 8; // 🚀 Pagination
 
@@ -37,7 +39,7 @@ export default function AdminCqPartenairePage() {
       .finally(() => setLoading(false));
   }, [month, year, selectedPartenaire]);
 
-  // 🛡️ Agrégation Globale & Enrichissement TAUX_PLAINTE[cite: 7]
+  // 🛡️ Agrégation Globale & Enrichissement TAUX_PLAINTE
   let displayData = data;
   
   if (selectedPartenaire === "ALL" && data.length > 0) {
@@ -178,7 +180,7 @@ export default function AdminCqPartenairePage() {
                     <td style={{ fontWeight: '800', color: '#64748b' }}>{row.zone === 'GLOBAL' ? 'National (Global)' : `ZONE ${row.zone}`}</td>
                     <td style={{ fontWeight: '900', fontSize: '15px' }}>{row.num.toLocaleString('fr-FR')}</td>
                     
-                    {/* 🛡️ L'FIX HWA HNA: Affichage dyal l'9fel ila kan Fichier 2 mazal mat-injecta[cite: 7] */}
+                    {/* 🛡️ L'FIX HWA HNA: Affichage dyal l'9fel ila kan Fichier 2 mazal mat-injecta */}
                     <td>
                       {row.isLocked 
                         ? <span title="Nécessite l'import du Fichier 2 (PLP...)" style={{ filter: 'grayscale(1)', opacity: 0.6 }}>🔒 Bloqué</span> 
