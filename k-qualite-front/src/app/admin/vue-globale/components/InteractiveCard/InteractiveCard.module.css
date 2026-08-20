@@ -1,7 +1,7 @@
 .cardWrapper { 
   height: 100%;
   opacity: 0;
-  animation: cardEntrance 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: cardEntrance 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   will-change: transform, opacity;
 }
 
@@ -17,39 +17,33 @@
   transform-style: preserve-3d;
   will-change: transform;
   overflow: hidden; 
-  transform: perspective(1200px) translate3d(0, 0, 0);
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  /* Fallback initial */
+  transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1);
 }
 
-/* 🚀 DESIGN X300: L'CADER (BORDER) ANIMÉ F L'HOVER */
+/* 🚀 L'CADER ANIMÉ F L'HOVER */
 .cardInner::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: 24px;
-  padding: 2.5px; /* L'ghold dyal l'cader */
-  /* Gradient li kaydor */
+  padding: 3px; 
   background: linear-gradient(90deg, #3b82f6, #8b5cf6, #0ea5e9, #3b82f6);
   background-size: 300% 100%;
-  /* Mask bach nkhwiw l'west w nkhliw gher l'cader */
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
   animation: borderSpin 3s linear infinite;
-  pointer-events: none;
+  pointer-events: none; /* L'FIX: Bach may-blockich l'hover */
   z-index: 10;
-  will-change: opacity, background-position;
 }
 
-.cardInner:hover::before {
-  opacity: 1; /* Kan-biyenou l'cader f l'hover */
-}
-
+.cardInner:hover::before { opacity: 1; }
 .cardInner:hover {
-  border-color: transparent; /* Kan-khebiw l'cader l9dim */
-  box-shadow: 0 30px 60px -15px rgba(59, 130, 246, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.8);
+  border-color: transparent; 
+  box-shadow: 0 30px 50px -10px rgba(59, 130, 246, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.8);
   z-index: 10;
 }
 
@@ -57,22 +51,20 @@
   position: absolute;
   inset: 0;
   background: radial-gradient(
-    circle 300px at var(--mouse-x, 0) var(--mouse-y, 0), 
-    rgba(255, 255, 255, 0.9), 
+    circle 250px at var(--mouse-x, 0) var(--mouse-y, 0), 
+    rgba(255, 255, 255, 0.95), 
     transparent 80%
   );
   opacity: 0;
   transition: opacity 0.4s ease;
-  pointer-events: none; 
+  pointer-events: none; /* L'FIX: Bach may-blockich l'hover */
   z-index: 1;
-  will-change: opacity;
 }
 
-.cardInner:hover .glare {
-  opacity: 1;
-}
+.cardInner:hover .glare { opacity: 1; }
 
-.content { position: relative; z-index: 2; height: 100%; }
+.content { position: relative; z-index: 2; height: 100%; pointer-events: none; }
+.content * { pointer-events: auto; } /* N-rdou l'clique l'chwiyya li ldakhl */
 
 @keyframes cardEntrance { 
   from { opacity: 0; transform: translate3d(0, 30px, 0) scale(0.95); } 

@@ -87,7 +87,6 @@ export default function AdminCqDataPage() {
           </div>
         </header>
 
-        {/* 🚀 L'FIX Z-INDEX HNA: L'filtersWrapper rah z-index: 1000 f CSS */}
         <div className={styles.filtersWrapper}>
           <div className={styles.filterGroup}>
             <label>Période Cible</label>
@@ -192,7 +191,7 @@ export default function AdminCqDataPage() {
                     {data.map((row, index) => {
                       const montantToDisplay = visionMode === 'ADMIN' ? row.montant : row.mtSst;
                       return (
-                        <tr key={row.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
+                        <tr key={row.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05 + 0.8}s` }}>
                           <td className={styles.partenaireName}>
                             <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#3b82f6', display:'inline-block', boxShadow: '0 0 8px rgba(59,130,246,0.5)' }}></span>
                             {row.partenaireNom}
