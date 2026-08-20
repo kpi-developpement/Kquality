@@ -40,7 +40,7 @@ export default function UtilisateursPage() {
   const openModal = (user?: UtilisateurDTO) => {
     if (user) {
       setEditingId(user.id!);
-      setFormData({ ...user, motDePasse: '' }); // Password khawi f l'edit
+      setFormData({ ...user, motDePasse: '' });
     } else {
       setEditingId(null);
       setFormData({ email: '', motDePasse: '', role: 'AGENT_KYNTUS', actif: true, partenaireId: null, permissions: [] });
@@ -84,109 +84,142 @@ export default function UtilisateursPage() {
     }
   };
 
-  if (loading) return <div className={styles.container}>Chargement...</div>;
-
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <div>
-          <div className={styles.adminBadge}>IAM - SÉCURITÉ</div>
-          <h1>Gestion des Utilisateurs & Accès</h1>
-          <p>Créez des profils et assignez des rôles et permissions dynamiques.</p>
+    <div className={styles.pageWrapper}>
+      <div className={styles.bgBlob1}></div>
+      <div className={styles.bgBlob2}></div>
+
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <div>
+            <div className={styles.adminBadge}>IAM - SÉCURITÉ</div>
+            <h1>Contrôle des Accès</h1>
+            <p>Créez des profils et assignez des rôles et permissions dynamiques.</p>
+          </div>
+          <button className={styles.btnAdd} onClick={() => openModal()}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Nouvel Utilisateur
+          </button>
+        </header>
+
+        <div className={styles.tableWrapper}>
+          {loading ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des accès...</div>
+          ) : (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Email / Identifiant</th>
+                  <th>Rôle Système</th>
+                  <th>Affiliation Partenaire</th>
+                  <th>Statut</th>
+                  <th>Permissions Habilitées</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u, index) => (
+                  <tr key={u.id} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
+                    <td style={{ fontWeight: '900', color: '#0f172a' }}>{u.email}</td>
+                    <td><span className={`${styles.roleBadge} ${styles['role' + u.role]}`}>{u.role.replace('_', ' ')}</span></td>
+                    <td style={{ fontWeight: '700', color: '#475569' }}>{u.partenaireNom || 'Non Affilié (Interne)'}</td>
+                    <td>
+                      {u.actif 
+                        ? <span style={{color:'#10b981', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '5px'}}><span style={{width:'8px',height:'8px',background:'#10b981',borderRadius:'50%',boxShadow:'0 0 8px #10b981'}}></span> Actif</span> 
+                        : <span style={{color:'#ef4444', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '5px'}}><span style={{width:'8px',height:'8px',background:'#ef4444',borderRadius:'50%'}}></span> Désactivé</span>
+                      }
+                    </td>
+                    <td style={{ maxWidth: '350px' }}>
+                      <div className={styles.permissionsContainer}>
+                        {u.permissions.map(p => <span key={p} className={styles.permBadge}>{p.replace('_', ' ')}</span>)}
+                      </div>
+                    </td>
+                    <td>
+                      <div className={styles.actionsBox}>
+                        <button className={styles.btnEdit} onClick={() => openModal(u)}>Éditer</button>
+                        <button className={styles.btnDelete} onClick={() => handleDelete(u.id!)}>Révocation</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {users.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '60px', color: '#94a3b8', fontStyle: 'italic', fontWeight: '800' }}>Aucun utilisateur configuré.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
-        <button className={styles.btnAdd} onClick={() => openModal()}>+ Nouvel Utilisateur</button>
-      </header>
 
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Email</th><th>Rôle</th><th>Partenaire</th><th>Statut</th><th>Permissions</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id}>
-                <td style={{ fontWeight: 'bold' }}>{u.email}</td>
-                <td><span className={`${styles.roleBadge} ${styles['role' + u.role]}`}>{u.role}</span></td>
-                <td>{u.partenaireNom || '-'}</td>
-                <td>{u.actif ? <span style={{color:'green'}}>Actif</span> : <span style={{color:'red'}}>Inactif</span>}</td>
-                <td style={{ maxWidth: '300px' }}>
-                  {u.permissions.map(p => <span key={p} className={styles.permBadge}>{p}</span>)}
-                </td>
-                <td>
-                  <button className={styles.btnEdit} onClick={() => openModal(u)}>Éditer</button>
-                  <button className={styles.btnDelete} onClick={() => handleDelete(u.id!)}>Supprimer</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {isModalOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h2>{editingId ? "Modifier l'utilisateur" : "Créer un utilisateur"}</h2>
-            <form onSubmit={handleSubmit}>
-              <div className={styles.formGroup}>
-                <label>Email</label>
-                <input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+        {/* 🚀 MODAL SECURE GATEWAY */}
+        {isModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <div className={styles.modalHeader}>
+                <h2>{editingId ? "Modification des Accès" : "Provisionnement d'Accès"}</h2>
               </div>
-              
-              <div className={styles.formGroup}>
-                <label>Mot de passe {editingId && "(Laisser vide pour ne pas modifier)"}</label>
-                <input type="password" required={!editingId} value={formData.motDePasse} onChange={e => setFormData({...formData, motDePasse: e.target.value})} />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Rôle Système</label>
-                <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
-                  <option value="ADMIN">ADMIN (Accès Total)</option>
-                  <option value="PILOTE">PILOTE (Validation)</option>
-                  <option value="PARTENAIRE">PARTENAIRE (Client)</option>
-                  <option value="AGENT_KYNTUS">AGENT KYNTUS (Consultation)</option>
-                </select>
-              </div>
-
-              {formData.role === 'PARTENAIRE' && (
+              <form onSubmit={handleSubmit}>
                 <div className={styles.formGroup}>
-                  <label>Lier à une Entreprise Partenaire</label>
-                  <select required value={formData.partenaireId || ''} onChange={e => setFormData({...formData, partenaireId: Number(e.target.value)})}>
-                    <option value="">-- Sélectionner --</option>
-                    {partenaires.map(p => <option key={p.id} value={p.id}>{p.nomEntreprise}</option>)}
+                  <label>Email Professionnel</label>
+                  <input type="email" required placeholder="nom@entreprise.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label>Clé de Sécurité {editingId && <span style={{textTransform:'none', fontWeight:'600', color:'#94a3b8'}}>(Laisser vide pour conserver l'actuelle)</span>}</label>
+                  <input type="password" placeholder="••••••••" required={!editingId} value={formData.motDePasse} onChange={e => setFormData({...formData, motDePasse: e.target.value})} />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Rôle Global</label>
+                  <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
+                    <option value="ADMIN">ADMIN (Contrôle Total)</option>
+                    <option value="PILOTE">PILOTE (Validation Qualité)</option>
+                    <option value="PARTENAIRE">PARTENAIRE (Client Externe)</option>
+                    <option value="AGENT_KYNTUS">AGENT KYNTUS (Consultation)</option>
                   </select>
                 </div>
-              )}
 
-              <div className={styles.formGroup}>
-                <label>Statut du compte</label>
-                <select value={formData.actif ? "true" : "false"} onChange={e => setFormData({...formData, actif: e.target.value === "true"})}>
-                  <option value="true">Actif</option>
-                  <option value="false">Désactivé</option>
-                </select>
-              </div>
+                {formData.role === 'PARTENAIRE' && (
+                  <div className={styles.formGroup}>
+                    <label>Affiliation Entreprise Partenaire</label>
+                    <select required value={formData.partenaireId || ''} onChange={e => setFormData({...formData, partenaireId: Number(e.target.value)})}>
+                      <option value="">-- Assigner à une entité --</option>
+                      {partenaires.map(p => <option key={p.id} value={p.id}>{p.nomEntreprise}</option>)}
+                    </select>
+                  </div>
+                )}
 
-              <div className={styles.formGroup}>
-                <label>Permissions (Accès granulaires)</label>
-                <div className={styles.permissionsGrid}>
-                  {AVAILABLE_PERMISSIONS.map(perm => (
-                    <label key={perm} className={styles.checkboxLabel}>
-                      <input type="checkbox" checked={formData.permissions.includes(perm)} onChange={() => handlePermissionToggle(perm)} />
-                      {perm}
-                    </label>
-                  ))}
+                <div className={styles.formGroup}>
+                  <label>État du Compte</label>
+                  <select value={formData.actif ? "true" : "false"} onChange={e => setFormData({...formData, actif: e.target.value === "true"})}>
+                    <option value="true">Actif (Accès Autorisé)</option>
+                    <option value="false">Désactivé (Accès Bloqué)</option>
+                  </select>
                 </div>
-              </div>
 
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.btnCancel} onClick={() => setIsModalOpen(false)}>Annuler</button>
-                <button type="submit" className={styles.btnSave}>Enregistrer</button>
-              </div>
-            </form>
+                <div className={styles.formGroup}>
+                  <label>Matrice des Permissions</label>
+                  <div className={styles.permissionsGrid}>
+                    {AVAILABLE_PERMISSIONS.map(perm => (
+                      <label key={perm} className={styles.checkboxLabel}>
+                        <input type="checkbox" checked={formData.permissions.includes(perm)} onChange={() => handlePermissionToggle(perm)} />
+                        {perm.replace(/_/g, ' ')}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button type="button" className={styles.btnCancel} onClick={() => setIsModalOpen(false)}>Annuler l'opération</button>
+                  <button type="submit" className={styles.btnSave}>{editingId ? "Sauvegarder" : "Déployer l'Accès"}</button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+      </div>
     </div>
   );
 }

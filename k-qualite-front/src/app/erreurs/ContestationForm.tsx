@@ -1,5 +1,5 @@
-/* erreurs/ContestationForm.tsx */
 "use client";
+
 import { useState } from 'react';
 import { deposerContestation } from '@/services/apiService';
 import styles from './ContestationForm.module.css';
@@ -30,8 +30,9 @@ export default function ContestationForm({ erreurId, onSuccess }: ContestationFo
         Dépôt de Contestation Sécurisé
       </h3>
       {error && <div className={styles.errorMessage}>{error}</div>}
+      
       <div className={styles.inputGroup}>
-        <label>Motif de contestation *</label>
+        <label>Motif d'Écart *</label>
         <select required value={motif} onChange={(e) => setMotif(e.target.value)}>
           <option value="">Sélectionner un motif d'écart...</option>
           <option value="PREUVE_VALIDE">La preuve fournie est valide et conforme</option>
@@ -40,17 +41,45 @@ export default function ContestationForm({ erreurId, onSuccess }: ContestationFo
           <option value="AUTRE">Autre raison technique (à détailler)</option>
         </select>
       </div>
+      
       <div className={styles.inputGroup}>
-        <label>Rapport Technique (Explications)</label>
-        <textarea rows={4} placeholder="Détaillez les raisons techniques et opérationnelles prouvant la conformité..." value={commentaire} onChange={(e) => setCommentaire(e.target.value)}></textarea>
+        <label>Rapport Technique (Argumentaire)</label>
+        <textarea 
+          rows={4} 
+          placeholder="Détaillez les raisons techniques et opérationnelles prouvant la conformité de l'intervention..." 
+          value={commentaire} 
+          onChange={(e) => setCommentaire(e.target.value)}
+        ></textarea>
       </div>
+      
       <div className={styles.inputGroup}>
         <label>Pièce Jointe (URL de la Preuve)</label>
-        <input type="text" placeholder="https://votre-serveur.com/preuve-intervention.jpg" value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} />
-        <small className={styles.helpText}>Protocole en cours : insérez le lien direct vers le fichier hébergé.</small>
+        {/* 🚀 CLASS fileInput FOR THE DASHED DROPZONE EFFECT */}
+        <input 
+          type="text" 
+          className={styles.fileInput}
+          placeholder="Collez ici l'URL de votre fichier (Ex: https://votre-serveur.com/preuve.jpg)" 
+          value={fileUrl} 
+          onChange={(e) => setFileUrl(e.target.value)} 
+        />
+        <small className={styles.helpText}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          Protocole de test : insérez le lien direct vers le fichier hébergé.
+        </small>
       </div>
+      
       <button type="submit" className={styles.submitBtn} disabled={loading}>
-        {loading ? 'Cryptage et Envoi...' : 'Transmettre le dossier à l\'audit'}
+        {loading ? (
+          <>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+            Cryptage et Envoi...
+          </>
+        ) : (
+          <>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            Transmettre le dossier à l'audit
+          </>
+        )}
       </button>
     </form>
   );
