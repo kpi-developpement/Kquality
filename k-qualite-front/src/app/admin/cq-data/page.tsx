@@ -106,34 +106,44 @@ export default function AdminCqDataPage() {
           <div>
             {/* 🚀 L'CARTE F L'HOVER GHA YTBEDEL L'CADER DYALHA (ANIMATED BORDER) */}
             <InteractiveCard delayIndex={1}>
-              <div className={styles.estimationContent}>
-                <div className={styles.estHeader}>
-                  <h3 className={styles.estTitle}>Projection Globale</h3>
-                  <span className={styles.estBadge}>ESTIMATION</span>
+              {/* 🚀 IMPACT VAULT - CONCEPT X300 */}
+              <div className={styles.impactVault}>
+                <div className={styles.vaultHeader}>
+                  <h3 className={styles.vaultTitle}>Impact Financier</h3>
+                  <div className={styles.liveIndicator}>
+                    <div className={styles.dot}></div> LIVE
+                  </div>
                 </div>
-                <h2 className={styles.estAmount}>{totalGlobal.toLocaleString('fr-FR')} €</h2>
-                <p className={styles.estSub}>si la période clôturait aujourd'hui</p>
 
-                <div className={styles.progressList}>
+                <div className={styles.vaultMain}>
+                  <div className={styles.radarRing1}></div>
+                  <div className={styles.radarRing2}></div>
+                  <h2 className={styles.vaultAmount}>{totalGlobal.toLocaleString('fr-FR')} €</h2>
+                  <span className={styles.vaultSub}>Estimation à la clôture</span>
+                </div>
+
+                <div className={styles.vaultMetrics}>
                   {TABS_CONFIG.map(tab => {
                     const tabTotal = calculateTotal(tab.id);
                     const percentage = totalGlobal > 0 ? (tabTotal / totalGlobal) * 100 : 0;
                     
                     return (
-                      <div key={tab.id} className={styles.progressItem}>
-                        <div className={styles.progressHeader}>
+                      <div key={tab.id} className={styles.metricItem}>
+                        <div className={styles.metricHeader}>
                           <span>{tab.title}</span>
                           <span style={{ color: tab.color }}>{tabTotal.toLocaleString('fr-FR')} €</span>
                         </div>
-                        <div className={styles.progressBarBg}>
+                        <div className={styles.energyTrack}>
                           <div 
-                            className={styles.progressBarFill} 
+                            className={styles.energyFill} 
                             style={{ 
                               width: `${percentage}%`, 
                               backgroundColor: tab.color,
-                              boxShadow: `0 0 12px ${tab.color}90` 
+                              boxShadow: `0 0 15px ${tab.color}90` 
                             }}
-                          ></div>
+                          >
+                            <div className={styles.energySpark} style={{ color: tab.color }}></div>
+                          </div>
                         </div>
                       </div>
                     );
