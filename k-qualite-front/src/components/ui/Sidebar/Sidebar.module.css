@@ -1,77 +1,117 @@
-/* Sidebar.module.css */
+/* components/ui/Sidebar/Sidebar.module.css */
 
 .sidebar {
-  width: 90px;
+  width: 96px;
   height: 100vh;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(255, 255, 255, 0.4); /* Khfifa bach l'Aura tban */
+  backdrop-filter: blur(40px);
+  border-right: 1px solid rgba(255, 255, 255, 0.8);
   display: flex;
   flex-direction: column;
-  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.02);
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.03);
   position: relative;
-  z-index: 999; /* Dima fo9 l'contenu */
+  z-index: 99999;
   overflow: hidden;
 }
 
 .sidebar.expanded {
-  width: 280px;
-  box-shadow: 20px 0 50px rgba(0, 0, 0, 0.05);
+  width: 320px;
+  box-shadow: 20px 0 60px rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.65);
 }
+
+/* =================================================== */
+/* 🚀 THE ALIVE AURA (Mouse Spotlight & Breathing)     */
+/* =================================================== */
+
+/* L'Aura li kat-tneffes (Ambient) */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, transparent 50%, rgba(139, 92, 246, 0.05) 100%);
+  z-index: 0;
+  pointer-events: none;
+  animation: pulseAmbient 4s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* L'Kecheff (Spotlight) li kaytb3 la souris */
+.sidebar::before {
+  content: '';
+  position: absolute;
+  inset: -100%; /* Kbir bach mayt9t3ch mli tkon la souris f l'7afiya */
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+    rgba(59, 130, 246, 0.15),
+    transparent 40%
+  );
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  will-change: background;
+}
+
+.sidebar:hover::before { opacity: 1; }
+
+@keyframes pulseAmbient {
+  0% { opacity: 0.5; transform: scaleY(1); }
+  100% { opacity: 1; transform: scaleY(1.05); }
+}
+
+/* Bch l'content yb9a fo9 l'Aura */
+.logoSection, .navLinks, .footerSection { position: relative; z-index: 10; }
+
+/* =================================================== */
 
 /* --- LOGO SECTION --- */
 .logoSection {
   display: flex;
   align-items: center;
-  padding: 30px 25px;
-  gap: 15px;
+  padding: 35px 28px;
+  gap: 18px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.6);
-  min-width: 280px;
+  min-width: 320px;
 }
 
 .logoBadge {
   background: linear-gradient(135deg, #1abc9c, #16a085);
   color: white;
-  min-width: 40px;
-  height: 40px;
+  min-width: 42px;
+  height: 42px;
   border-radius: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: 900;
   font-size: 20px;
-  box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3);
-  transition: transform 0.4s ease;
+  box-shadow: 0 4px 15px rgba(26, 188, 156, 0.3);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.sidebar.expanded .logoBadge {
-  transform: rotate(360deg);
-}
+.sidebar.expanded .logoBadge { transform: rotate(360deg) scale(1.05); }
 
 .logoTextWrapper {
   display: flex;
   flex-direction: column;
   opacity: 0;
-  transform: translateX(-10px);
-  transition: all 0.3s ease;
+  transform: translateX(-15px);
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.sidebar.expanded .logoTextWrapper {
-  opacity: 1;
-  transform: translateX(0);
-}
+.sidebar.expanded .logoTextWrapper { opacity: 1; transform: translateX(0); }
 
-.logoText { font-size: 18px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; }
-.logoSubtext { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; }
+.logoText { font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; }
+.logoSubtext { font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 1px; text-transform: uppercase; }
 
-/* --- NAV LINKS --- */
+/* --- NAV LINKS L'MEJNOUNIN --- */
 .navLinks {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 25px 15px;
-  gap: 8px;
+  padding: 25px 20px;
+  gap: 10px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -82,77 +122,72 @@
 .navItem {
   display: flex;
   align-items: center;
-  padding: 12px 10px;
-  border-radius: 14px;
-  color: #64748b; /* Text gris par défaut */
+  padding: 12px 14px;
+  border-radius: 16px;
+  color: #64748b; 
   text-decoration: none;
   transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   position: relative;
-  min-width: 250px;
+  min-width: 260px;
+  border: 1px solid transparent;
   overflow: hidden;
 }
 
 .iconBox {
-  min-width: 40px;
-  height: 40px;
+  min-width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0f172a; /* 🚀 ICONS DARK BLUE */
-  transition: all 0.3s ease;
+  color: #1e293b; /* Dark Blue / Slate */
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-radius: 12px;
 }
 
-.iconBox svg {
-  width: 22px;
-  height: 22px;
-  transition: all 0.3s ease;
-}
+.iconBox svg { width: 22px; height: 22px; transition: all 0.3s ease; }
 
 .navText {
   font-size: 14px;
-  font-weight: 700;
-  margin-left: 10px;
+  font-weight: 800;
+  margin-left: 12px;
   opacity: 0;
   transform: translateX(-15px);
-  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   white-space: nowrap;
 }
 
-.sidebar.expanded .navText {
-  opacity: 1;
-  transform: translateX(0);
-}
+.sidebar.expanded .navText { opacity: 1; transform: translateX(0); }
 
-/* Hover Effects */
+/* 🚀 Hover Effects (Magnetic Capsule) */
 .navItem:hover {
-  background: rgba(241, 245, 249, 0.8);
-  transform: translateX(4px);
-}
-
-.navItem:hover .iconBox {
-  color: #3b82f6; /* Kayweli bleu fo9 l'hover */
-  transform: scale(1.1);
-}
-
-.navItem:hover .navText {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+  transform: translateX(6px);
   color: #0f172a;
 }
 
-/* Active State (L'page li rak fiha) */
-.navItem.active {
+.navItem:hover .iconBox {
+  color: #3b82f6; 
   background: #eff6ff;
+  transform: scale(1.1);
+}
+
+/* 🚀 Active State (Laser Glow) */
+.navItem.active {
+  background: linear-gradient(90deg, rgba(239, 246, 255, 0.8), rgba(255, 255, 255, 0.9));
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
   color: #2563eb;
 }
 
 .navItem.active .iconBox {
   color: #2563eb;
-  filter: drop-shadow(0 2px 5px rgba(37, 99, 235, 0.3));
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
 }
 
-.navItem.active .navText {
-  color: #2563eb;
-  font-weight: 800;
-}
+.navItem.active .navText { font-weight: 900; }
 
 .navItem.active::before {
   content: '';
@@ -160,20 +195,27 @@
   left: 0;
   top: 15%;
   bottom: 15%;
-  width: 4px;
+  width: 5px;
   background: #3b82f6;
-  border-radius: 0 4px 4px 0;
-  box-shadow: 2px 0 8px rgba(59, 130, 246, 0.4);
+  border-radius: 0 6px 6px 0;
+  box-shadow: 2px 0 12px rgba(59, 130, 246, 0.5);
+  animation: laserPulse 2s infinite alternate;
+}
+
+@keyframes laserPulse {
+  0% { box-shadow: 2px 0 8px rgba(59, 130, 246, 0.3); opacity: 0.8; }
+  100% { box-shadow: 2px 0 15px rgba(59, 130, 246, 0.8); opacity: 1; }
 }
 
 /* --- FOOTER SECTION (Profile & Logout) --- */
 .footerSection {
-  padding: 20px 15px;
+  padding: 25px 20px;
   border-top: 1px solid rgba(226, 232, 240, 0.6);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-width: 280px;
+  gap: 15px;
+  min-width: 320px;
+  background: linear-gradient(to top, rgba(241, 245, 249, 0.5), transparent);
 }
 
 .userProfile {
@@ -181,20 +223,28 @@
   align-items: center;
   padding: 10px;
   gap: 15px;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.expanded .userProfile:hover {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
 }
 
 .userAvatar {
-  min-width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: #f1f5f9;
-  color: #0f172a;
+  min-width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #38bdf8;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 16px;
-  border: 1px solid #e2e8f0;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
 }
 
 .userInfo {
@@ -206,26 +256,30 @@
 
 .sidebar.expanded .userInfo { opacity: 1; }
 
-.partnerName { font-size: 13px; font-weight: 800; color: #0f172a; text-transform: uppercase; }
-.roleBadge { font-size: 10px; font-weight: 800; color: #3b82f6; letter-spacing: 0.5px; }
+.partnerName { font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; }
+.roleBadge { font-size: 11px; font-weight: 800; color: #3b82f6; letter-spacing: 1px; }
 
-/* Logout Button */
+/* Logout Button Luxe */
 .logoutBtn {
   display: flex;
   align-items: center;
-  padding: 10px;
-  border-radius: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  width: calc(100% - 20px);
 }
 
 .logoutBtn .iconBox { color: #ef4444; }
 .logoutBtn .navText { color: #ef4444; font-weight: 800; }
 
 .logoutBtn:hover {
-  background: #fef2f2;
+  background: rgba(254, 242, 242, 0.8);
+  border-color: rgba(254, 202, 202, 0.8);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.08);
+  transform: translateX(4px);
 }
-.logoutBtn:hover .iconBox { transform: scale(1.1); filter: drop-shadow(0 2px 5px rgba(239, 68, 68, 0.3)); }
+
+.logoutBtn:hover .iconBox { transform: scale(1.1); filter: drop-shadow(0 4px 8px rgba(239, 68, 68, 0.3)); }
