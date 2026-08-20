@@ -25,20 +25,20 @@
 
 .container { max-width: 1400px; margin: 0 auto; position: relative; z-index: 10; }
 
-/* HEADER */
-.header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; animation: fadeInDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; position: relative; z-index: 10; }
+/* 🚀 L'FIX Z-INDEX HNA: Header kbir bach l'Dropdown ykoun lfo9 ga3 */
+.header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; animation: fadeInDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; position: relative; z-index: 9999; }
 .adminBadge { display: inline-block; background: linear-gradient(135deg, #1e293b, #0f172a); color: #38bdf8; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 900; letter-spacing: 1.5px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); position: relative; overflow: hidden; }
 .adminBadge::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent); transform: skewX(-20deg); animation: badgeShine 4s infinite; }
 @keyframes badgeShine { 0%, 80% { left: -100%; } 100% { left: 200%; } }
 .header h1 { color: #0f172a; font-size: 2.6rem; font-weight: 900; margin: 0 0 10px 0; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(255,255,255,0.5); }
 .header p { color: #475569; font-size: 1.1rem; margin: 0; font-weight: 700; }
 
-/* 🚀 FILTERS WRAPPER (Z-Index l'fou9 bach yban Dropdown) */
-.filtersWrapper { display: flex; gap: 20px; align-items: center; justify-content: flex-end; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); padding: 15px 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05); margin-bottom: 30px; position: relative; z-index: 1000; animation: fadeInUp 0.8s ease-out forwards 0.2s; opacity: 0; }
+/* 🚀 FILTERS WRAPPER: Z-Index 9999 */
+.filtersWrapper { display: flex; gap: 20px; align-items: center; justify-content: flex-end; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); padding: 15px 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05); margin-bottom: 30px; position: relative; z-index: 9999; animation: fadeInUp 0.8s ease-out forwards 0.2s; opacity: 0; }
 .filterLabel { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 1px; }
 .filterLabel svg { width: 18px; height: 18px; stroke: #3b82f6; }
 
-/* 🚀 KPI GRID */
+/* 🚀 KPI GRID: Z-Index hna rje3 10 bach yb9a t7t l'Dropdown */
 .kpiGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 30px; position: relative; z-index: 10; }
 .kpiCard { display: flex; flex-direction: column; gap: 10px; padding: 5px; }
 .kpiHeader { display: flex; align-items: center; gap: 12px; }
@@ -47,7 +47,7 @@
 .kpiValue { font-size: 38px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -1px; }
 .valueRed { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(239, 68, 68, 0.15)); }
 
-/* 🚀 TABLE LUXE */
+/* TABLE LUXE */
 .tableWrapper { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-radius: 24px 24px 0 0; border: 1px solid rgba(255, 255, 255, 1); border-bottom: none; overflow: hidden; box-shadow: 0 15px 40px -5px rgba(0, 0, 0, 0.05); animation: fadeInUp 0.8s ease-out forwards 0.4s; opacity: 0; position: relative; z-index: 10; }
 .table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .table th { background: rgba(248, 250, 252, 0.9); padding: 22px 24px; text-align: left; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #475569; border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
@@ -62,6 +62,9 @@
 .reference { font-family: monospace; font-size: 15px; font-weight: 800; color: #475569; background: rgba(241, 245, 249, 0.8); padding: 4px 8px; border-radius: 6px; }
 .impact { font-weight: 900; color: #ef4444; }
 
+/* 🚀 L'NOUVEAU BADGE DYAL CATEGORIE */
+.categorieBadge { background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #2563eb; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 900; letter-spacing: 0.5px; border: 1px solid rgba(191, 219, 254, 0.8); display: inline-block; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.05); }
+
 /* Status Badges */
 .badge { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }
 .badge.nouveau, .badge.en_attente { background: #fffbeb; color: #f59e0b; border: 1px solid #fde68a; box-shadow: 0 2px 5px rgba(245, 158, 11, 0.1); }
@@ -75,7 +78,7 @@
 
 .empty { text-align: center; color: #94a3b8; padding: 60px !important; font-size: 16px; font-weight: 800; font-style: italic; }
 
-/* 🚀 PAGINATION LUXE */
+/* PAGINATION LUXE */
 .paginationWrapper { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border-radius: 0 0 24px 24px; border: 1px solid rgba(255, 255, 255, 1); border-top: 1px solid rgba(226, 232, 240, 0.8); padding: 16px 24px; box-shadow: 0 15px 40px -5px rgba(0, 0, 0, 0.05); animation: fadeInUp 0.8s ease-out forwards 0.5s; opacity: 0; position: relative; z-index: 10; }
 .pageInfo { font-size: 13px; font-weight: 800; color: #64748b; }
 .pageControls { display: flex; gap: 8px; }
