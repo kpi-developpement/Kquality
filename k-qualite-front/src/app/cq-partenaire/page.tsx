@@ -26,7 +26,6 @@ export default function CqPartenairePage() {
     }
   }, [user, month, year]);
 
-  // 🛡️ Calcul dynamique du TAUX_PLAINTE (NUM / Somme des DENUM Fichier 2)
   let displayData = data.map(row => {
     if (row.indicateur === 'TAUX_PLAINTE') {
       const f2Denum = data
@@ -38,7 +37,6 @@ export default function CqPartenairePage() {
     return row;
   });
 
-  // 🚀 LOGIQUE DE MAPPING ET GROUPEMENT (RACC vs SAV)
   function mapProcessus(ind: string) {
     const i = ind.toUpperCase();
     if (['PLP', 'HOTLINE', 'CONSTRUCTION'].includes(i)) return { domaine: 'RACC', cat: 'PERF', niv: 'RANG 1', ind: i };
@@ -68,13 +66,13 @@ export default function CqPartenairePage() {
     return a.zone.localeCompare(b.zone);
   });
 
-  // 🚀 Helper pour générer les lignes avec RowSpan par Domaine
+  // 🚀 Helper pour générer les lignes avec RowSpan (SANS LA COLONNE DOMAINE)
   const generateRowsForDomaine = (domaine: string) => {
     const dRows = mappedData.filter(r => r.domaine === domaine);
     const renderRows: any[] = [];
     
     const categories = Array.from(new Set(dRows.map(r => r.cat)));
-    categories.forEach((cat, catIdx) => {
+    categories.forEach((cat) => {
       const cRows = dRows.filter(r => r.cat === cat);
       const niveaux = Array.from(new Set(cRows.map(r => r.niv)));
       
@@ -88,7 +86,6 @@ export default function CqPartenairePage() {
           iRows.forEach((row, rowIdx) => {
             renderRows.push({
               ...row,
-              domaineSpan: (catIdx === 0 && nivIdx === 0 && indIdx === 0 && rowIdx === 0) ? dRows.length : 0,
               catSpan: (nivIdx === 0 && indIdx === 0 && rowIdx === 0) ? cRows.length : 0,
               nivSpan: (indIdx === 0 && rowIdx === 0) ? nRows.length : 0,
               indSpan: (rowIdx === 0) ? iRows.length : 0,
@@ -103,16 +100,15 @@ export default function CqPartenairePage() {
   const raccRows = generateRowsForDomaine('RACC');
   const savRows = generateRowsForDomaine('SAV');
 
-  // 🚀 Helper pour la couleur de la jauge
   const getGaugeColor = (resultat: number, isNokIndicator: boolean = false) => {
     if (isNokIndicator) {
-      if (resultat < 5) return '#10b981'; // Vert
-      if (resultat < 10) return '#f59e0b'; // Orange
-      return '#ef4444'; // Rouge
+      if (resultat < 5) return '#10b981';
+      if (resultat < 10) return '#f59e0b';
+      return '#ef4444';
     }
-    if (resultat >= 90) return '#10b981'; // Vert
-    if (resultat >= 75) return '#f59e0b'; // Orange
-    return '#ef4444'; // Rouge
+    if (resultat >= 90) return '#10b981';
+    if (resultat >= 75) return '#f59e0b';
+    return '#ef4444';
   };
 
   const totalLignes = displayData.length;
@@ -213,20 +209,12 @@ export default function CqPartenairePage() {
                       const isNok = ['SARCLI', 'TAUX PLAINTE', 'GEM NOK', 'INCOHERENCE PTO'].includes(row.ind);
                       return (
                         <tr key={`racc-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.1 + index * 0.02}s` }}>
-                          {row.domaineSpan > 0 && (
-                            <td rowSpan={row.domaineSpan} className={styles.groupCellDomaine}>
-                              <div className={styles.verticalText}>
-                                <span className={styles.badgeRacc}>{row.domaine}</span>
-                              </div>
-                            </td>
-                          )}
                           {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
                           {row.nivSpan > 0 && <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>}
                           {row.indSpan > 0 && <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>}
                           <td><span className={styles.zoneBadge}>{row.zone}</span></td>
                           <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
                           
-                          {/* 🛡️ L'FIX: Affichage dyal l'9fel ila kan Fichier 2 mazal mat-injecta */}
                           <td>
                             {row.isLocked 
                               ? <span title="Nécessite l'import du Fichier 2" style={{ filter: 'grayscale(1)', opacity: 0.6 }}>🔒</span> 
@@ -252,7 +240,7 @@ export default function CqPartenairePage() {
                         </tr>
                       );
                     })}
-                    {raccRows.length === 0 && <tr><td colSpan={8} className={styles.empty}>Aucune donnée RACC trouvée pour cette période.</td></tr>}
+                    {raccRows.length === 0 && <tr><td colSpan={7} className={styles.empty}>Aucune donnée RACC trouvée pour cette période.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -279,16 +267,9 @@ export default function CqPartenairePage() {
                   </thead>
                   <tbody>
                     {savRows.map((row, index) => {
-                      const isNok = false; // F SAV hna ma3ndnach NOK b7al SARCLI
+                      const isNok = false;
                       return (
                         <tr key={`sav-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.1 + index * 0.02}s` }}>
-                          {row.domaineSpan > 0 && (
-                            <td rowSpan={row.domaineSpan} className={styles.groupCellDomaine}>
-                              <div className={styles.verticalText}>
-                                <span className={styles.badgeSav}>{row.domaine}</span>
-                              </div>
-                            </td>
-                          )}
                           {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
                           {row.nivSpan > 0 && <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>}
                           {row.indSpan > 0 && <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>}
@@ -309,7 +290,7 @@ export default function CqPartenairePage() {
                         </tr>
                       );
                     })}
-                    {savRows.length === 0 && <tr><td colSpan={8} className={styles.empty}>Aucune donnée SAV trouvée pour cette période.</td></tr>}
+                    {savRows.length === 0 && <tr><td colSpan={7} className={styles.empty}>Aucune donnée SAV trouvée pour cette période.</td></tr>}
                   </tbody>
                 </table>
               </div>

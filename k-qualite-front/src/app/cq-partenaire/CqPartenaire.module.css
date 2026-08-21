@@ -100,77 +100,77 @@
 .tableWrapper { 
   background: rgba(255, 255, 255, 0.9); 
   backdrop-filter: blur(20px); 
-  border-radius: 20px; 
+  border-radius: 16px; 
   border: 1px solid rgba(255, 255, 255, 1); 
-  overflow: hidden; 
-  box-shadow: 0 15px 40px -5px rgba(0, 0, 0, 0.05); 
+  overflow-x: auto; 
+  overflow-y: auto; 
+  max-height: 60vh; 
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04); 
+  position: relative; 
+  z-index: 10; 
 }
+
+.tableWrapper::-webkit-scrollbar { width: 6px; height: 6px; }
+.tableWrapper::-webkit-scrollbar-track { background: rgba(241, 245, 249, 0.5); border-radius: 10px; }
+.tableWrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
 .table { width: 100%; border-collapse: separate; border-spacing: 0; }
 
 .table th { 
-  background: #f8fafc;
-  padding: 16px 20px; 
+  background: rgba(248, 250, 252, 0.95); 
+  backdrop-filter: blur(10px);
+  padding: 12px 16px; 
   text-align: left; 
-  font-size: 12px; 
-  font-weight: 900; 
+  font-size: 11px; 
+  font-weight: 800; 
   text-transform: uppercase; 
-  letter-spacing: 1px; 
+  letter-spacing: 0.5px; 
   color: #64748b; 
-  border-bottom: 2px solid #e2e8f0; 
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8); 
+  position: sticky; 
+  top: 0; 
+  z-index: 20; 
 }
 
 .table td { 
-  padding: 14px 20px; 
-  border-bottom: 1px solid #f1f5f9; 
-  font-size: 14px; 
+  padding: 10px 16px; 
+  border-bottom: 1px solid rgba(241, 245, 249, 0.6); 
+  font-size: 12px; 
   color: #1e293b; 
   font-weight: 700; 
   transition: all 0.2s ease; 
+  position: relative; 
+  z-index: 1; 
 }
 
-.tableRow:hover td { background: #ffffff; box-shadow: 0 2px 15px rgba(0,0,0,0.03); z-index: 2; position: relative; transform: scale(1.005); }
+.tableRow:hover td { background: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.02); z-index: 2; transform: scale(1.002); }
 
 /* 🚀 ROWSPAN CELLS */
-.groupCellDomaine {
-  background: rgba(248, 250, 252, 0.5);
-  border-right: 2px solid rgba(226, 232, 240, 0.8);
-  text-align: center;
-  vertical-align: middle;
-  padding: 4px !important;
-}
 .groupCellCat {
   background: #f1f5f9 !important;
   border-right: 2px solid #e2e8f0;
   font-weight: 900 !important;
+  font-size: 11px !important;
   color: #0f172a !important;
   text-transform: uppercase;
   letter-spacing: 1px;
   vertical-align: middle;
 }
+
 .groupCellNiv {
   background: #f8fafc !important;
   border-right: 1px solid #e2e8f0;
   font-weight: 800 !important;
+  font-size: 11px !important;
   color: #3b82f6 !important;
   vertical-align: middle;
 }
+
 .groupCellInd {
-  font-weight: 800 !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
   color: #475569 !important;
   vertical-align: middle;
-}
-
-.verticalText {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  margin: 0 auto;
-  white-space: nowrap;
 }
 
 /* 🚀 JAUGE VISUELLE POUR LE RÉSULTAT */
@@ -205,11 +205,9 @@
 }
 
 /* BADGES */
-.badgeRacc { background: linear-gradient(135deg, #fef2f2, #fee2e2); color: #ef4444; padding: 8px 12px; border-radius: 8px; font-weight: 900; font-size: 11px; letter-spacing: 1px; border: 1px solid rgba(252, 165, 165, 0.5); display: inline-block; }
-.badgeSav { background: linear-gradient(135deg, #ecfdf5, #d1fae5); color: #10b981; padding: 8px 12px; border-radius: 8px; font-weight: 900; font-size: 11px; letter-spacing: 1px; border: 1px solid rgba(167, 243, 208, 0.5); display: inline-block; }
-.zoneBadge { background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; border: 1px solid #e2e8f0; }
+.zoneBadge { background: #f1f5f9; color: #64748b; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; border: 1px solid #e2e8f0; }
 .badgeLocked { background: linear-gradient(135deg, #f8fafc, #f1f5f9); color: #64748b; padding: 6px 14px; border-radius: 8px; font-weight: 900; border: 1px solid rgba(226, 232, 240, 0.8); display: inline-block; }
-.empty { text-align: center; color: #94a3b8; padding: 60px !important; font-size: 15px; font-weight: 600; font-style: italic; }
+.empty { text-align: center; color: #94a3b8; padding: 40px !important; font-size: 13px; font-weight: 600; font-style: italic; }
 
 @keyframes fadeInDown { from { opacity: 0; transform: translate3d(0, -30px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 @keyframes fadeInUp { from { opacity: 0; transform: translate3d(0, 30px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }

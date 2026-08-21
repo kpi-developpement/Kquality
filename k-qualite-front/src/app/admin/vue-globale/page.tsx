@@ -112,7 +112,6 @@ export default function VueGlobalePage() {
   const totalRaccBonus = filteredData.filter(item => raccProcessus.includes(item.processus)).reduce((sum, item) => sum + item.bonus, 0);
   const totalSavBonus = filteredData.filter(item => !raccProcessus.includes(item.processus)).reduce((sum, item) => sum + item.bonus, 0);
 
-  // 🛡️ Logique de Mapping
   function mapProcessus(p: string, domaine: string) {
     if (p.startsWith('PERF_RANG_1_')) return { cat: 'PERF', niv: 'RANG 1', ind: 'PLP', zone: p.split('_')[3] };
     if (p.startsWith('HOTLINE_RANG_1_')) return { cat: 'PERF', niv: 'RANG 1', ind: 'HOTLINE', zone: p.split('_')[3] };
@@ -149,13 +148,14 @@ export default function VueGlobalePage() {
   const indOrder = ['PLP', 'HOTLINE', 'CONSTRUCTION', 'RANG 2', 'TNH', 'SACLI OK', 'SARCLI NOK', 'TAUX PLAINTE', 'GEM NOK', 'INCOHERENCE PTO', 'CADRAGE', 'TAUX_20J', 'ZMD_AMII', 'ZMD_RIP', 'ZTD', 'SATCLI SAV', 'SECURISATION', 'TNH SAV', 'CCR', 'SAV PERF'];
   
   mappedData.sort((a, b) => {
+    if (a.domaine !== b.domaine) return a.domaine === 'RACC' ? -1 : 1;
     if (a.cat !== b.cat) return catOrder.indexOf(a.cat) - catOrder.indexOf(b.cat);
     if (a.niv !== b.niv) return nivOrder.indexOf(a.niv) - nivOrder.indexOf(b.niv);
     if (a.ind !== b.ind) return indOrder.indexOf(a.ind) - indOrder.indexOf(b.ind);
     return a.zone.localeCompare(b.zone);
   });
 
-  // 🚀 Helper pour générer les lignes avec RowSpan par Domaine
+  // 🚀 Helper pour générer les lignes avec RowSpan (SANS LA COLONNE DOMAINE)
   const generateRowsForDomaine = (domaine: string) => {
     const dRows = mappedData.filter(r => r.domaine === domaine);
     const renderRows: any[] = [];
@@ -189,18 +189,15 @@ export default function VueGlobalePage() {
   const raccRows = generateRowsForDomaine('RACC');
   const savRows = generateRowsForDomaine('SAV');
 
-  // 🚀 Helper pour la couleur de la jauge
   const getGaugeColor = (resultat: number, isNokIndicator: boolean = false) => {
-    // Si c'est un indicateur négatif (ex: SARCLI NOK, TAUX PLAINTE), un score bas est bon.
     if (isNokIndicator) {
-      if (resultat < 5) return '#10b981'; // Vert
-      if (resultat < 10) return '#f59e0b'; // Orange
-      return '#ef4444'; // Rouge
+      if (resultat < 5) return '#10b981';
+      if (resultat < 10) return '#f59e0b';
+      return '#ef4444';
     }
-    // Indicateur classique (plus c'est haut, mieux c'est)
-    if (resultat >= 90) return '#10b981'; // Vert
-    if (resultat >= 75) return '#f59e0b'; // Orange
-    return '#ef4444'; // Rouge
+    if (resultat >= 90) return '#10b981';
+    if (resultat >= 75) return '#f59e0b';
+    return '#ef4444';
   };
 
   const IconRacc = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
@@ -361,7 +358,7 @@ export default function VueGlobalePage() {
                   </thead>
                   <tbody>
                     {savRows.map((row, index) => {
-                      const isNok = row.ind.includes('NOK') || row.ind.includes('PLAINTE') || row.ind.includes('INCOHERENCE');
+                      const isNok = false;
                       return (
                         <tr key={`sav-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.1 + index * 0.02}s` }}>
                           {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
