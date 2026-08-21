@@ -1,26 +1,53 @@
-.container {
-  padding: 30px;
-  max-width: 1200px;
-  margin: 0 auto;
-  font-family: Arial, sans-serif;
-}
+/* dashboard/Dashboard.module.css */
 
-.header {
-  margin-bottom: 30px;
-}
+.pageWrapper { position: relative; min-height: 100vh; background-color: #f1f5f9; background-image: linear-gradient(rgba(59, 130, 246, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.12) 1px, transparent 1px); background-size: 35px 35px; animation: scrollGrid 40s linear infinite; padding: 40px; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; z-index: 1; }
+@keyframes scrollGrid { 0% { background-position: 0 0; } 100% { background-position: -35px -35px; } }
 
-.header h1 {
-  color: #2c3e50;
-  margin-bottom: 5px;
-}
+.bgBlob1, .bgBlob2 { position: absolute; filter: blur(120px); z-index: 0; pointer-events: none; animation: liquidFloat 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; }
+.bgBlob1 { width: 800px; height: 800px; background: #3b82f6; top: -200px; left: -150px; opacity: 0.06; border-radius: 50%; }
+.bgBlob2 { width: 600px; height: 600px; background: #10b981; bottom: -200px; right: -100px; opacity: 0.04; animation-delay: -5s; border-radius: 50%; }
+@keyframes liquidFloat { 0% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(50px, -50px, 0) scale(1.05); } 100% { transform: translate3d(-30px, 40px, 0) scale(0.95); } }
 
-.header p {
-  color: #7f8c8d;
-  margin: 0;
-}
+.container { max-width: 1400px; margin: 0 auto; position: relative; z-index: 10; }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-}
+.header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; animation: fadeInDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; position: relative; z-index: 10; }
+.partnerBadge { display: inline-block; background: linear-gradient(135deg, #10b981, #047857); color: #ffffff; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 900; letter-spacing: 1.5px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); }
+.header h1 { color: #0f172a; font-size: 2.6rem; font-weight: 900; margin: 0 0 10px 0; letter-spacing: -1px; }
+.header p { color: #475569; font-size: 1.1rem; margin: 0; font-weight: 700; }
+
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 30px; position: relative; z-index: 10; }
+
+/* 🚀 IMPACT VAULT L'MEJNOUN */
+.impactVault { display: flex; flex-direction: column; height: 100%; background: transparent; position: relative; z-index: 2; padding: 10px; }
+.vaultHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.vaultTitle { font-size: 14px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: 1px; text-transform: uppercase; }
+.liveIndicator { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #ef4444; letter-spacing: 1px; background: rgba(239, 68, 68, 0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(239, 68, 68, 0.2); }
+.dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: blink 1s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.vaultMain { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 0; margin-bottom: 20px; }
+.radarRing1, .radarRing2 { position: absolute; border-radius: 50%; pointer-events: none; }
+.radarRing1 { width: 160px; height: 160px; border: 2px dashed rgba(239, 68, 68, 0.3); animation: spin 15s linear infinite; }
+.radarRing2 { width: 120px; height: 120px; border: 1px solid rgba(239, 68, 68, 0.1); border-left: 2px solid #ef4444; border-right: 2px solid #ef4444; animation: spinReverse 10s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } } @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
+.vaultAmount { font-size: 48px; font-weight: 900; margin: 0; letter-spacing: -2px; background: linear-gradient(135deg, #ef4444 0%, #7f1d1d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 4px 15px rgba(239, 68, 68, 0.3)); position: relative; z-index: 2; }
+.vaultSub { font-size: 12px; font-weight: 800; color: #64748b; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; position: relative; z-index: 2; }
+
+/* 🚀 KPI CARDS */
+.kpiCard { display: flex; flex-direction: column; gap: 12px; padding: 5px; height: 100%; justify-content: space-between; }
+.kpiHeader { display: flex; align-items: center; gap: 12px; }
+.kpiIcon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.8); }
+.kpiTitle { font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
+.kpiValue { font-size: 42px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -1.5px; }
+
+/* 🚀 ENERGY TRACKS (Progress Bars Luxe) */
+.energyTrack { width: 100%; height: 12px; background: rgba(15, 23, 42, 0.05); border-radius: 12px; overflow: visible; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); position: relative; padding: 2px; margin-top: 10px; }
+.energyFill { height: 100%; border-radius: 10px; position: relative; transition: width 1.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.energySpark { position: absolute; right: -4px; top: -2px; bottom: -2px; width: 8px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 15px 3px currentColor; animation: sparkPulse 2s infinite alternate; }
+@keyframes sparkPulse { 0% { opacity: 0.6; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }
+
+/* BADGES */
+.badgeAlert { background: linear-gradient(135deg, #fef2f2, #fee2e2); color: #ef4444; padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 12px; border: 1px solid rgba(252, 165, 165, 0.5); display: inline-block; margin-top: 10px; }
+.badgeInfo { background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #2563eb; padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 12px; border: 1px solid rgba(191, 219, 254, 0.5); display: inline-block; margin-top: 10px; }
+
+@keyframes fadeInDown { from { opacity: 0; transform: translate3d(0, -30px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
