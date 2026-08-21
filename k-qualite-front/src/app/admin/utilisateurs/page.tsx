@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
-import { getAdminUsers, getAdminPartenaires, createAdminUser, updateAdminUser, deleteAdminUser } from '@/services/apiService';
+// 🛡️ L'FIX HWA HNA: Remplacer updateAdminUser par updateUser
+import { getAdminUsers, getAdminPartenaires, createAdminUser, updateUser, deleteAdminUser } from '@/services/apiService';
 import { UtilisateurDTO, PartenaireDTO } from '@/types/api';
 import styles from './Utilisateurs.module.css';
 
@@ -66,7 +67,8 @@ export default function UtilisateursPage() {
     e.preventDefault();
     try {
       if (editingId) {
-        await updateAdminUser(editingId, formData);
+        // 🛡️ L'FIX HWA HNA: Utilisation de updateUser
+        await updateUser(editingId, formData);
         alert("Utilisateur mis à jour avec succès !");
       } else {
         if (!formData.motDePasse) return alert("Mot de passe obligatoire pour la création");
