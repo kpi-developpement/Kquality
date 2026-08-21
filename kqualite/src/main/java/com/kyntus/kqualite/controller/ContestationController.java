@@ -28,14 +28,21 @@ public class ContestationController {
         return ResponseEntity.ok(ApiResponse.success(null, "Contestation déposée avec succès"));
     }
 
-    // --- JDID ---
     @GetMapping("/en-attente")
     public ResponseEntity<ApiResponse<List<ContestationResponseDTO>>> getContestationsEnAttente() {
         List<ContestationResponseDTO> liste = contestationService.getContestationsEnAttente();
         return ResponseEntity.ok(ApiResponse.success(liste, "Contestations récupérées"));
     }
 
-    // --- JDID ---
+    // 🛡️ JDID: Endpoint pour le compteur du Dashboard
+    @GetMapping("/count")
+    public ResponseEntity<ApiResponse<Long>> countContestations(
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+        long count = contestationService.countContestationsByMonthAndYear(month, year);
+        return ResponseEntity.ok(ApiResponse.success(count, "Nombre de contestations récupéré"));
+    }
+
     @PostMapping("/{id}/traiter")
     public ResponseEntity<ApiResponse<Void>> traiterContestation(
             @PathVariable Long id,

@@ -4,7 +4,6 @@
   position: relative;
   min-height: 100vh;
   background-color: #f4f7fb; 
-  /* 🚀 L'FIX: Rditlik l'Grid waaaade7 w n9i */
   background-image: 
     linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
@@ -22,11 +21,10 @@
   100% { background-position: -35px -35px; }
 }
 
-/* 🚀 L'FIX: Dbaba Khfifa Blezreq (katji FO9 l'Grid hit 3ndha z-index: 0) */
 .bgBlob1, .bgBlob2 {
   position: absolute;
   filter: blur(120px); 
-  z-index: 0; /* Fo9 l'background Grid, w t7t l'contenu */
+  z-index: 0; 
   pointer-events: none;
   animation: liquidFloat 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
@@ -36,7 +34,7 @@
   width: 800px; height: 800px; 
   background: #3b82f6; 
   top: -200px; left: -200px; 
-  opacity: 0.05; /* Dbaba khfifa */
+  opacity: 0.05; 
   border-radius: 50%;
 }
 .bgBlob2 { 
@@ -56,10 +54,9 @@
 
 .container { max-width: 1400px; margin: 0 auto; position: relative; z-index: 10; }
 
-/* 🚀 L'FIX Z-INDEX: 3tit l'Header z-index kbir bach l'Dropdown dyalo yghti l'Cartes */
 .header { 
   position: relative;
-  z-index: 100; /* <--- HADA HWA SER */
+  z-index: 100;
   display: flex; 
   justify-content: space-between; 
   align-items: flex-end; 
@@ -72,7 +69,6 @@
 
 .controlsWrapper { display: flex; flex-direction: column; gap: 16px; align-items: flex-end; justify-content: flex-end; }
 
-/* Vision Toggle */
 .visionToggle { display: flex; background: rgba(226, 232, 240, 0.6); padding: 5px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: inset 0 2px 5px rgba(0,0,0,0.04); backdrop-filter: blur(10px); }
 .visionBtn { padding: 8px 22px; border: none; background: transparent; font-weight: 800; font-size: 12px; color: #64748b; cursor: pointer; border-radius: 8px; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); text-transform: uppercase; letter-spacing: 0.5px; }
 .visionBtn:hover:not(.activeAdmin):not(.activePartenaire) { color: #1e293b; }
@@ -81,29 +77,95 @@
 
 .controls { display: flex; align-items: center; gap: 12px; }
 
-/* Les Grids */
 .topGrid { 
   display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-bottom: 30px; 
-  position: relative; z-index: 10; /* Z-index sghir 3la l'Header */
+  position: relative; z-index: 10; 
 }
 .middleGrid { 
   display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 40px; 
   position: relative; z-index: 10;
 }
 
-/* TABLE */
+/* 🚀 TABLE LUXE M3A ROWSPAN */
 .tableWrapper { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.9); overflow: hidden; box-shadow: 0 15px 40px -5px rgba(0, 0, 0, 0.04); animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.5s; opacity: 0; will-change: transform, opacity; position: relative; z-index: 10; }
 .table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .table th { background: rgba(248, 250, 252, 0.7); padding: 20px 24px; text-align: left; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #64748b; border-bottom: 1px solid rgba(226, 232, 240, 0.6); }
 .table td { padding: 18px 24px; border-bottom: 1px solid rgba(241, 245, 249, 0.6); font-size: 14px; color: #1e293b; font-weight: 700; transition: all 0.2s ease; position: relative; z-index: 1; }
 
 .tableRow { opacity: 0; animation: fadeSlideRight 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; will-change: transform, opacity; }
-.tableRow td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-.tableRow td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-.tableRow:hover td { background: linear-gradient(90deg, rgba(255,255,255,1), rgba(248,250,252,1)); transform: scale(1.01); box-shadow: 0 4px 15px rgba(0,0,0,0.03); z-index: 2; }
+.tableRow:hover td { background: linear-gradient(90deg, rgba(255,255,255,1), rgba(248,250,252,1)); box-shadow: 0 4px 15px rgba(0,0,0,0.03); z-index: 2; }
+
+/* 🚀 STYLES DES CELLULES GROUPEES (ROWSPAN) */
+.groupCellDomaine {
+  background: rgba(248, 250, 252, 0.5);
+  border-right: 2px solid rgba(226, 232, 240, 0.8);
+  text-align: center;
+  vertical-align: middle;
+}
+.groupCellCat {
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  background: rgba(255, 255, 255, 0.3);
+  border-right: 1px solid rgba(226, 232, 240, 0.5);
+  vertical-align: middle;
+}
+.groupCellNiv {
+  font-weight: 800 !important;
+  color: #3b82f6 !important;
+  background: rgba(255, 255, 255, 0.5);
+  border-right: 1px solid rgba(226, 232, 240, 0.5);
+  vertical-align: middle;
+}
+.groupCellInd {
+  font-weight: 700 !important;
+  color: #475569 !important;
+  vertical-align: middle;
+}
+
+.verticalText {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0 auto;
+}
+
+.badgeRacc {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  color: #ef4444;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  border: 1px solid rgba(252, 165, 165, 0.5);
+  display: inline-block;
+}
+.badgeSav {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  color: #10b981;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  border: 1px solid rgba(167, 243, 208, 0.5);
+  display: inline-block;
+}
+.zoneBadge {
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
 
 .badgeSuccess { background: linear-gradient(135deg, #ecfdf5, #d1fae5); color: #059669; padding: 6px 14px; border-radius: 8px; font-weight: 900; border: 1px solid rgba(167, 243, 208, 0.5); display: inline-block; }
 .badgeBonus { background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #2563eb; padding: 6px 14px; border-radius: 8px; font-weight: 900; border: 1px solid rgba(191, 219, 254, 0.5); display: inline-block; }
+.empty { text-align: center; color: #94a3b8; padding: 60px !important; font-size: 15px; font-weight: 600; font-style: italic; }
 
 @keyframes fadeInDown { from { opacity: 0; transform: translate3d(0, -30px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 @keyframes fadeInUp { from { opacity: 0; transform: translate3d(0, 30px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }

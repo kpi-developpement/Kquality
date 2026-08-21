@@ -15,4 +15,8 @@ public interface ContestationRepository extends JpaRepository<Contestation, Long
     // Kat-jbed les contestations li l'erreur dyalhom mazal f statut 'CONTESTE'
     @Query("SELECT c FROM Contestation c JOIN c.erreur e WHERE e.statut = :statut")
     List<Contestation> findByErreurStatut(@Param("statut") StatutErreur statut);
+
+    // 🛡️ JDID: Compter le nombre de contestations pour un mois et une année spécifiques
+    @Query("SELECT COUNT(c) FROM Contestation c WHERE EXTRACT(MONTH FROM c.dateDepot) = :month AND EXTRACT(YEAR FROM c.dateDepot) = :year")
+    long countByMonthAndYear(@Param("month") int month, @Param("year") int year);
 }

@@ -26,7 +26,7 @@ public class ContestationService {
     private final ContestationRepository contestationRepository;
     private final ErreurRepository erreurRepository;
     private final UtilisateurRepository utilisateurRepository;
-    private final ResultatCQRepository resultatCQRepository; // <-- JDID: Bach n-jbdou l'CQ w l'Penalite
+    private final ResultatCQRepository resultatCQRepository;
 
     @Transactional
     public void deposerContestation(Long utilisateurId, ContestationRequestDTO request) {
@@ -76,6 +76,12 @@ public class ContestationService {
                 .collect(Collectors.toList());
     }
 
+    // 🛡️ JDID: Récupérer le nombre total de contestations pour le Dashboard
+    @Transactional(readOnly = true)
+    public long countContestationsByMonthAndYear(int month, int year) {
+        return contestationRepository.countByMonthAndYear(month, year);
+    }
+
     @Transactional
     public void traiterContestation(Long contestationId, TraitementRequestDTO request, Long adminId) {
         Contestation contestation = contestationRepository.findById(contestationId)
@@ -85,16 +91,11 @@ public class ContestationService {
         contestation.setCommentaireDecision(request.getCommentaire());
 
         if (request.isAccepter()) {
-            // N-khbiyou l'impact l'9dim 9bel ma n-rdouh 0
             Double ancienImpact = erreur.getImpactEstime();
-
             erreur.setStatut(StatutErreur.ANNULE);
             erreur.setImpactEstime(0.0);
 
-            // --- JDID: L'Recalcul dyal l'Pénalité Globale ---
             Long partenaireId = erreur.getDossier().getTechnicien().getPartenaire().getId();
-
-            // Kan-jbdou l'ResultatCQ dyal dak ch'her w kan-n9ssou l'flouss mn l'Total
             resultatCQRepository.findByPartenaireIdAndPeriodeMois(partenaireId, "2026-08")
                     .ifPresent(resultat -> {
                         if (resultat.getPenalite() != null) {
