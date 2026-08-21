@@ -93,7 +93,6 @@ export default function VueGlobalePage() {
       const calculatedTotal = flatCqData.reduce((sum, row) => sum + (visionMode === 'ADMIN' ? (row.montant || 0) : (row.mtSst || 0)), 0);
       setTotalCqPenalties(calculatedTotal);
 
-      // 🛡️ JDID: Fetch Contestations count
       const count = await getContestationsCount(month, year);
       setContestationsCount(count);
 
@@ -113,7 +112,7 @@ export default function VueGlobalePage() {
   const totalRaccBonus = filteredData.filter(item => raccProcessus.includes(item.processus)).reduce((sum, item) => sum + item.bonus, 0);
   const totalSavBonus = filteredData.filter(item => !raccProcessus.includes(item.processus)).reduce((sum, item) => sum + item.bonus, 0);
 
-  // 🛡️ JDID: Logique de Mapping et de Groupement (RowSpan)
+  // 🛡️ Logique de Mapping et de Groupement (RowSpan)
   function mapProcessus(p: string, domaine: string) {
     if (p.startsWith('PERF_RANG_1_')) return { cat: 'PERF', niv: 'RANG 1', ind: 'PLP', zone: p.split('_')[3] };
     if (p.startsWith('HOTLINE_RANG_1_')) return { cat: 'PERF', niv: 'RANG 1', ind: 'HOTLINE', zone: p.split('_')[3] };
@@ -265,7 +264,7 @@ export default function VueGlobalePage() {
           </InteractiveCard>
         </div>
 
-        {/* 🚀 LA NOUVELLE TABLE AVEC ROWSPAN (GROUPEMENT) */}
+        {/* 🚀 LA NOUVELLE TABLE AVEC ROWSPAN (COMPACTE & SCROLLABLE) */}
         <div className={styles.tableWrapper}>
           {loading ? (
             <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des données en temps réel...</div>
