@@ -2,6 +2,7 @@ package com.kyntus.kqualite.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "cq_data")
@@ -44,10 +45,23 @@ public class CqData {
     @Column(name = "montant")
     private Double montant;
 
-    // 🛡️ L'FIX HWA HNA: Zedt l'colonne MT SST
     @Column(name = "mt_sst")
     private Double mtSst;
 
     @Column(name = "valeur_metrique")
     private String valeurMetrique;
+
+    // 🛡️ JDID: Cycle de vie de la contestation
+    @Column(name = "statut_contestation")
+    @Builder.Default
+    private String statutContestation = "NON_CONTESTE"; // NON_CONTESTE, EN_COURS, ACCEPTE, REFUSE
+
+    @Column(name = "motif_contestation", length = 1000)
+    private String motifContestation;
+
+    @Column(name = "date_contestation")
+    private LocalDateTime dateContestation;
+
+    @Column(name = "reponse_admin", length = 1000)
+    private String reponseAdmin;
 }

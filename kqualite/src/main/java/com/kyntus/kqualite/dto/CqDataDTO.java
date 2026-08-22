@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -19,8 +20,14 @@ public class CqDataDTO {
     private String reference;
     private String departement;
     private Double montant;
-    private Double mtSst; // 🛡️ JDID
+    private Double mtSst;
     private String valeurMetrique;
     private Long partenaireId;
     private String partenaireNom;
+
+    // 🛡️ JDID
+    private String statutContestation;
+    private String motifContestation;
+    private LocalDateTime dateContestation;
+    private String reponseAdmin;
 }

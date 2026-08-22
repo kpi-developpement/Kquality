@@ -68,7 +68,6 @@ export async function getContestationsEnAttente(): Promise<ContestationResponseD
   return json.data;
 }
 
-// 🛡️ JDID: Fetch count of contestations
 export async function getContestationsCount(month: number, year: number): Promise<number> {
   const res = await fetch(`${BASE_URL}/contestations/count?month=${month}&year=${year}`, { headers: getAuthHeaders(), cache: 'no-store' });
   if (!res.ok) return 0;
@@ -188,6 +187,20 @@ export async function getCqDataByPartenaire(partenaireId: number, typeFeuille: s
   if (!res.ok) throw new Error('Erreur récupération CQ Data');
   const json = await res.json();
   return json.data;
+}
+
+// 🛡️ JDID: Contester une ligne CQ Data
+export async function contesterCqData(id: number, motif: string) {
+  const res = await fetch(`${BASE_URL}/cq-data/${id}/contester`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ motif })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Erreur lors de la contestation");
+  }
+  return await res.json();
 }
 
 export async function getAdminCqData(typeFeuille: string, month: number, year: number, partenaireId?: string): Promise<CqDataDTO[]> {

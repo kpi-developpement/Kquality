@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -51,7 +53,6 @@ public class CqDataController {
         return ResponseEntity.ok(ApiResponse.success(data, "Données Admin récupérées"));
     }
 
-    //  API jdida l'Dropdown dyal l'Admin
     @GetMapping("/admin/partenaires-actifs")
     public ResponseEntity<ApiResponse<List<PartenaireDTO>>> getPartenairesActifs(
             @RequestParam("month") int month,
@@ -63,6 +64,23 @@ public class CqDataController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(ApiResponse.success(data, "Partenaires actifs récupérés"));
+    }
+
+    // 🛡️ JDID: Endpoint pour contester une ligne CQ
+    @PostMapping("/{id}/contester")
+    public ResponseEntity<ApiResponse<Void>> contesterCqData(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        CqData cqData = cqDataRepository.findById(id).orElseThrow(() -> new RuntimeException("Ligne introuvable"));
+
+        if (!"NON_CONTESTE".equals(cqData.getStatutContestation()) && cqData.getStatutContestation() != null) {
+            throw new RuntimeException("Cette ligne a déjà été contestée.");
+        }
+
+        cqData.setStatutContestation("EN_COURS");
+        cqData.setMotifContestation(payload.get("motif"));
+        cqData.setDateContestation(LocalDateTime.now());
+        cqDataRepository.save(cqData);
+
+        return ResponseEntity.ok(ApiResponse.success(null, "Contestation soumise avec succès"));
     }
 
     private CqDataDTO mapToDTO(CqData c) {
@@ -80,6 +98,10 @@ public class CqDataController {
                 .valeurMetrique(c.getValeurMetrique())
                 .partenaireId(c.getPartenaire().getId())
                 .partenaireNom(c.getPartenaire().getNomEntreprise())
+                .statutContestation(c.getStatutContestation() != null ? c.getStatutContestation() : "NON_CONTESTE")
+                .motifContestation(c.getMotifContestation())
+                .dateContestation(c.getDateContestation())
+                .reponseAdmin(c.getReponseAdmin())
                 .build();
     }
 }

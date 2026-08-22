@@ -16,7 +16,6 @@ export interface DashboardPartenaireDTO {
   statutPenalites: string;
 }
 
-// ... (Khlli dakchi l9dim) ...
 export interface ErreurResponseDTO {
   id: number;
   dateDetection: string;
@@ -30,11 +29,10 @@ export interface ErreurResponseDTO {
   technicienMatricule: string;
   regleCode: string;
   regleDescription: string;
-  categorie?: string; // 🛡️ L'FIX HWA HNA
+  categorie?: string; 
   aContestation: boolean;
   partenaireNom?: string;
 }
-// ...
 
 export interface ContestationResponseDTO {
   id: number;
@@ -59,6 +57,7 @@ export interface KpiArchiveDTO {
   resultat: number;
   partDeMarche: number;
   bonus: number;
+  createdAt: string;
 }
 
 export interface AuthResponseDTO {
@@ -91,16 +90,23 @@ export interface CqDataDTO {
   id: number;
   typeFeuille: string;
   kyn: string;
+  mois: number;
+  annee: number;
   anMois: string;
   reference: string;
   departement: string;
   montant: number;
   mtSst?: number;
   valeurMetrique: string;
-  // 🛡️ L'FIX HWA HNA: Zedt les 2 champs li kano na9sin
   partenaireId?: number;
   partenaireNom?: string;
+  // 🛡️ JDID
+  statutContestation?: string;
+  motifContestation?: string;
+  dateContestation?: string;
+  reponseAdmin?: string;
 }
+
 export interface CqPartenaireKpiDTO {
   id: number;
   partenaireId: number;
