@@ -14,25 +14,30 @@ export default function AdminErreursPage() {
   const [erreurs, setErreurs] = useState<ErreurResponseDTO[]>([]);
   const [partenaires, setPartenaires] = useState<PartenaireDTO[]>([]);
   const [selectedPartenaire, setSelectedPartenaire] = useState("ALL");
+  
+  // 🛡️ JDID: Filtres de période
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
+  
   const [loading, setLoading] = useState(true);
-
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedPartenaire]);
+  }, [selectedPartenaire, month, year]);
 
   useEffect(() => {
-    getAdminPartenaires().then(setPartenaires).catch(console.error); //[cite: 5]
+    getAdminPartenaires().then(setPartenaires).catch(console.error);
   }, []);
 
   useEffect(() => {
     setLoading(true);
-    getAdminErreurs(selectedPartenaire) //[cite: 5]
+    // 🛡️ JDID: Envoi de month et year
+    getAdminErreurs(month, year, selectedPartenaire)
       .then(setErreurs)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [selectedPartenaire]);
+  }, [selectedPartenaire, month, year]);
 
   const totalErreurs = erreurs.length;
   const impactGlobal = erreurs.reduce((acc, err) => acc + (err.impactEstime || 0), 0);
@@ -41,6 +46,9 @@ export default function AdminErreursPage() {
     { value: "ALL", label: `Vue Globale (Tous les partenaires)` },
     ...partenaires.map(p => ({ value: p.id.toString(), label: p.nomEntreprise }))
   ];
+  
+  const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
+  const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
 
   const totalPages = Math.ceil(totalErreurs / ITEMS_PER_PAGE);
   const paginatedErreurs = useMemo(() => {
@@ -69,14 +77,12 @@ export default function AdminErreursPage() {
           <div className={styles.filtersWrapper}>
             <div className={styles.filterLabel}>
               <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-              Filtrer par Partenaire
+              Filtrer l'Analyse
             </div>
-            <CustomSelect 
-              value={selectedPartenaire} 
-              options={partenaireOptions} 
-              onChange={setSelectedPartenaire} 
-              width="300px" 
-            />
+            {/* 🛡️ JDID: Ajout des CustomSelect pour le mois et l'année */}
+            <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="120px" />
+            <CustomSelect value={year} options={yearOptions} onChange={setYear} width="100px" />
+            <CustomSelect value={selectedPartenaire} options={partenaireOptions} onChange={setSelectedPartenaire} width="300px" />
           </div>
         </header>
 
@@ -125,7 +131,6 @@ export default function AdminErreursPage() {
                   <th>Dossier</th>
                   <th>Date</th>
                   <th>Technicien</th>
-                  {/* 🚀 L'FIX HNA: ZEDT CATÉGORIE W BDDLT DESCRIPTION L SOUS CATEGORIE */}
                   <th>Catégorie</th>
                   <th>Sous Catégorie</th>
                   <th>Impact</th>
@@ -143,16 +148,12 @@ export default function AdminErreursPage() {
                     <td className={styles.reference}>{erreur.dossierReference}</td>
                     <td style={{ fontWeight: '800', color: '#64748b' }}>{new Date(erreur.dateDetection).toLocaleDateString()}</td>
                     <td style={{ fontWeight: '800' }}>{erreur.technicienNomComplet}</td>
-                    
-                    {/* 🚀 AFFICHER LA CATÉGORIE EN PILLULE */}
                     <td>
                       <span className={styles.categorieBadge}>
                         {erreur.categorie || 'Non Catégorisée'}
                       </span>
                     </td>
-                    
                     <td style={{ color: '#475569', fontWeight: '700' }}>{erreur.regleDescription}</td>
-                    
                     <td className={styles.impact}>{erreur.impactEstime} €</td>
                     <td>
                       <span className={`${styles.badge} ${styles[erreur.statut.toLowerCase()] || styles.badge_default}`}>

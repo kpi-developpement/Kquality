@@ -21,13 +21,15 @@ public class AdminErreurController {
 
     private final ErreurImportService erreurImportService;
     private final CqMultiSheetImportService cqMultiSheetImportService;
-    private final ErreurService erreurService; // 🛡️ JDID
+    private final ErreurService erreurService;
 
-    // 🛡️ L'FIX HWA HNA: API l'Admin bach y-chouf les erreurs
+    // 🛡️ JDID: Ajout des paramètres month et year
     @GetMapping
     public ResponseEntity<ApiResponse<List<ErreurResponseDTO>>> getAllErreurs(
-            @RequestParam(value = "partenaireId", required = false) Long partenaireId) {
-        List<ErreurResponseDTO> data = erreurService.getAllErreursAdmin(partenaireId);
+            @RequestParam(value = "partenaireId", required = false) Long partenaireId,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+        List<ErreurResponseDTO> data = erreurService.getAllErreursAdmin(partenaireId, month, year);
         return ResponseEntity.ok(ApiResponse.success(data, "Erreurs récupérées avec succès"));
     }
 

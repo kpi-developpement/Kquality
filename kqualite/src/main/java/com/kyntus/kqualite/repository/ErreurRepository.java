@@ -12,12 +12,13 @@ import java.util.List;
 @Repository
 public interface ErreurRepository extends JpaRepository<Erreur, Long> {
 
-    // Njbdou ga3 les erreurs dyal un Partenaire specifique (ISOLATION)
-    // Katmchi mn Erreur -> Dossier -> Technicien -> Partenaire
     @Query("SELECT e FROM Erreur e JOIN e.dossier d JOIN d.technicien t WHERE t.partenaire.id = :partenaireId")
     List<Erreur> findAllByPartenaireId(@Param("partenaireId") Long partenaireId);
 
-    // Njbdou les erreurs b statut (b7al NOUVEAU wla A_ANALYSER) l wahed l'partenaire
     @Query("SELECT e FROM Erreur e JOIN e.dossier d JOIN d.technicien t WHERE t.partenaire.id = :partenaireId AND e.statut = :statut")
     List<Erreur> findByPartenaireIdAndStatut(@Param("partenaireId") Long partenaireId, @Param("statut") StatutErreur statut);
+
+    // 🛡️ JDID: Filtre Admin par Partenaire, Mois et Année
+    @Query("SELECT e FROM Erreur e JOIN e.dossier d JOIN d.technicien t WHERE (:partenaireId IS NULL OR t.partenaire.id = :partenaireId) AND EXTRACT(MONTH FROM e.dateDetection) = :month AND EXTRACT(YEAR FROM e.dateDetection) = :year")
+    List<Erreur> findByFiltres(@Param("partenaireId") Long partenaireId, @Param("month") int month, @Param("year") int year);
 }

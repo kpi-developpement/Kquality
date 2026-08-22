@@ -36,6 +36,7 @@ export interface ErreurResponseDTO {
 
 export interface ContestationResponseDTO {
   id: number;
+  type: string; // 🛡️ JDID: "ERREUR" ou "PENALITE_CQ"
   motif: string;
   commentaire: string;
   pieceJointeUrl: string;
@@ -44,6 +45,8 @@ export interface ContestationResponseDTO {
   dossierReference: string;
   partenaireNom: string;
   impactEstime: number;
+  statut: string; // 🛡️ JDID: "EN_ATTENTE", "ACCEPTE", "REFUSE"
+  reponseAdmin?: string;
 }
 
 export interface KpiArchiveDTO {
@@ -100,7 +103,6 @@ export interface CqDataDTO {
   valeurMetrique: string;
   partenaireId?: number;
   partenaireNom?: string;
-  // 🛡️ JDID
   statutContestation?: string;
   motifContestation?: string;
   dateContestation?: string;

@@ -22,7 +22,10 @@ public interface CqDataRepository extends JpaRepository<CqData, Long> {
     @Transactional
     void deleteByMoisAndAnnee(int mois, int annee);
 
-    // 🛡️ L'FIX HWA HNA: Jbed ghir les partenaires li 3ndhom data f had l'mois w l'annee
     @Query("SELECT DISTINCT c.partenaire FROM CqData c WHERE c.mois = :mois AND c.annee = :annee")
     List<Partenaire> findDistinctPartenairesByMoisAndAnnee(@Param("mois") int mois, @Param("annee") int annee);
+
+    // 🛡️ JDID: Récupérer toutes les lignes CQ qui ont une contestation
+    @Query("SELECT c FROM CqData c WHERE c.statutContestation IS NOT NULL AND c.statutContestation != 'NON_CONTESTE'")
+    List<CqData> findContestedCqData();
 }

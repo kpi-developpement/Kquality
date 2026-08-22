@@ -23,15 +23,10 @@ public class ErreurService {
                 .collect(Collectors.toList());
     }
 
+    // 🛡️ JDID: Ajout de month et year
     @Transactional(readOnly = true)
-    public List<ErreurResponseDTO> getAllErreursAdmin(Long partenaireId) {
-        List<Erreur> erreurs;
-        if (partenaireId != null) {
-            erreurs = erreurRepository.findAllByPartenaireId(partenaireId);
-        } else {
-            erreurs = erreurRepository.findAll();
-        }
-        return erreurs.stream()
+    public List<ErreurResponseDTO> getAllErreursAdmin(Long partenaireId, int month, int year) {
+        return erreurRepository.findByFiltres(partenaireId, month, year).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -50,7 +45,7 @@ public class ErreurService {
                 .technicienMatricule(erreur.getDossier().getTechnicien().getMatricule())
                 .regleCode(erreur.getRegleQualite().getCodeRegle())
                 .regleDescription(erreur.getRegleQualite().getDescription())
-                .categorie(erreur.getRegleQualite().getCategorie()) // 🛡️ JDID
+                .categorie(erreur.getRegleQualite().getCategorie())
                 .aContestation(erreur.getContestation() != null)
                 .partenaireNom(erreur.getDossier().getTechnicien().getPartenaire().getNomEntreprise())
                 .build();

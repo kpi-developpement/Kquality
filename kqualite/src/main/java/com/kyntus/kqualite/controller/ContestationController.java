@@ -28,13 +28,13 @@ public class ContestationController {
         return ResponseEntity.ok(ApiResponse.success(null, "Contestation déposée avec succès"));
     }
 
-    @GetMapping("/en-attente")
-    public ResponseEntity<ApiResponse<List<ContestationResponseDTO>>> getContestationsEnAttente() {
-        List<ContestationResponseDTO> liste = contestationService.getContestationsEnAttente();
-        return ResponseEntity.ok(ApiResponse.success(liste, "Contestations récupérées"));
+    // 🛡️ JDID: Récupérer TOUTES les contestations unifiées
+    @GetMapping("/toutes")
+    public ResponseEntity<ApiResponse<List<ContestationResponseDTO>>> getAllContestations() {
+        List<ContestationResponseDTO> liste = contestationService.getAllContestations();
+        return ResponseEntity.ok(ApiResponse.success(liste, "Toutes les contestations récupérées"));
     }
 
-    // 🛡️ JDID: Endpoint pour le compteur du Dashboard
     @GetMapping("/count")
     public ResponseEntity<ApiResponse<Long>> countContestations(
             @RequestParam("month") int month,
@@ -43,12 +43,14 @@ public class ContestationController {
         return ResponseEntity.ok(ApiResponse.success(count, "Nombre de contestations récupéré"));
     }
 
-    @PostMapping("/{id}/traiter")
+    // 🛡️ JDID: Endpoint dynamique avec le type
+    @PostMapping("/{type}/{id}/traiter")
     public ResponseEntity<ApiResponse<Void>> traiterContestation(
+            @PathVariable String type,
             @PathVariable Long id,
             @RequestHeader(value = "X-Admin-Id", defaultValue = "99") Long adminId,
             @RequestBody TraitementRequestDTO request) {
-        contestationService.traiterContestation(id, request, adminId);
+        contestationService.traiterContestation(type, id, request, adminId);
         return ResponseEntity.ok(ApiResponse.success(null, "Contestation traitée avec succès"));
     }
 }

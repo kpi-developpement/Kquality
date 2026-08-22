@@ -21,7 +21,6 @@ const getAuthHeaders = () => {
   return headers;
 };
 
-// --- AUTHENTICATION ---
 export async function login(email: string, password: string): Promise<AuthResponseDTO> {
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
@@ -33,7 +32,6 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return json.data;
 }
 
-// --- DATA FETCHING ---
 export async function getDashboardData(partenaireId: number = 1): Promise<DashboardPartenaireDTO> {
   const url = `${BASE_URL}/dashboard/partenaire/${partenaireId}?periodeMois=2026-08`;
   const res = await fetch(url, { headers: getAuthHeaders(), cache: 'no-store' });
@@ -61,8 +59,9 @@ export async function deposerContestation(erreurId: number, motif: string, comme
   return await res.json();
 }
 
-export async function getContestationsEnAttente(): Promise<ContestationResponseDTO[]> {
-  const res = await fetch(`${BASE_URL}/contestations/en-attente`, { headers: getAuthHeaders(), cache: 'no-store' });
+// 🛡️ JDID: Récupérer toutes les contestations unifiées
+export async function getAllContestations(): Promise<ContestationResponseDTO[]> {
+  const res = await fetch(`${BASE_URL}/contestations/toutes`, { headers: getAuthHeaders(), cache: 'no-store' });
   if (!res.ok) throw new Error('Erreur récupération contestations');
   const json: ApiResponse<ContestationResponseDTO[]> = await res.json();
   return json.data;
@@ -75,8 +74,9 @@ export async function getContestationsCount(month: number, year: number): Promis
   return json.data;
 }
 
-export async function traiterContestation(id: number, accepter: boolean, commentaire: string) {
-  const res = await fetch(`${BASE_URL}/contestations/${id}/traiter`, {
+// 🛡️ JDID: Traitement dynamique avec le type
+export async function traiterContestation(type: string, id: number, accepter: boolean, commentaire: string) {
+  const res = await fetch(`${BASE_URL}/contestations/${type}/${id}/traiter`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ accepter, commentaire })
@@ -189,7 +189,6 @@ export async function getCqDataByPartenaire(partenaireId: number, typeFeuille: s
   return json.data;
 }
 
-// 🛡️ JDID: Contester une ligne CQ Data
 export async function contesterCqData(id: number, motif: string) {
   const res = await fetch(`${BASE_URL}/cq-data/${id}/contester`, {
     method: 'POST',
@@ -221,9 +220,10 @@ export async function getActivePartenairesForCq(month: number, year: number): Pr
   return json.data;
 }
 
-export async function getAdminErreurs(partenaireId?: string): Promise<ErreurResponseDTO[]> {
-  let url = `${BASE_URL}/admin/erreurs`;
-  if (partenaireId && partenaireId !== "ALL") url += `?partenaireId=${partenaireId}`;
+// 🛡️ JDID: Ajout de month et year
+export async function getAdminErreurs(month: number, year: number, partenaireId?: string): Promise<ErreurResponseDTO[]> {
+  let url = `${BASE_URL}/admin/erreurs?month=${month}&year=${year}`;
+  if (partenaireId && partenaireId !== "ALL") url += `&partenaireId=${partenaireId}`;
   const res = await fetch(url, { headers: getAuthHeaders(), cache: 'no-store' });
   if (!res.ok) throw new Error('Erreur récupération erreurs admin');
   const json = await res.json();

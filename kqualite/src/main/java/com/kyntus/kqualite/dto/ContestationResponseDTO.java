@@ -13,14 +13,17 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ContestationResponseDTO {
     private Long id;
+    private String type; // 🛡️ JDID: "ERREUR" ou "PENALITE_CQ"
     private String motif;
     private String commentaire;
     private String pieceJointeUrl;
     private LocalDateTime dateDepot;
 
-    // Infos 3la l'erreur w l'partenaire bach l'admin y3ref 3mn kay7kem
     private Long erreurId;
     private String dossierReference;
     private String partenaireNom;
     private Double impactEstime;
+
+    private String statut; // 🛡️ JDID: "EN_ATTENTE", "ACCEPTE", "REFUSE"
+    private String reponseAdmin; // 🛡️ JDID
 }
