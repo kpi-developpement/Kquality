@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { getErreurs, getAdminErreurs } from '@/services/apiService';
+import { getErreurById } from '@/services/apiService'; // 🛡️ L'FIX HWA HNA
 import { ErreurResponseDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import ContestationForm from '../ContestationForm'; 
@@ -21,13 +21,9 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
     if (!user) return;
     try {
       setLoading(true);
-      let erreurs: ErreurResponseDTO[] = [];
-      if (user.role === 'ADMIN') erreurs = await getAdminErreurs("ALL");
-      else if (user.partenaireId) erreurs = await getErreurs(user.partenaireId);
-
-      const found = erreurs.find(e => e.id.toString() === urlId);
-      if (found) setErreur(found);
-      else setNotFound(true);
+      // 🛡️ L'FIX HWA HNA: Appel direct b l'ID (Rapide w N9i)
+      const found = await getErreurById(Number(urlId));
+      setErreur(found);
     } catch (error) {
       console.error(error);
       setNotFound(true);
@@ -54,19 +50,16 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
           Retour au Registre
         </Link>
         
-        {/* 🚀 THE IMPACT VAULT HEADER AVEC LA CATÉGORIE */}
         <div className={styles.headerBox}>
           <div className={styles.headerLeft}>
             <span className={styles.dossierLabel}>Dossier d'Anomalie</span>
             <h1>{erreur.dossierReference}</h1>
             
-            {/* 🚀 L'FIX: BADGE DE CATÉGORIE AJOUTÉ HNA */}
             <span className={styles.categorieBadge}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
               {erreur.categorie || 'Catégorie non spécifiée'}
             </span>
 
-            {/* DESCRIPTION = SOUS CATÉGORIE */}
             <p className={styles.regle}>{erreur.regleDescription}</p>
           </div>
 
@@ -87,10 +80,7 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
             <ul>
               {user?.role === 'ADMIN' && <li><strong>Partenaire</strong> <span style={{color:'#2563eb'}}>{erreur.partenaireNom}</span></li>}
               <li><strong>Technicien Assigné</strong> {erreur.technicienNomComplet} ({erreur.technicienMatricule})</li>
-              
-              {/* 🚀 L'FIX: CATÉGORIE AJOUTÉE F L'LISTA DES METADONNÉES TAHIYA */}
               <li><strong>Catégorie Primaire</strong> {erreur.categorie || 'N/A'}</li>
-              
               <li><strong>Date d'intervention</strong> {new Date(erreur.dossierDateIntervention).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</li>
               <li><strong>Date de détection (Audit)</strong> {new Date(erreur.dateDetection).toLocaleString('fr-FR')}</li>
               <li>

@@ -47,6 +47,14 @@ export async function getErreurs(partenaireId: number = 1): Promise<ErreurRespon
   return json.data;
 }
 
+// 🛡️ L'FIX HWA HNA: Nouvelle fonction pour récupérer une seule erreur
+export async function getErreurById(id: number): Promise<ErreurResponseDTO> {
+  const res = await fetch(`${BASE_URL}/erreurs/${id}`, { headers: getAuthHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error('Erreur récupération détail erreur');
+  const json = await res.json();
+  return json.data;
+}
+
 export async function deposerContestation(erreurId: number, motif: string, commentaire: string, pieceJointeUrl: string) {
   const url = `${BASE_URL}/contestations/deposer`;
   const payload = { erreurId, motif, commentaire, pieceJointeUrl };
@@ -59,7 +67,6 @@ export async function deposerContestation(erreurId: number, motif: string, comme
   return await res.json();
 }
 
-// 🛡️ JDID: Récupérer toutes les contestations unifiées
 export async function getAllContestations(): Promise<ContestationResponseDTO[]> {
   const res = await fetch(`${BASE_URL}/contestations/toutes`, { headers: getAuthHeaders(), cache: 'no-store' });
   if (!res.ok) throw new Error('Erreur récupération contestations');
@@ -74,7 +81,6 @@ export async function getContestationsCount(month: number, year: number): Promis
   return json.data;
 }
 
-// 🛡️ JDID: Traitement dynamique avec le type
 export async function traiterContestation(type: string, id: number, accepter: boolean, commentaire: string) {
   const res = await fetch(`${BASE_URL}/contestations/${type}/${id}/traiter`, {
     method: 'POST',
@@ -220,7 +226,6 @@ export async function getActivePartenairesForCq(month: number, year: number): Pr
   return json.data;
 }
 
-// 🛡️ JDID: Ajout de month et year
 export async function getAdminErreurs(month: number, year: number, partenaireId?: string): Promise<ErreurResponseDTO[]> {
   let url = `${BASE_URL}/admin/erreurs?month=${month}&year=${year}`;
   if (partenaireId && partenaireId !== "ALL") url += `&partenaireId=${partenaireId}`;

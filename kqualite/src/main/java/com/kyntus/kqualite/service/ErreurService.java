@@ -23,12 +23,19 @@ public class ErreurService {
                 .collect(Collectors.toList());
     }
 
-    // 🛡️ JDID: Ajout de month et year
     @Transactional(readOnly = true)
     public List<ErreurResponseDTO> getAllErreursAdmin(Long partenaireId, int month, int year) {
         return erreurRepository.findByFiltres(partenaireId, month, year).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    // 🛡️ L'FIX HWA HNA: Nouvelle méthode pour récupérer une seule erreur par son ID
+    @Transactional(readOnly = true)
+    public ErreurResponseDTO getErreurById(Long id) {
+        return erreurRepository.findById(id)
+                .map(this::mapToDTO)
+                .orElseThrow(() -> new RuntimeException("Erreur introuvable"));
     }
 
     private ErreurResponseDTO mapToDTO(Erreur erreur) {

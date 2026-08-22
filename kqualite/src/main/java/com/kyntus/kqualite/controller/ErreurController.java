@@ -24,4 +24,11 @@ public class ErreurController {
         List<ErreurResponseDTO> erreurs = erreurService.getErreursByPartenaire(partenaireId);
         return ResponseEntity.ok(ApiResponse.success(erreurs, "Liste des erreurs récupérée avec succès"));
     }
+
+    // 🛡️ L'FIX HWA HNA: Endpoint dédié pour le détail d'une erreur
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<ErreurResponseDTO>> getErreurById(@PathVariable Long id) {
+        ErreurResponseDTO erreur = erreurService.getErreurById(id);
+        return ResponseEntity.ok(ApiResponse.success(erreur, "Détail de l'erreur récupéré"));
+    }
 }
