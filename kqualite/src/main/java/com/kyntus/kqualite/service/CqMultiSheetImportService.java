@@ -50,7 +50,6 @@ public class CqMultiSheetImportService {
 
                 Map<String, Integer> headerMap = new HashMap<>();
                 for (Cell cell : headerRow) {
-                    // 🛡️ L'FIX: On normalise proprement l'en-tête dès la lecture
                     headerMap.put(normalizeHeader(getCellValue(cell)), cell.getColumnIndex());
                 }
 
@@ -94,7 +93,6 @@ public class CqMultiSheetImportService {
 
         Partenaire partenaire = techOpt.get().getPartenaire();
 
-        // 🛡️ L'EXTRACTION BLINDÉE (Gère les accents "Pénalité", les espaces "MT SST", etc.)
         Double montantGlobal = parseDouble(extractValue(row, headers, "montant", "impact", "penalite", "cout", "total"));
         String mtSstStr = extractValue(row, headers, "mtsst", "montantsst", "impactsst", "penalitesst", "sst");
 
@@ -102,7 +100,6 @@ public class CqMultiSheetImportService {
         if (!mtSstStr.isEmpty()) {
             mtSst = parseDouble(mtSstStr);
         } else {
-            // Si la colonne MT SST n'existe pas, on prend l'impact global
             mtSst = montantGlobal;
         }
 
@@ -138,16 +135,13 @@ public class CqMultiSheetImportService {
         return true;
     }
 
-    // 🛡️ LE NETTOYEUR ABSOLU : Enlève les accents (é -> e) et les caractères spéciaux
     private String normalizeHeader(String input) {
         if (input == null) return "";
         String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
         return normalized.replaceAll("\\p{M}", "").toLowerCase().replaceAll("[^a-z0-9]", "");
     }
 
-    // 🛡️ L'EXTRACTEUR ROBUSTE
     private String extractValue(Row row, Map<String, Integer> headers, String... possibleNames) {
-        // 1. Recherche Exacte
         for (String name : possibleNames) {
             String cleanTarget = normalizeHeader(name);
             if (headers.containsKey(cleanTarget)) {
@@ -155,7 +149,6 @@ public class CqMultiSheetImportService {
             }
         }
 
-        // 2. Recherche Partielle (Si le nom exact n'est pas trouvé, ex: "Impact (MT SST) €")
         for (String name : possibleNames) {
             String cleanTarget = normalizeHeader(name);
             for (Map.Entry<String, Integer> entry : headers.entrySet()) {
@@ -170,15 +163,27 @@ public class CqMultiSheetImportService {
     private Double parseDouble(String val) {
         if (val == null || val.isEmpty()) return 0.0;
         String clean = val.replaceAll("[^\\d.,-]", "").replace(",", ".");
-        try { return Double.parseDouble(clean); } catch (Exception e) { return 0.0; }
+        try {
+            // 🛡️ L'FIX HWA HNA: Math.abs() bach n-reddou les pénalités négatives (-200) positives (200)
+            return Math.abs(Double.parseDouble(clean));
+        } catch (Exception e) { return 0.0; }
     }
 
+    // 🛡️ L'FIX HWA HNA: Gestion des cellules de type FORMULA
     private String getCellValue(Cell cell) {
         if (cell == null) return "";
         switch (cell.getCellType()) {
             case STRING: return cell.getStringCellValue().trim();
             case NUMERIC: return String.valueOf(cell.getNumericCellValue());
             case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                // Si c'est une formule, on lit le résultat calculé en cache par Excel
+                switch (cell.getCachedFormulaResultType()) {
+                    case NUMERIC: return String.valueOf(cell.getNumericCellValue());
+                    case STRING: return cell.getStringCellValue().trim();
+                    case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+                    default: return "";
+                }
             default: return "";
         }
     }
