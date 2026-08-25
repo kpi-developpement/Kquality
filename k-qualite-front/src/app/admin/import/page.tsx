@@ -11,10 +11,11 @@ import {
   importGemNokExcel, 
   importCadrageExcel,
   importTauxPlainteExcel,
-  importSavExcel
+  importSavExcel,
+  purgeData // 🛡️ JDID
 } from '@/services/apiService';
-import CustomSelect from '../vue-globale/components/CustomSelect/CustomSelect'; // 🚀
-import InteractiveCard from '../vue-globale/components/InteractiveCard/InteractiveCard'; // 🚀
+import CustomSelect from '../vue-globale/components/CustomSelect/CustomSelect'; 
+import InteractiveCard from '../vue-globale/components/InteractiveCard/InteractiveCard'; 
 import styles from './Import.module.css';
 
 export default function ImportErreursPage() {
@@ -25,6 +26,9 @@ export default function ImportErreursPage() {
   
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
+
+  // 🛡️ JDID: State pour la purge
+  const [purgeTarget, setPurgeTarget] = useState("ALL");
 
   const fileInputErreursRef = useRef<HTMLInputElement>(null);
   const fileInputMultiRef = useRef<HTMLInputElement>(null);
@@ -65,8 +69,45 @@ export default function ImportErreursPage() {
     }
   };
 
+  // 🛡️ JDID: Fonction de purge
+  const handlePurge = async () => {
+    const confirmMsg = purgeTarget === "ALL" 
+      ? `⚠️ ATTENTION ⚠️\nVous êtes sur le point de supprimer TOUTES les données du mois ${month}/${year}.\nCette action est irréversible. Confirmer ?`
+      : `Voulez-vous vraiment supprimer les données de [${purgeTarget}] pour le mois ${month}/${year} ?`;
+
+    if (window.confirm(confirmMsg)) {
+      setLoading(true);
+      setLoadingMsg(`Purge des données en cours...`);
+      setError("");
+      setSummary(null);
+      
+      try {
+        await purgeData(purgeTarget, month, year);
+        alert("Les données ont été purgées avec succès.");
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
   const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
+
+  const purgeOptions = [
+    { value: "ALL", label: "TOUT VIDER (Danger)" },
+    { value: "ERREURS", label: "Erreurs Classiques" },
+    { value: "MULTI_CQ", label: "Multi-Feuilles CQ" },
+    { value: "CQ_PARTENAIRE", label: "Fichier 2 (PLP, Hotline...)" },
+    { value: "SACLI", label: "SACLI" },
+    { value: "SARCLI", label: "SARCLI" },
+    { value: "INCOHERENCE_PTO", label: "Incohérence PTO" },
+    { value: "GEM_NOK", label: "GEM NOK" },
+    { value: "CADRAGE", label: "Cadrage" },
+    { value: "TAUX_PLAINTE", label: "Taux de Plainte" },
+    { value: "SAV", label: "Fichier SAV" }
+  ];
 
   return (
     <div className={styles.pageWrapper}>
@@ -78,9 +119,9 @@ export default function ImportErreursPage() {
         {loading && (
           <div className={styles.loadingOverlay}>
             <div className={styles.spinner}></div>
-            <h2>Déploiement en cours</h2>
+            <h2>Opération en cours</h2>
             <p>{loadingMsg}</p>
-            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '10px' }}>Le système Kyntus distribue les lignes aux partenaires respectifs.</p>
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '10px' }}>Le système Kyntus traite votre demande.</p>
           </div>
         )}
 
@@ -254,6 +295,30 @@ export default function ImportErreursPage() {
             </ul>
           </div>
         )}
+
+        {/* 🛡️ JDID: DANGER ZONE POUR PURGER LA BDD */}
+        <div className={styles.dangerZone}>
+          <h3 className={styles.dangerTitle}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            Zone de Purge (Danger)
+          </h3>
+          <p style={{ color: '#7f1d1d', marginBottom: '20px', fontWeight: '600' }}>
+            Cette section vous permet de supprimer définitivement les données importées pour un mois spécifique afin de réimporter un fichier corrigé.
+          </p>
+          
+          <div className={styles.dangerControls}>
+            <div className={styles.filterGroup}>
+              <label style={{ color: '#b91c1c' }}>Fichier à purger</label>
+              <CustomSelect value={purgeTarget} options={purgeOptions} onChange={setPurgeTarget} width="250px" />
+            </div>
+            
+            <button className={styles.btnPurge} onClick={handlePurge}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Purger les données
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   );

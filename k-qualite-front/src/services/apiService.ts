@@ -47,7 +47,6 @@ export async function getErreurs(partenaireId: number = 1): Promise<ErreurRespon
   return json.data;
 }
 
-// 🛡️ L'FIX HWA HNA: Nouvelle fonction pour récupérer une seule erreur
 export async function getErreurById(id: number): Promise<ErreurResponseDTO> {
   const res = await fetch(`${BASE_URL}/erreurs/${id}`, { headers: getAuthHeaders(), cache: 'no-store' });
   if (!res.ok) throw new Error('Erreur récupération détail erreur');
@@ -311,5 +310,18 @@ export async function importSavExcel(file: File, month: number, year: number) {
   const formData = new FormData(); formData.append('file', file); formData.append('month', month.toString()); formData.append('year', year.toString());
   const res = await fetch(`${BASE_URL}/admin/cq-partenaire/import-sav`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` }, body: formData });
   if (!res.ok) throw new Error("Erreur importation Fichier SAV");
+  return await res.json();
+}
+
+// 🛡️ JDID: Fonction de Purge
+export async function purgeData(target: string, month: number, year: number) {
+  const res = await fetch(`${BASE_URL}/admin/purge?target=${target}&month=${month}&year=${year}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Erreur lors de la purge des données");
+  }
   return await res.json();
 }
