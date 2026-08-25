@@ -36,11 +36,9 @@ export default function ErreursPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 🚀 STATES EXPORT
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedCols, setSelectedCols] = useState<string[]>(EXPORT_COLUMNS.map(c => c.id));
 
-  // 🚀 STATES IMPORT & WIZARD
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardQueue, setWizardQueue] = useState<WizardItem[]>([]);
@@ -61,7 +59,7 @@ export default function ErreursPage() {
   useEffect(() => { fetchErreurs(); }, [user]);
 
   // ==========================================
-  // 🚀 LOGIQUE EXPORT EXCEL (AVEC BOOLEAN NATIF)
+  // 🚀 LOGIQUE EXPORT EXCEL (Mettre X)
   // ==========================================
   const handleExport = () => {
     const dataToExport = erreurs.map(err => {
@@ -74,9 +72,9 @@ export default function ErreursPage() {
       if (selectedCols.includes('impactEstime')) row['Impact (€)'] = err.impactEstime;
       if (selectedCols.includes('statut')) row['Statut'] = err.statut;
       
-      // 🚀 L'FIX HWA HNA: On utilise le type Booléen (false) pour que Excel le reconnaisse comme FAUX/VRAI
+      // 🚀 L'FIX HWA HNA: N-sehlouha 3la l'partenaire, y-kteb ghir X
       row['Analyse (Votre réponse)'] = '';
-      row['Preuve Photo (VRAI/FAUX)'] = false; 
+      row['Preuve Photo (Mettre X)'] = ''; 
       
       return row;
     });
@@ -117,9 +115,9 @@ export default function ErreursPage() {
           const eps = row[epsKey];
           const analyse = row[analyseKey];
           
-          // 🛡️ L'ALGORITHME BLINDÉ: Il comprend "true", "vrai", "oui", "x", "1"
-          const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : 'false';
-          const needsPhoto = photoVal === 'oui' || photoVal === '1' || photoVal === 'true' || photoVal === 'x' || photoVal === 'vrai';
+          // 🛡️ L'ALGORITHME BLINDÉ: Il comprend "X", "x", "oui", "1", "vrai"
+          const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : '';
+          const needsPhoto = photoVal === 'x' || photoVal === 'oui' || photoVal === '1' || photoVal === 'true' || photoVal === 'vrai';
 
           if (analyse && analyse.trim() !== '') {
             const matchedErreur = erreurs.find(e => e.dossierReference === eps);
@@ -232,7 +230,6 @@ export default function ErreursPage() {
             <p>Consultez et contestez les écarts détectés sur vos interventions.</p>
           </div>
           
-          {/* 🚀 BOUTONS EXPORT / IMPORT */}
           <div className={styles.actionHeaderGroup}>
             <button className={styles.btnExport} onClick={() => setIsExportModalOpen(true)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -342,7 +339,7 @@ export default function ErreursPage() {
                   Configuration de l'Export
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '14px', marginTop: '10px' }}>
-                  Le fichier contiendra obligatoirement la colonne <strong>Dossier (EPS)</strong>, ainsi que les colonnes <strong>Analyse</strong> et <strong>Preuve Photo (VRAI/FAUX)</strong> pour vos réponses.
+                  Le fichier contiendra obligatoirement la colonne <strong>Dossier (EPS)</strong>, ainsi que les colonnes <strong>Analyse</strong> et <strong>Preuve Photo (Mettre X)</strong> pour vos réponses.
                 </p>
               </div>
               
@@ -380,7 +377,7 @@ export default function ErreursPage() {
                   Preuve Photographique Requise
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '13px', marginTop: '5px' }}>
-                  Vous avez coché "VRAI" (ou "OUI") pour ce dossier dans votre fichier Excel.
+                  Vous avez mis "X" dans la colonne Preuve Photo pour ce dossier.
                 </p>
               </div>
 
