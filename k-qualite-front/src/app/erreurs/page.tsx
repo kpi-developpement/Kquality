@@ -1,14 +1,34 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
-import { getErreurs } from '@/services/apiService';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { getErreurs, deposerContestation } from '@/services/apiService';
 import { ErreurResponseDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; // Re-utilisation dyal 3D wrapper
+import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; 
+import * as XLSX from 'xlsx'; // 🚀 L'FIX HWA HNA: Librairie Excel
 import styles from './Erreurs.module.css';
 
 const ITEMS_PER_PAGE = 8;
+
+const EXPORT_COLUMNS = [
+  { id: 'dateDetection', label: 'Date Détection' },
+  { id: 'technicienNomComplet', label: 'Technicien' },
+  { id: 'categorie', label: 'Catégorie' },
+  { id: 'regleDescription', label: 'Sous Catégorie' },
+  { id: 'impactEstime', label: 'Impact (€)' },
+  { id: 'statut', label: 'Statut' }
+];
+
+interface WizardItem {
+  erreurId: number;
+  eps: string;
+  categorie: string;
+  impact: number;
+  analyse: string;
+  needsPhoto: boolean;
+  photoUrl: string;
+}
 
 export default function ErreursPage() {
   const { user } = useAuth();
@@ -16,15 +36,170 @@ export default function ErreursPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
+  // 🚀 STATES EXPORT
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedCols, setSelectedCols] = useState<string[]>(EXPORT_COLUMNS.map(c => c.id));
+
+  // 🚀 STATES IMPORT & WIZARD
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardQueue, setWizardQueue] = useState<WizardItem[]>([]);
+  const [currentWizardIndex, setCurrentWizardIndex] = useState(0);
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState("");
+
+  const fetchErreurs = () => {
     if (user?.partenaireId) {
+      setLoading(true);
       getErreurs(user.partenaireId)
         .then(setErreurs)
         .catch(console.error)
         .finally(() => setLoading(false));
     }
-  }, [user]);
+  };
 
+  useEffect(() => { fetchErreurs(); }, [user]);
+
+  // ==========================================
+  // 🚀 LOGIQUE EXPORT EXCEL
+  // ==========================================
+  const handleExport = () => {
+    const dataToExport = erreurs.map(err => {
+      const row: any = { 'Dossier (EPS)': err.dossierReference }; // EPS est obligatoire
+      
+      if (selectedCols.includes('dateDetection')) row['Date Détection'] = new Date(err.dateDetection).toLocaleDateString();
+      if (selectedCols.includes('technicienNomComplet')) row['Technicien'] = err.technicienNomComplet;
+      if (selectedCols.includes('categorie')) row['Catégorie'] = err.categorie || 'N/A';
+      if (selectedCols.includes('regleDescription')) row['Sous Catégorie'] = err.regleDescription;
+      if (selectedCols.includes('impactEstime')) row['Impact (€)'] = err.impactEstime;
+      if (selectedCols.includes('statut')) row['Statut'] = err.statut;
+      
+      // 🚀 Les deux colonnes magiques pour le partenaire
+      row['Analyse (Votre réponse)'] = '';
+      row['Preuve Photo (OUI/NON)'] = '';
+      
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Contestations");
+    
+    const month = new Date().getMonth() + 1;
+    const year = new Date().getFullYear();
+    XLSX.writeFile(wb, `Export_Erreurs_${month}_${year}.xlsx`);
+    setIsExportModalOpen(false);
+  };
+
+  // ==========================================
+  // 🚀 LOGIQUE IMPORT EXCEL & WIZARD
+  // ==========================================
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const bstr = evt.target?.result;
+      const wb = XLSX.read(bstr, { type: 'binary' });
+      const wsname = wb.SheetNames[0];
+      const ws = wb.Sheets[wsname];
+      const data = XLSX.utils.sheet_to_json(ws);
+
+      const queue: WizardItem[] = [];
+
+      data.forEach((row: any) => {
+        const epsKey = Object.keys(row).find(k => k.toLowerCase().includes('dossier') || k.toLowerCase().includes('eps'));
+        const analyseKey = Object.keys(row).find(k => k.toLowerCase().includes('analyse'));
+        const photoKey = Object.keys(row).find(k => k.toLowerCase().includes('preuve') || k.toLowerCase().includes('photo'));
+
+        if (epsKey && analyseKey) {
+          const eps = row[epsKey];
+          const analyse = row[analyseKey];
+          const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : 'non';
+          const needsPhoto = photoVal === 'oui' || photoVal === '1' || photoVal === 'true' || photoVal === 'x' || photoVal === 'vrai';
+
+          if (analyse && analyse.trim() !== '') {
+            const matchedErreur = erreurs.find(e => e.dossierReference === eps);
+            // On ne prend que les erreurs contestables
+            if (matchedErreur && (matchedErreur.statut === 'NOUVEAU' || matchedErreur.statut === 'A_ANALYSER')) {
+              queue.push({
+                erreurId: matchedErreur.id,
+                eps: matchedErreur.dossierReference,
+                categorie: matchedErreur.categorie || 'N/A',
+                impact: matchedErreur.impactEstime,
+                analyse: analyse,
+                needsPhoto: needsPhoto,
+                photoUrl: ''
+              });
+            }
+          }
+        }
+      });
+
+      if (queue.length > 0) {
+        setWizardQueue(queue);
+        
+        // Chercher le premier qui a besoin d'une photo
+        const firstPhotoIdx = queue.findIndex(q => q.needsPhoto);
+        if (firstPhotoIdx !== -1) {
+          setCurrentWizardIndex(firstPhotoIdx);
+          setCurrentPhotoUrl("");
+          setIsWizardOpen(true);
+        } else {
+          // Si aucun n'a besoin de photo, on soumet tout direct
+          submitBatch(queue);
+        }
+      } else {
+        alert("Aucune analyse trouvée ou les dossiers sont déjà contestés/expirés.");
+      }
+    };
+    reader.readAsBinaryString(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleWizardNext = () => {
+    // Sauvegarder l'URL pour l'item actuel
+    const updatedQueue = [...wizardQueue];
+    updatedQueue[currentWizardIndex].photoUrl = currentPhotoUrl;
+    setWizardQueue(updatedQueue);
+
+    // Chercher le prochain qui a besoin d'une photo
+    const nextIdx = updatedQueue.findIndex((q, idx) => idx > currentWizardIndex && q.needsPhoto);
+    
+    if (nextIdx !== -1) {
+      setCurrentWizardIndex(nextIdx);
+      setCurrentPhotoUrl("");
+    } else {
+      // Fini ! On ferme le wizard et on soumet
+      setIsWizardOpen(false);
+      submitBatch(updatedQueue);
+    }
+  };
+
+  const submitBatch = async (queue: WizardItem[]) => {
+    setBatchLoading(true);
+    let success = 0;
+    let failed = 0;
+
+    for (const item of queue) {
+      try {
+        // On envoie "AUTRE" comme motif par défaut pour les imports Excel
+        await deposerContestation(item.erreurId, "AUTRE", item.analyse, item.photoUrl);
+        success++;
+      } catch (err) {
+        failed++;
+      }
+    }
+
+    setBatchLoading(false);
+    alert(`Traitement par lot terminé !\n✅ Succès : ${success}\n❌ Échecs : ${failed}`);
+    fetchErreurs(); // Rafraîchir le tableau
+  };
+
+  // ==========================================
+  // 🚀 RENDER
+  // ==========================================
   const totalErreurs = erreurs.length;
   const impactGlobal = erreurs.reduce((acc, err) => acc + (err.impactEstime || 0), 0);
   const contestables = erreurs.filter(e => e.statut === 'NOUVEAU' || e.statut === 'A_ANALYSER').length;
@@ -46,12 +221,33 @@ export default function ErreursPage() {
       <div className={styles.bgBlob1}></div>
       <div className={styles.bgBlob2}></div>
 
+      {batchLoading && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.spinner}></div>
+          <h2>Traitement par lot en cours</h2>
+          <p>Le système injecte vos contestations. Veuillez patienter...</p>
+        </div>
+      )}
+
       <div className={styles.container}>
         <header className={styles.header}>
           <div>
             <div className={styles.partnerBadge}>PORTAIL QUALITÉ</div>
             <h1>Registre des Erreurs</h1>
             <p>Consultez et contestez les écarts détectés sur vos interventions.</p>
+          </div>
+          
+          {/* 🚀 BOUTONS EXPORT / IMPORT */}
+          <div className={styles.actionHeaderGroup}>
+            <button className={styles.btnExport} onClick={() => setIsExportModalOpen(true)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Générer Excel d'Analyse
+            </button>
+            <button className={styles.btnImport} onClick={() => fileInputRef.current?.click()}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              Importer les Contestations
+            </button>
+            <input type="file" accept=".xlsx,.xls" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImport} />
           </div>
         </header>
 
@@ -140,6 +336,87 @@ export default function ErreursPage() {
             </div>
           </div>
         )}
+
+        {/* 🚀 MODAL EXPORT EXCEL */}
+        {isExportModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <div className={styles.modalHeader}>
+                <h2>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Configuration de l'Export
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '14px', marginTop: '10px' }}>
+                  Le fichier contiendra obligatoirement la colonne <strong>Dossier (EPS)</strong>, ainsi que les colonnes <strong>Analyse</strong> et <strong>Preuve Photo</strong> pour vos réponses.
+                </p>
+              </div>
+              
+              <div className={styles.checkboxGrid}>
+                {EXPORT_COLUMNS.map(col => (
+                  <label key={col.id} className={styles.checkboxLabel}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedCols.includes(col.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedCols([...selectedCols, col.id]);
+                        else setSelectedCols(selectedCols.filter(id => id !== col.id));
+                      }}
+                    />
+                    {col.label}
+                  </label>
+                ))}
+              </div>
+
+              <div className={styles.modalActions}>
+                <button className={styles.btnCancel} onClick={() => setIsExportModalOpen(false)}>Annuler</button>
+                <button className={styles.btnSave} onClick={handleExport}>Générer le fichier Excel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🚀 WIZARD MODAL (UPLOAD PHOTOS) */}
+        {isWizardOpen && wizardQueue[currentWizardIndex] && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <div className={styles.modalHeader}>
+                <h2>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                  Preuve Photographique Requise
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '13px', marginTop: '5px' }}>
+                  Vous avez coché "OUI" pour ce dossier dans votre fichier Excel.
+                </p>
+              </div>
+
+              <div className={styles.wizardInfo}>
+                <p>Dossier EPS : <span>{wizardQueue[currentWizardIndex].eps}</span></p>
+                <p>Catégorie : <span style={{ color: '#0f172a' }}>{wizardQueue[currentWizardIndex].categorie}</span></p>
+                <p>Impact : <span style={{ color: '#ef4444' }}>{wizardQueue[currentWizardIndex].impact} €</span></p>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>URL de la preuve photographique *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="https://votre-serveur.com/photo.jpg" 
+                  value={currentPhotoUrl}
+                  onChange={e => setCurrentPhotoUrl(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.modalActions}>
+                <button className={styles.btnNext} onClick={handleWizardNext} disabled={!currentPhotoUrl.trim()}>
+                  {wizardQueue.findIndex((q, idx) => idx > currentWizardIndex && q.needsPhoto) !== -1 
+                    ? "Suivant" 
+                    : "Terminer et Soumettre"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
