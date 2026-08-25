@@ -6,7 +6,7 @@ import { ErreurResponseDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; 
-import * as XLSX from 'xlsx'; // 🚀 L'FIX HWA HNA: Librairie Excel
+import * as XLSX from 'xlsx'; 
 import styles from './Erreurs.module.css';
 
 const ITEMS_PER_PAGE = 8;
@@ -61,11 +61,11 @@ export default function ErreursPage() {
   useEffect(() => { fetchErreurs(); }, [user]);
 
   // ==========================================
-  // 🚀 LOGIQUE EXPORT EXCEL
+  // 🚀 LOGIQUE EXPORT EXCEL (AVEC BOOLEAN NATIF)
   // ==========================================
   const handleExport = () => {
     const dataToExport = erreurs.map(err => {
-      const row: any = { 'Dossier (EPS)': err.dossierReference }; // EPS est obligatoire
+      const row: any = { 'Dossier (EPS)': err.dossierReference }; 
       
       if (selectedCols.includes('dateDetection')) row['Date Détection'] = new Date(err.dateDetection).toLocaleDateString();
       if (selectedCols.includes('technicienNomComplet')) row['Technicien'] = err.technicienNomComplet;
@@ -74,9 +74,9 @@ export default function ErreursPage() {
       if (selectedCols.includes('impactEstime')) row['Impact (€)'] = err.impactEstime;
       if (selectedCols.includes('statut')) row['Statut'] = err.statut;
       
-      // 🚀 Les deux colonnes magiques pour le partenaire
+      // 🚀 L'FIX HWA HNA: On utilise le type Booléen (false) pour que Excel le reconnaisse comme FAUX/VRAI
       row['Analyse (Votre réponse)'] = '';
-      row['Preuve Photo (OUI/NON)'] = '';
+      row['Preuve Photo (VRAI/FAUX)'] = false; 
       
       return row;
     });
@@ -116,12 +116,13 @@ export default function ErreursPage() {
         if (epsKey && analyseKey) {
           const eps = row[epsKey];
           const analyse = row[analyseKey];
-          const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : 'non';
+          
+          // 🛡️ L'ALGORITHME BLINDÉ: Il comprend "true", "vrai", "oui", "x", "1"
+          const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : 'false';
           const needsPhoto = photoVal === 'oui' || photoVal === '1' || photoVal === 'true' || photoVal === 'x' || photoVal === 'vrai';
 
           if (analyse && analyse.trim() !== '') {
             const matchedErreur = erreurs.find(e => e.dossierReference === eps);
-            // On ne prend que les erreurs contestables
             if (matchedErreur && (matchedErreur.statut === 'NOUVEAU' || matchedErreur.statut === 'A_ANALYSER')) {
               queue.push({
                 erreurId: matchedErreur.id,
@@ -140,14 +141,12 @@ export default function ErreursPage() {
       if (queue.length > 0) {
         setWizardQueue(queue);
         
-        // Chercher le premier qui a besoin d'une photo
         const firstPhotoIdx = queue.findIndex(q => q.needsPhoto);
         if (firstPhotoIdx !== -1) {
           setCurrentWizardIndex(firstPhotoIdx);
           setCurrentPhotoUrl("");
           setIsWizardOpen(true);
         } else {
-          // Si aucun n'a besoin de photo, on soumet tout direct
           submitBatch(queue);
         }
       } else {
@@ -159,19 +158,16 @@ export default function ErreursPage() {
   };
 
   const handleWizardNext = () => {
-    // Sauvegarder l'URL pour l'item actuel
     const updatedQueue = [...wizardQueue];
     updatedQueue[currentWizardIndex].photoUrl = currentPhotoUrl;
     setWizardQueue(updatedQueue);
 
-    // Chercher le prochain qui a besoin d'une photo
     const nextIdx = updatedQueue.findIndex((q, idx) => idx > currentWizardIndex && q.needsPhoto);
     
     if (nextIdx !== -1) {
       setCurrentWizardIndex(nextIdx);
       setCurrentPhotoUrl("");
     } else {
-      // Fini ! On ferme le wizard et on soumet
       setIsWizardOpen(false);
       submitBatch(updatedQueue);
     }
@@ -184,7 +180,6 @@ export default function ErreursPage() {
 
     for (const item of queue) {
       try {
-        // On envoie "AUTRE" comme motif par défaut pour les imports Excel
         await deposerContestation(item.erreurId, "AUTRE", item.analyse, item.photoUrl);
         success++;
       } catch (err) {
@@ -194,7 +189,7 @@ export default function ErreursPage() {
 
     setBatchLoading(false);
     alert(`Traitement par lot terminé !\n✅ Succès : ${success}\n❌ Échecs : ${failed}`);
-    fetchErreurs(); // Rafraîchir le tableau
+    fetchErreurs(); 
   };
 
   // ==========================================
@@ -347,7 +342,7 @@ export default function ErreursPage() {
                   Configuration de l'Export
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '14px', marginTop: '10px' }}>
-                  Le fichier contiendra obligatoirement la colonne <strong>Dossier (EPS)</strong>, ainsi que les colonnes <strong>Analyse</strong> et <strong>Preuve Photo</strong> pour vos réponses.
+                  Le fichier contiendra obligatoirement la colonne <strong>Dossier (EPS)</strong>, ainsi que les colonnes <strong>Analyse</strong> et <strong>Preuve Photo (VRAI/FAUX)</strong> pour vos réponses.
                 </p>
               </div>
               
@@ -385,7 +380,7 @@ export default function ErreursPage() {
                   Preuve Photographique Requise
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '13px', marginTop: '5px' }}>
-                  Vous avez coché "OUI" pour ce dossier dans votre fichier Excel.
+                  Vous avez coché "VRAI" (ou "OUI") pour ce dossier dans votre fichier Excel.
                 </p>
               </div>
 

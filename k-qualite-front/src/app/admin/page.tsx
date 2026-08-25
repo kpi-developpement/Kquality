@@ -1,9 +1,9 @@
 "use client"; 
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { getAllContestations, traiterContestation } from '@/services/apiService';
 import { ContestationResponseDTO } from '@/types/api'; 
-import Link from 'next/link';
+import * as XLSX from 'xlsx'; // 🚀 L'FIX HWA HNA: Librairie Excel
 import InteractiveCard from './vue-globale/components/InteractiveCard/InteractiveCard'; 
 import CustomSelect from './vue-globale/components/CustomSelect/CustomSelect'; 
 import styles from './Admin.module.css';
@@ -15,9 +15,12 @@ export default function AdminContestationsPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 🛡️ JDID: Filtres
   const [filterType, setFilterType] = useState('ALL');
   const [filterStatut, setFilterStatut] = useState('EN_ATTENTE');
+
+  // 🚀 STATES IMPORT/EXPORT
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [batchLoading, setBatchLoading] = useState(false);
 
   const fetchContestations = async () => {
     try {
@@ -49,6 +52,89 @@ export default function AdminContestationsPage() {
     } catch (error) {
       alert("Erreur lors du traitement");
     }
+  };
+
+  // ==========================================
+  // 🚀 LOGIQUE EXPORT EXCEL (ADMIN)
+  // ==========================================
+  const handleExport = () => {
+    // On exporte uniquement les données filtrées (ex: celles EN_ATTENTE)
+    const dataToExport = filteredContestations.map(c => ({
+      'ID Contestation': c.id,
+      'Type': c.type,
+      'Partenaire': c.partenaireNom,
+      'Dossier (EPS)': c.dossierReference,
+      'Motif Partenaire': c.motif,
+      'Argumentaire Partenaire': c.commentaire,
+      'Impact (€)': c.impactEstime,
+      'Statut Actuel': c.statut,
+      'Décision (ACCEPTER/REFUSER)': '', // Colonne à remplir par l'Admin
+      'Commentaire Admin': ''            // Colonne à remplir par l'Admin
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Arbitrage");
+    
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Export_Arbitrage_${date}.xlsx`);
+  };
+
+  // ==========================================
+  // 🚀 LOGIQUE IMPORT EXCEL (BATCH TRAITEMENT)
+  // ==========================================
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const bstr = evt.target?.result;
+      const wb = XLSX.read(bstr, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws);
+
+      const queue: any[] = [];
+
+      data.forEach((row: any) => {
+        const id = row['ID Contestation'];
+        const type = row['Type'];
+        const decision = row['Décision (ACCEPTER/REFUSER)']?.toString().trim().toUpperCase();
+        const comment = row['Commentaire Admin'] || '';
+
+        if (id && type && (decision === 'ACCEPTER' || decision === 'REFUSER')) {
+          queue.push({ 
+            id: Number(id), 
+            type: String(type), 
+            isAccepted: decision === 'ACCEPTER', 
+            comment: String(comment) 
+          });
+        }
+      });
+
+      if (queue.length > 0) {
+        setBatchLoading(true);
+        let success = 0;
+        let failed = 0;
+
+        for (const item of queue) {
+          try {
+            await traiterContestation(item.type, item.id, item.isAccepted, item.comment);
+            success++;
+          } catch (err) {
+            failed++;
+          }
+        }
+
+        setBatchLoading(false);
+        alert(`Arbitrage par lot terminé !\n✅ Traités avec succès : ${success}\n❌ Échecs : ${failed}`);
+        fetchContestations(); // Rafraîchir le tableau
+      } else {
+        alert("Aucune décision valide (ACCEPTER/REFUSER) trouvée dans le fichier.");
+      }
+    };
+    reader.readAsBinaryString(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // 🛡️ Filtrage
@@ -90,12 +176,34 @@ export default function AdminContestationsPage() {
       <div className={styles.bgBlob1}></div>
       <div className={styles.bgBlob2}></div>
 
+      {/* 🚀 LOADING OVERLAY POUR LE BATCH */}
+      {batchLoading && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.spinner}></div>
+          <h2>Arbitrage par lot en cours</h2>
+          <p>Le système enregistre vos décisions. Veuillez patienter...</p>
+        </div>
+      )}
+
       <div className={styles.container}>
         <header className={styles.header}>
           <div>
             <div className={styles.adminBadge}>CENTRE D'ARBITRAGE</div>
             <h1>Gestion des Contestations</h1>
             <p>Traitez les réclamations des partenaires avant la clôture mensuelle.</p>
+            
+            {/* 🚀 BOUTONS EXPORT / IMPORT POUR L'ADMIN */}
+            <div className={styles.actionHeaderGroup}>
+              <button className={styles.btnExport} onClick={handleExport}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Exporter la liste (Excel)
+              </button>
+              <button className={styles.btnImport} onClick={() => fileInputRef.current?.click()}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Importer les Décisions
+              </button>
+              <input type="file" accept=".xlsx,.xls" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImport} />
+            </div>
           </div>
           
           <div className={styles.filtersWrapper}>
