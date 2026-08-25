@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   importErreursExcel, 
   importMultiCqExcel, 
@@ -12,7 +12,7 @@ import {
   importCadrageExcel,
   importTauxPlainteExcel,
   importSavExcel,
-  purgeData // 🛡️ JDID
+  purgeData
 } from '@/services/apiService';
 import CustomSelect from '../vue-globale/components/CustomSelect/CustomSelect'; 
 import InteractiveCard from '../vue-globale/components/InteractiveCard/InteractiveCard'; 
@@ -27,8 +27,10 @@ export default function ImportErreursPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
-  // 🛡️ JDID: State pour la purge
+  // 🛡️ JDID: State pour la purge & Custom Dropdown
   const [purgeTarget, setPurgeTarget] = useState("ALL");
+  const [isDangerDropdownOpen, setDangerDropdownOpen] = useState(false);
+  const dangerDropdownRef = useRef<HTMLDivElement>(null);
 
   const fileInputErreursRef = useRef<HTMLInputElement>(null);
   const fileInputMultiRef = useRef<HTMLInputElement>(null);
@@ -41,6 +43,17 @@ export default function ImportErreursPage() {
   const fileInputGemRef = useRef<HTMLInputElement>(null);
   const fileInputCadrageRef = useRef<HTMLInputElement>(null);
   const fileInputPlainteRef = useRef<HTMLInputElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dangerDropdownRef.current && !dangerDropdownRef.current.contains(event.target as Node)) {
+        setDangerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleUpload = async (
     e: React.ChangeEvent<HTMLInputElement>, 
@@ -69,11 +82,10 @@ export default function ImportErreursPage() {
     }
   };
 
-  // 🛡️ JDID: Fonction de purge
   const handlePurge = async () => {
     const confirmMsg = purgeTarget === "ALL" 
-      ? `⚠️ ATTENTION ⚠️\nVous êtes sur le point de supprimer TOUTES les données du mois ${month}/${year}.\nCette action est irréversible. Confirmer ?`
-      : `Voulez-vous vraiment supprimer les données de [${purgeTarget}] pour le mois ${month}/${year} ?`;
+      ? `⚠️ DANGER CRITIQUE ⚠️\nVous êtes sur le point de SUPPRIMER DÉFINITIVEMENT TOUTES les données du mois ${month}/${year}.\n\nÊtes-vous absolument certain de vouloir continuer ?`
+      : `Voulez-vous vraiment supprimer les données de [${purgeOptions.find(o => o.value === purgeTarget)?.label}] pour le mois ${month}/${year} ?`;
 
     if (window.confirm(confirmMsg)) {
       setLoading(true);
@@ -96,7 +108,7 @@ export default function ImportErreursPage() {
   const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
 
   const purgeOptions = [
-    { value: "ALL", label: "TOUT VIDER (Danger)" },
+    { value: "ALL", label: "TOUT VIDER (Danger Critique)" },
     { value: "ERREURS", label: "Erreurs Classiques" },
     { value: "MULTI_CQ", label: "Multi-Feuilles CQ" },
     { value: "CQ_PARTENAIRE", label: "Fichier 2 (PLP, Hotline...)" },
@@ -131,6 +143,7 @@ export default function ImportErreursPage() {
           <p>Injectez vos rapports Excel/CSV. Le système distribuera automatiquement et intelligemment les métriques aux partenaires via le matricule KYN.</p>
         </header>
 
+        {/* 🚀 1. CONTROL PANEL (MOIS / ANNEE) */}
         <div className={styles.controlPanel}>
           <div className={styles.filterGroup}>
             <label>Mois Cible</label>
@@ -143,6 +156,76 @@ export default function ImportErreursPage() {
         </div>
 
         {error && <div style={{ color: '#ef4444', background: 'rgba(254, 242, 242, 0.9)', padding: '20px', borderRadius: '16px', border: '1px solid #fecaca', marginBottom: '30px', fontWeight: '800', textAlign: 'center', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.1)', backdropFilter: 'blur(10px)' }}>⚠️ Erreur système : {error}</div>}
+
+        {/* 🚀 2. DANGER ZONE PREMIUM (TOP PLACEMENT) */}
+        <div className={styles.dangerCard}>
+          <div className={styles.dangerInfo}>
+            <h3>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              Zone de Purge (Danger)
+            </h3>
+            <p>Supprimez définitivement les données importées pour le mois {month}/{year} afin de réimporter un fichier corrigé.</p>
+          </div>
+          
+          <div className={styles.dangerActions}>
+            {/* Custom Dropdown Bde3 */}
+            <div className={styles.dangerSelectContainer} ref={dangerDropdownRef}>
+              <button 
+                type="button"
+                className={`${styles.dangerSelectBtn} ${isDangerDropdownOpen ? styles.isOpen : ''}`}
+                onClick={() => setDangerDropdownOpen(!isDangerDropdownOpen)}
+              >
+                <span>{purgeOptions.find(o => o.value === purgeTarget)?.label}</span>
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+
+              <div className={`${styles.dangerDropdown} ${isDangerDropdownOpen ? styles.isOpen : ''}`}>
+                {purgeOptions.map((option) => (
+                  <div
+                    key={option.value}
+                    className={`${styles.dangerOption} ${option.value === 'ALL' ? styles.isAll : ''}`}
+                    onClick={() => {
+                      setPurgeTarget(option.value);
+                      setDangerDropdownOpen(false);
+                    }}
+                  >
+                    {option.value === 'ALL' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>}
+                    {option.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <button className={styles.btnPurge} onClick={handlePurge}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Purger
+            </button>
+          </div>
+        </div>
+
+        {/* --- SUMMARY SUCCESS CARD --- */}
+        {summary && !loading && (
+          <div className={styles.summaryCard}>
+            <h3>
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              Succès de l'Extraction : {summary.type}
+            </h3>
+            <ul className={styles.summaryList}>
+              <li className={styles.summaryItem}>
+                <span className={styles.summaryLabel}>Total Lignes Analysées</span>
+                <span className={styles.summaryValue}>{summary.data.totalLignes.toLocaleString()}</span>
+              </li>
+              <li className={styles.summaryItem}>
+                <span className={styles.summaryLabel}>Insérées / Distribuées avec succès</span>
+                <span className={`${styles.summaryValue} ${styles.valueSuccess}`}>{summary.data.lignesInserees.toLocaleString()}</span>
+              </li>
+              <li className={styles.summaryItem}>
+                <span className={styles.summaryLabel}>Rejetées (Matricule KYN Introuvable)</span>
+                <span className={`${styles.summaryValue} ${summary.data.lignesRejetees > 0 ? styles.valueError : ''}`}>{summary.data.lignesRejetees.toLocaleString()}</span>
+              </li>
+            </ul>
+          </div>
+        )}
 
         {/* GROUP 1 */}
         <h2 className={styles.sectionTitle}>
@@ -271,54 +354,6 @@ export default function ImportErreursPage() {
           </InteractiveCard>
 
         </div>
-
-        {/* --- SUMMARY SUCCESS CARD --- */}
-        {summary && !loading && (
-          <div className={styles.summaryCard}>
-            <h3>
-              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-              Succès de l'Extraction : {summary.type}
-            </h3>
-            <ul className={styles.summaryList}>
-              <li className={styles.summaryItem}>
-                <span className={styles.summaryLabel}>Total Lignes Analysées</span>
-                <span className={styles.summaryValue}>{summary.data.totalLignes.toLocaleString()}</span>
-              </li>
-              <li className={styles.summaryItem}>
-                <span className={styles.summaryLabel}>Insérées / Distribuées avec succès</span>
-                <span className={`${styles.summaryValue} ${styles.valueSuccess}`}>{summary.data.lignesInserees.toLocaleString()}</span>
-              </li>
-              <li className={styles.summaryItem}>
-                <span className={styles.summaryLabel}>Rejetées (Matricule KYN Introuvable)</span>
-                <span className={`${styles.summaryValue} ${summary.data.lignesRejetees > 0 ? styles.valueError : ''}`}>{summary.data.lignesRejetees.toLocaleString()}</span>
-              </li>
-            </ul>
-          </div>
-        )}
-
-        {/* 🛡️ JDID: DANGER ZONE POUR PURGER LA BDD */}
-        <div className={styles.dangerZone}>
-          <h3 className={styles.dangerTitle}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            Zone de Purge (Danger)
-          </h3>
-          <p style={{ color: '#7f1d1d', marginBottom: '20px', fontWeight: '600' }}>
-            Cette section vous permet de supprimer définitivement les données importées pour un mois spécifique afin de réimporter un fichier corrigé.
-          </p>
-          
-          <div className={styles.dangerControls}>
-            <div className={styles.filterGroup}>
-              <label style={{ color: '#b91c1c' }}>Fichier à purger</label>
-              <CustomSelect value={purgeTarget} options={purgeOptions} onChange={setPurgeTarget} width="250px" />
-            </div>
-            
-            <button className={styles.btnPurge} onClick={handlePurge}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              Purger les données
-            </button>
-          </div>
-        </div>
-
       </div>
     </div>
   );
