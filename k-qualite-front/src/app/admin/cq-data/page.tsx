@@ -14,8 +14,6 @@ const TABS_CONFIG = [
   { id: "Taux de coupures", title: "Coupures", color: "#10b981", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> }
 ];
 
-const ITEMS_PER_PAGE = 8; // 🚀 Nombre d'éléments par page
-
 export default function AdminCqDataPage() {
   const [activeTab, setActiveTab] = useState(TABS_CONFIG[0].id);
   const [data, setData] = useState<CqDataDTO[]>([]);
@@ -29,13 +27,15 @@ export default function AdminCqDataPage() {
   const [visionMode, setVisionMode] = useState<'ADMIN' | 'PARTENAIRE'>('ADMIN');
   const [loading, setLoading] = useState(false);
 
-  // 🚀 STATE PAGINATION
+  // 🚀 NOUVEAUX STATES : Recherche et Pagination Dynamique
+  const [searchQuery, setSearchQuery] = useState("");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Reset pagination quand on change les filtres
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, month, year, selectedPartenaire, visionMode]);
+  }, [activeTab, month, year, selectedPartenaire, visionMode, searchQuery, itemsPerPage]);
 
   useEffect(() => {
     getActivePartenairesForCq(month, year)
@@ -73,12 +73,26 @@ export default function AdminCqDataPage() {
   };
   const totalGlobal = calculateTotal();
 
-  // 🚀 LOGIQUE PAGINATION
-  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
+  // 🚀 LOGIQUE DE RECHERCHE MULTI-EPS (Séparateur: Espace ou Virgule)
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) return data;
+    
+    const searchTerms = searchQuery.toLowerCase().split(/[\s,]+/).filter(Boolean);
+    
+    return data.filter(row => {
+      if (!row.reference) return false;
+      const ref = row.reference.toLowerCase();
+      // Retourne true si la référence contient AU MOINS UN des termes recherchés
+      return searchTerms.some(term => ref.includes(term));
+    });
+  }, [data, searchQuery]);
+
+  // 🚀 LOGIQUE PAGINATION DYNAMIQUE
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return data.slice(start, start + ITEMS_PER_PAGE);
-  }, [data, currentPage]);
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredData.slice(start, start + itemsPerPage);
+  }, [filteredData, currentPage, itemsPerPage]);
 
   const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
   const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
@@ -162,7 +176,6 @@ export default function AdminCqDataPage() {
           </div>
 
           <div>
-            {/* 🚀 UPGRADED VISION BUTTONS */}
             <div className={styles.visionToggle}>
               <button 
                 className={`${styles.visionBtn} ${visionMode === 'ADMIN' ? styles.active : ''}`}
@@ -178,22 +191,37 @@ export default function AdminCqDataPage() {
               </button>
             </div>
 
-            {/* 🚀 UPGRADED TABS */}
-            <div className={styles.tabs}>
-              {TABS_CONFIG.map(tab => (
-                <button 
-                  key={tab.id} 
-                  className={`${styles.tabBtn} ${activeTab === tab.id ? styles.active : ''}`} 
-                  onClick={() => setActiveTab(tab.id)}
-                  style={activeTab === tab.id ? { border: `2px solid ${tab.color}`, color: tab.color } : {}}
-                >
-                  <span style={{ width: '18px', height: '18px', display: 'flex' }}>{tab.icon}</span>
-                  {tab.title}
-                </button>
-              ))}
+            {/* 🚀 TABS + SEARCH BAR */}
+            <div className={styles.tableControls}>
+              <div className={styles.tabs}>
+                {TABS_CONFIG.map(tab => (
+                  <button 
+                    key={tab.id} 
+                    className={`${styles.tabBtn} ${activeTab === tab.id ? styles.active : ''}`} 
+                    onClick={() => setActiveTab(tab.id)}
+                    style={activeTab === tab.id ? { border: `2px solid ${tab.color}`, color: tab.color } : {}}
+                  >
+                    <span style={{ width: '18px', height: '18px', display: 'flex' }}>{tab.icon}</span>
+                    {tab.title}
+                  </button>
+                ))}
+              </div>
+
+              <div className={styles.searchBox}>
+                <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input 
+                  type="text" 
+                  className={styles.searchInput} 
+                  placeholder="Rechercher EPS (ex: EPS-001, EPS-002...)" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
 
-            {/* 🚀 TABLE M3A PAGINATION */}
             <div className={styles.tableWrapper}>
               {loading ? (
                 <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Récupération des anomalies...</div>
@@ -226,7 +254,7 @@ export default function AdminCqDataPage() {
                     })}
                     {paginatedData.length === 0 && (
                       <tr>
-                        <td colSpan={6} className={styles.empty}>Aucune anomalie trouvée dans cette catégorie.</td>
+                        <td colSpan={6} className={styles.empty}>Aucune anomalie trouvée pour cette recherche.</td>
                       </tr>
                     )}
                   </tbody>
@@ -234,49 +262,64 @@ export default function AdminCqDataPage() {
               )}
             </div>
 
-            {/* 🚀 PAGINATION BAR LUXE */}
-            {!loading && totalPages > 1 && (
+            {/* 🚀 PAGINATION BAR AVEC SELECTEUR DE TAILLE */}
+            {!loading && (
               <div className={styles.paginationWrapper}>
-                <span className={styles.pageInfo}>
-                  Affichage {((currentPage - 1) * ITEMS_PER_PAGE) + 1} à {Math.min(currentPage * ITEMS_PER_PAGE, data.length)} sur {data.length}
-                </span>
-                <div className={styles.pageControls}>
-                  <button 
-                    className={styles.pageBtn} 
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(prev => prev - 1)}
-                  >
-                    &lt;
-                  </button>
+                <div className={styles.pageInfo}>
+                  <span>
+                    Affichage {filteredData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} à {Math.min(currentPage * itemsPerPage, filteredData.length)} sur {filteredData.length}
+                  </span>
                   
-                  {Array.from({ length: totalPages }).map((_, i) => {
-                    const page = i + 1;
-                    // Logique pour n'afficher que quelques boutons si on a trop de pages
-                    if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
-                      return (
-                        <button 
-                          key={page}
-                          className={`${styles.pageBtn} ${currentPage === page ? styles.activePage : ''}`}
-                          onClick={() => setCurrentPage(page)}
-                        >
-                          {page}
-                        </button>
-                      );
-                    }
-                    if (page === currentPage - 2 || page === currentPage + 2) {
-                      return <span key={page} style={{ color: '#94a3b8', padding: '0 5px' }}>...</span>;
-                    }
-                    return null;
-                  })}
-
-                  <button 
-                    className={styles.pageBtn} 
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(prev => prev + 1)}
+                  <select 
+                    className={styles.pageSizeSelect} 
+                    value={itemsPerPage} 
+                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
                   >
-                    &gt;
-                  </button>
+                    <option value={5}>5 par page</option>
+                    <option value={10}>10 par page</option>
+                    <option value={25}>25 par page</option>
+                    <option value={50}>50 par page</option>
+                  </select>
                 </div>
+
+                {totalPages > 1 && (
+                  <div className={styles.pageControls}>
+                    <button 
+                      className={styles.pageBtn} 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => prev - 1)}
+                    >
+                      &lt;
+                    </button>
+                    
+                    {Array.from({ length: totalPages }).map((_, i) => {
+                      const page = i + 1;
+                      if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                        return (
+                          <button 
+                            key={page}
+                            className={`${styles.pageBtn} ${currentPage === page ? styles.activePage : ''}`}
+                            onClick={() => setCurrentPage(page)}
+                          >
+                            {page}
+                          </button>
+                        );
+                      }
+                      if (page === currentPage - 2 || page === currentPage + 2) {
+                        return <span key={page} style={{ color: '#94a3b8', padding: '0 5px' }}>...</span>;
+                      }
+                      return null;
+                    })}
+
+                    <button 
+                      className={styles.pageBtn} 
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                    >
+                      &gt;
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             

@@ -164,12 +164,11 @@ public class CqMultiSheetImportService {
         if (val == null || val.isEmpty()) return 0.0;
         String clean = val.replaceAll("[^\\d.,-]", "").replace(",", ".");
         try {
-            // 🛡️ L'FIX HWA HNA: Math.abs() bach n-reddou les pénalités négatives (-200) positives (200)
-            return Math.abs(Double.parseDouble(clean));
+            // 🛡️ L'FIX HWA HNA: 7iydna Math.abs() bach tb9a l'valeur kima hia (négative wla positive)
+            return Double.parseDouble(clean);
         } catch (Exception e) { return 0.0; }
     }
 
-    // 🛡️ L'FIX HWA HNA: Gestion des cellules de type FORMULA
     private String getCellValue(Cell cell) {
         if (cell == null) return "";
         switch (cell.getCellType()) {
@@ -177,7 +176,6 @@ public class CqMultiSheetImportService {
             case NUMERIC: return String.valueOf(cell.getNumericCellValue());
             case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
             case FORMULA:
-                // Si c'est une formule, on lit le résultat calculé en cache par Excel
                 switch (cell.getCachedFormulaResultType()) {
                     case NUMERIC: return String.valueOf(cell.getNumericCellValue());
                     case STRING: return cell.getStringCellValue().trim();
