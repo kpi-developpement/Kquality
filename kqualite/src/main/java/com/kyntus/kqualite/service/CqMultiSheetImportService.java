@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -49,7 +50,8 @@ public class CqMultiSheetImportService {
 
                 Map<String, Integer> headerMap = new HashMap<>();
                 for (Cell cell : headerRow) {
-                    headerMap.put(getCellValue(cell), cell.getColumnIndex()); // On garde la valeur brute ici
+                    // 🛡️ L'FIX: On normalise proprement l'en-tête dès la lecture
+                    headerMap.put(normalizeHeader(getCellValue(cell)), cell.getColumnIndex());
                 }
 
                 for (int r = 1; r <= sheet.getLastRowNum(); r++) {
@@ -80,7 +82,7 @@ public class CqMultiSheetImportService {
     }
 
     private boolean processRowBySheet(String sheetName, Row row, Map<String, Integer> headers, int month, int year) {
-        String kyn = extractValue(row, headers, "kyn", "id_tech", "tech", "matricule");
+        String kyn = extractValue(row, headers, "kyn", "idtech", "tech", "matricule");
         if (kyn.isEmpty()) return false;
 
         kyn = kyn.trim().toUpperCase();
@@ -92,9 +94,17 @@ public class CqMultiSheetImportService {
 
         Partenaire partenaire = techOpt.get().getPartenaire();
 
-        // 🛡️ L'EXTRACTION BLINDÉE: On cherche exactement "MT SST"
-        Double montantGlobal = parseDouble(extractValue(row, headers, "montant", "impact", "penalite", "cout"));
-        Double mtSst = parseDouble(extractValue(row, headers, "mt sst", "mtsst", "montant sst"));
+        // 🛡️ L'EXTRACTION BLINDÉE (Gère les accents "Pénalité", les espaces "MT SST", etc.)
+        Double montantGlobal = parseDouble(extractValue(row, headers, "montant", "impact", "penalite", "cout", "total"));
+        String mtSstStr = extractValue(row, headers, "mtsst", "montantsst", "impactsst", "penalitesst", "sst");
+
+        Double mtSst;
+        if (!mtSstStr.isEmpty()) {
+            mtSst = parseDouble(mtSstStr);
+        } else {
+            // Si la colonne MT SST n'existe pas, on prend l'impact global
+            mtSst = montantGlobal;
+        }
 
         CqData.CqDataBuilder builder = CqData.builder()
                 .typeFeuille(sheetName)
@@ -106,47 +116,50 @@ public class CqMultiSheetImportService {
                 .mtSst(mtSst);
 
         if (sheetName.equalsIgnoreCase("Audits tech")) {
-            builder.anMois(extractValue(row, headers, "an_mois_text", "an mois", "mois"))
-                    .reference(extractValue(row, headers, "idnt_rdv_intr_audt", "id rdv", "reference"))
-                    .departement(extractValue(row, headers, "code_departement", "departement", "dpt"));
+            builder.anMois(extractValue(row, headers, "anmoistext", "anmois", "mois"))
+                    .reference(extractValue(row, headers, "idntrdvintraudt", "idrdv", "reference"))
+                    .departement(extractValue(row, headers, "codedepartement", "departement", "dpt"));
         }
         else if (sheetName.equalsIgnoreCase("Check-voisinage")) {
-            builder.anMois(extractValue(row, headers, "an_mois_text", "an mois", "mois"))
-                    .reference(extractValue(row, headers, "intervention number", "id_rdv", "idrdv"))
-                    .valeurMetrique(extractValue(row, headers, "nbre de voisins en état ko", "voisins ko"));
+            builder.anMois(extractValue(row, headers, "anmoistext", "anmois", "mois"))
+                    .reference(extractValue(row, headers, "interventionnumber", "idrdv"))
+                    .valeurMetrique(extractValue(row, headers, "nbredevoisinsenetatko", "voisinsko"));
         }
         else if (sheetName.equalsIgnoreCase("Expertises SAV")) {
-            builder.reference(extractValue(row, headers, "bat_numero intervention maint", "numero intervention", "id_rdv"));
+            builder.reference(extractValue(row, headers, "batnumerointerventionmaint", "numerointervention", "idrdv"));
         }
         else if (sheetName.equalsIgnoreCase("Taux de coupures")) {
-            builder.reference(extractValue(row, headers, "idnt_rdv", "id_rdv"))
-                    .valeurMetrique(extractValue(row, headers, "nb_clients_coupes_rdv", "clients coupes"))
-                    .departement(extractValue(row, headers, "département", "departement", "dpt"));
+            builder.reference(extractValue(row, headers, "idntrdv", "idrdv"))
+                    .valeurMetrique(extractValue(row, headers, "nbclientscoupesrdv", "clientscoupes"))
+                    .departement(extractValue(row, headers, "departement", "dpt"));
         }
 
         cqDataRepository.save(builder.build());
         return true;
     }
 
-    // 🛡️ L'EXTRACTEUR BLINDÉ (ROBUST MATCHER)
+    // 🛡️ LE NETTOYEUR ABSOLU : Enlève les accents (é -> e) et les caractères spéciaux
+    private String normalizeHeader(String input) {
+        if (input == null) return "";
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{M}", "").toLowerCase().replaceAll("[^a-z0-9]", "");
+    }
+
+    // 🛡️ L'EXTRACTEUR ROBUSTE
     private String extractValue(Row row, Map<String, Integer> headers, String... possibleNames) {
-        // 1. Recherche Exacte (Après nettoyage total des espaces et caractères invisibles)
+        // 1. Recherche Exacte
         for (String name : possibleNames) {
-            String cleanTarget = name.toLowerCase().replaceAll("[^a-z0-9]", "");
-            for (Map.Entry<String, Integer> entry : headers.entrySet()) {
-                String cleanHeader = entry.getKey().toLowerCase().replaceAll("[^a-z0-9]", "");
-                if (cleanHeader.equals(cleanTarget)) {
-                    return getCellValue(row.getCell(entry.getValue()));
-                }
+            String cleanTarget = normalizeHeader(name);
+            if (headers.containsKey(cleanTarget)) {
+                return getCellValue(row.getCell(headers.get(cleanTarget)));
             }
         }
 
-        // 2. Recherche Partielle (Si le nom exact n'est pas trouvé)
+        // 2. Recherche Partielle (Si le nom exact n'est pas trouvé, ex: "Impact (MT SST) €")
         for (String name : possibleNames) {
-            String cleanTarget = name.toLowerCase().replaceAll("[^a-z0-9]", "");
+            String cleanTarget = normalizeHeader(name);
             for (Map.Entry<String, Integer> entry : headers.entrySet()) {
-                String cleanHeader = entry.getKey().toLowerCase().replaceAll("[^a-z0-9]", "");
-                if (cleanHeader.contains(cleanTarget)) {
+                if (entry.getKey().contains(cleanTarget)) {
                     return getCellValue(row.getCell(entry.getValue()));
                 }
             }
