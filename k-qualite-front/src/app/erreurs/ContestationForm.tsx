@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { deposerContestation } from '@/services/apiService';
 import styles from './ContestationForm.module.css';
 
@@ -9,18 +9,50 @@ interface ContestationFormProps { erreurId: number; onSuccess: () => void; }
 export default function ContestationForm({ erreurId, onSuccess }: ContestationFormProps) {
   const [motif, setMotif] = useState('');
   const [commentaire, setCommentaire] = useState('');
-  const [fileUrl, setFileUrl] = useState(''); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // 🚀 DRAG & DROP STATES
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dropzoneInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (selectedFile: File) => {
+    if (selectedFile && selectedFile.type.startsWith('image/')) {
+      setFile(selectedFile);
+      setPreviewUrl(URL.createObjectURL(selectedFile));
+    } else {
+      alert("Veuillez sélectionner une image valide (JPG, PNG).");
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  const resetDropzone = () => {
+    setFile(null);
+    setPreviewUrl(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      await deposerContestation(erreurId, motif, commentaire, fileUrl);
+      // 🛡️ L'FIX HWA HNA: On envoie l'objet File au lieu d'une string
+      await deposerContestation(erreurId, motif, commentaire, file);
       alert('Contestation envoyée au centre de contrôle avec succès !');
       onSuccess(); 
-    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+    } catch (err: any) { 
+      setError(err.message); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   return (
@@ -53,25 +85,44 @@ export default function ContestationForm({ erreurId, onSuccess }: ContestationFo
       </div>
       
       <div className={styles.inputGroup}>
-        <label>Pièce Jointe (URL de la Preuve)</label>
-        {/* 🚀 CLASS fileInput FOR THE DASHED DROPZONE EFFECT */}
-        <input 
-          type="text" 
-          className={styles.fileInput}
-          placeholder="Collez ici l'URL de votre fichier (Ex: https://votre-serveur.com/preuve.jpg)" 
-          value={fileUrl} 
-          onChange={(e) => setFileUrl(e.target.value)} 
-        />
-        <small className={styles.helpText}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          Protocole de test : insérez le lien direct vers le fichier hébergé.
-        </small>
+        <label>Pièce Jointe (Optionnel)</label>
+        
+        {previewUrl ? (
+          <div className={styles.previewContainer}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={previewUrl} alt="Preview" className={styles.previewImage} />
+            <button type="button" className={styles.removeBtn} onClick={resetDropzone} title="Supprimer l'image">✕</button>
+          </div>
+        ) : (
+          <div 
+            className={`${styles.dropzone} ${isDragging ? styles.active : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => dropzoneInputRef.current?.click()}
+          >
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <p>Glissez-déposez votre image ici</p>
+            <span>ou cliquez pour parcourir vos fichiers</span>
+            <input 
+              type="file" 
+              accept="image/png, image/jpeg, image/jpg" 
+              ref={dropzoneInputRef} 
+              style={{ display: 'none' }} 
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  handleFileSelect(e.target.files[0]);
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
       
       <button type="submit" className={styles.submitBtn} disabled={loading}>
         {loading ? (
           <>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className={styles.spin}><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
             Cryptage et Envoi...
           </>
         ) : (
