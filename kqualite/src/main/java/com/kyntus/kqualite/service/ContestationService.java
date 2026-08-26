@@ -1,7 +1,6 @@
 package com.kyntus.kqualite.service;
 
 import com.kyntus.kqualite.domain.*;
-import com.kyntus.kqualite.dto.ContestationRequestDTO;
 import com.kyntus.kqualite.dto.ContestationResponseDTO;
 import com.kyntus.kqualite.dto.TraitementRequestDTO;
 import com.kyntus.kqualite.repository.ContestationRepository;
@@ -12,10 +11,15 @@ import com.kyntus.kqualite.repository.ResultatCQRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,30 +31,58 @@ public class ContestationService {
     private final ResultatCQRepository resultatCQRepository;
     private final CqDataRepository cqDataRepository;
 
+    private final Path fileStorageLocation = Paths.get("uploads/preuves").toAbsolutePath().normalize();
+
+    // 🛡️ L'FIX HWA HNA: Logique de sauvegarde du fichier
     @Transactional
-    public void deposerContestation(Long utilisateurId, ContestationRequestDTO request) {
+    public void deposerContestation(Long utilisateurId, Long erreurId, String motif, String commentaire, MultipartFile file) {
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId).orElseThrow();
-        Erreur erreur = erreurRepository.findById(request.getErreurId()).orElseThrow();
+        Erreur erreur = erreurRepository.findById(erreurId).orElseThrow();
 
         if (LocalDateTime.now().isAfter(erreur.getEcheanceContestation())) throw new RuntimeException("Délai dépassé.");
         if (erreur.getStatut() == StatutErreur.CONTESTE || erreur.getStatut() == StatutErreur.CLOTURE) throw new RuntimeException("Déjà contestée.");
 
+        String fileUrl = null;
+        if (file != null && !file.isEmpty()) {
+            try {
+                Files.createDirectories(this.fileStorageLocation);
+                String originalFilename = file.getOriginalFilename();
+                String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                String newFilename = UUID.randomUUID().toString() + extension;
+
+                Path targetLocation = this.fileStorageLocation.resolve(newFilename);
+                Files.copy(file.getInputStream(), targetLocation);
+
+                // L'URL qui sera stockée dans la base de données
+                fileUrl = "/api/v1/files/" + newFilename;
+            } catch (Exception ex) {
+                throw new RuntimeException("Impossible de sauvegarder le fichier. Veuillez réessayer.", ex);
+            }
+        }
+
         Contestation contestation = Contestation.builder()
-                .motif(request.getMotif()).commentaire(request.getCommentaire())
-                .pieceJointeUrl(request.getPieceJointeUrl()).dateDepot(LocalDateTime.now())
-                .erreur(erreur).soumisePar(utilisateur).build();
+                .motif(motif)
+                .commentaire(commentaire)
+                .pieceJointeUrl(fileUrl)
+                .dateDepot(LocalDateTime.now())
+                .erreur(erreur)
+                .soumisePar(utilisateur)
+                .build();
 
         contestationRepository.save(contestation);
+
+        // On met à jour l'URL de la preuve dans l'erreur pour un accès rapide
+        if (fileUrl != null) {
+            erreur.setPreuveUrl(fileUrl);
+        }
         erreur.setStatut(StatutErreur.CONTESTE);
         erreurRepository.save(erreur);
     }
 
-    // 🛡️ JDID: Fusion des Contestations (Erreurs + CQ Data)
     @Transactional(readOnly = true)
     public List<ContestationResponseDTO> getAllContestations() {
         List<ContestationResponseDTO> list = new ArrayList<>();
 
-        // 1. Contestations des Erreurs
         List<Contestation> contestations = contestationRepository.findAll();
         for (Contestation c : contestations) {
             String statut = c.getErreur().getStatut() == StatutErreur.CONTESTE ? "EN_ATTENTE" :
@@ -72,7 +104,6 @@ public class ContestationService {
                     .build());
         }
 
-        // 2. Contestations des CQ Data
         List<CqData> cqDatas = cqDataRepository.findContestedCqData();
         for (CqData cq : cqDatas) {
             String statut = cq.getStatutContestation().equals("EN_COURS") ? "EN_ATTENTE" : cq.getStatutContestation();
@@ -93,7 +124,6 @@ public class ContestationService {
                     .build());
         }
 
-        // Tri par date décroissante
         list.sort((a, b) -> b.getDateDepot().compareTo(a.getDateDepot()));
         return list;
     }
@@ -103,7 +133,6 @@ public class ContestationService {
         return contestationRepository.countByMonthAndYear(month, year);
     }
 
-    // 🛡️ JDID: Traitement dynamique selon le type
     @Transactional
     public void traiterContestation(String type, Long id, TraitementRequestDTO request, Long adminId) {
         if ("ERREUR".equals(type)) {

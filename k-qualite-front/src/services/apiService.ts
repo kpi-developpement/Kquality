@@ -54,15 +54,26 @@ export async function getErreurById(id: number): Promise<ErreurResponseDTO> {
   return json.data;
 }
 
-export async function deposerContestation(erreurId: number, motif: string, commentaire: string, pieceJointeUrl: string) {
-  const url = `${BASE_URL}/contestations/deposer`;
-  const payload = { erreurId, motif, commentaire, pieceJointeUrl };
-  const res = await fetch(url, {
+// 🛡️ L'FIX HWA HNA: Utilisation de FormData pour envoyer le fichier physique
+export async function deposerContestation(erreurId: number, motif: string, commentaire: string, file: File | null) {
+  const formData = new FormData();
+  formData.append('erreurId', erreurId.toString());
+  formData.append('motif', motif);
+  if (commentaire) formData.append('commentaire', commentaire);
+  if (file) formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/contestations/deposer`, {
     method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(payload)
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}`
+    },
+    body: formData
   });
-  if (!res.ok) throw new Error(`Erreur Backend HTTP ${res.status}`);
+  
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Erreur Backend HTTP ${res.status}`);
+  }
   return await res.json();
 }
 
@@ -313,7 +324,6 @@ export async function importSavExcel(file: File, month: number, year: number) {
   return await res.json();
 }
 
-// 🛡️ JDID: Fonction de Purge
 export async function purgeData(target: string, month: number, year: number) {
   const res = await fetch(`${BASE_URL}/admin/purge?target=${target}&month=${month}&year=${year}`, {
     method: 'DELETE',

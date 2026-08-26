@@ -27,7 +27,7 @@ interface WizardItem {
   impact: number;
   analyse: string;
   needsPhoto: boolean;
-  photoUrl: string;
+  photoFile: File | null; // 🛡️ On stocke le fichier physique
 }
 
 export default function ErreursPage() {
@@ -44,7 +44,12 @@ export default function ErreursPage() {
   const [wizardQueue, setWizardQueue] = useState<WizardItem[]>([]);
   const [currentWizardIndex, setCurrentWizardIndex] = useState(0);
   const [batchLoading, setBatchLoading] = useState(false);
-  const [currentPhotoUrl, setCurrentPhotoUrl] = useState("");
+  
+  // 🚀 DRAG & DROP STATES
+  const [currentPhotoFile, setCurrentPhotoFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dropzoneInputRef = useRef<HTMLInputElement>(null);
 
   const fetchErreurs = () => {
     if (user?.partenaireId) {
@@ -58,9 +63,6 @@ export default function ErreursPage() {
 
   useEffect(() => { fetchErreurs(); }, [user]);
 
-  // ==========================================
-  // 🚀 LOGIQUE EXPORT EXCEL (Mettre X)
-  // ==========================================
   const handleExport = () => {
     const dataToExport = erreurs.map(err => {
       const row: any = { 'Dossier (EPS)': err.dossierReference }; 
@@ -72,7 +74,6 @@ export default function ErreursPage() {
       if (selectedCols.includes('impactEstime')) row['Impact (€)'] = err.impactEstime;
       if (selectedCols.includes('statut')) row['Statut'] = err.statut;
       
-      // 🚀 L'FIX HWA HNA: N-sehlouha 3la l'partenaire, y-kteb ghir X
       row['Analyse (Votre réponse)'] = '';
       row['Preuve Photo (Mettre X)'] = ''; 
       
@@ -89,9 +90,6 @@ export default function ErreursPage() {
     setIsExportModalOpen(false);
   };
 
-  // ==========================================
-  // 🚀 LOGIQUE IMPORT EXCEL & WIZARD
-  // ==========================================
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -115,7 +113,6 @@ export default function ErreursPage() {
           const eps = row[epsKey];
           const analyse = row[analyseKey];
           
-          // 🛡️ L'ALGORITHME BLINDÉ: Il comprend "X", "x", "oui", "1", "vrai"
           const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : '';
           const needsPhoto = photoVal === 'x' || photoVal === 'oui' || photoVal === '1' || photoVal === 'true' || photoVal === 'vrai';
 
@@ -129,7 +126,7 @@ export default function ErreursPage() {
                 impact: matchedErreur.impactEstime,
                 analyse: analyse,
                 needsPhoto: needsPhoto,
-                photoUrl: ''
+                photoFile: null
               });
             }
           }
@@ -142,7 +139,7 @@ export default function ErreursPage() {
         const firstPhotoIdx = queue.findIndex(q => q.needsPhoto);
         if (firstPhotoIdx !== -1) {
           setCurrentWizardIndex(firstPhotoIdx);
-          setCurrentPhotoUrl("");
+          resetDropzone();
           setIsWizardOpen(true);
         } else {
           submitBatch(queue);
@@ -155,16 +152,39 @@ export default function ErreursPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // 🚀 LOGIQUE DRAG & DROP
+  const resetDropzone = () => {
+    setCurrentPhotoFile(null);
+    setPreviewUrl(null);
+  };
+
+  const handleFileSelect = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      setCurrentPhotoFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      alert("Veuillez sélectionner une image valide (JPG, PNG).");
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
   const handleWizardNext = () => {
     const updatedQueue = [...wizardQueue];
-    updatedQueue[currentWizardIndex].photoUrl = currentPhotoUrl;
+    updatedQueue[currentWizardIndex].photoFile = currentPhotoFile;
     setWizardQueue(updatedQueue);
 
     const nextIdx = updatedQueue.findIndex((q, idx) => idx > currentWizardIndex && q.needsPhoto);
     
     if (nextIdx !== -1) {
       setCurrentWizardIndex(nextIdx);
-      setCurrentPhotoUrl("");
+      resetDropzone();
     } else {
       setIsWizardOpen(false);
       submitBatch(updatedQueue);
@@ -178,7 +198,7 @@ export default function ErreursPage() {
 
     for (const item of queue) {
       try {
-        await deposerContestation(item.erreurId, "AUTRE", item.analyse, item.photoUrl);
+        await deposerContestation(item.erreurId, "AUTRE", item.analyse, item.photoFile);
         success++;
       } catch (err) {
         failed++;
@@ -190,9 +210,6 @@ export default function ErreursPage() {
     fetchErreurs(); 
   };
 
-  // ==========================================
-  // 🚀 RENDER
-  // ==========================================
   const totalErreurs = erreurs.length;
   const impactGlobal = erreurs.reduce((acc, err) => acc + (err.impactEstime || 0), 0);
   const contestables = erreurs.filter(e => e.statut === 'NOUVEAU' || e.statut === 'A_ANALYSER').length;
@@ -218,7 +235,7 @@ export default function ErreursPage() {
         <div className={styles.loadingOverlay}>
           <div className={styles.spinner}></div>
           <h2>Traitement par lot en cours</h2>
-          <p>Le système injecte vos contestations. Veuillez patienter...</p>
+          <p>Le système injecte vos contestations et téléverse vos images. Veuillez patienter...</p>
         </div>
       )}
 
@@ -367,7 +384,7 @@ export default function ErreursPage() {
           </div>
         )}
 
-        {/* 🚀 WIZARD MODAL (UPLOAD PHOTOS) */}
+        {/* 🚀 WIZARD MODAL (DRAG AND DROP) */}
         {isWizardOpen && wizardQueue[currentWizardIndex] && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
@@ -388,18 +405,42 @@ export default function ErreursPage() {
               </div>
 
               <div className={styles.formGroup}>
-                <label>URL de la preuve photographique *</label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="https://votre-serveur.com/photo.jpg" 
-                  value={currentPhotoUrl}
-                  onChange={e => setCurrentPhotoUrl(e.target.value)}
-                />
+                <label>Importer la preuve (Image) *</label>
+                
+                {previewUrl ? (
+                  <div className={styles.previewContainer}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={previewUrl} alt="Preview" className={styles.previewImage} />
+                    <button className={styles.removeBtn} onClick={resetDropzone} title="Supprimer l'image">✕</button>
+                  </div>
+                ) : (
+                  <div 
+                    className={`${styles.dropzone} ${isDragging ? styles.active : ''}`}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => dropzoneInputRef.current?.click()}
+                  >
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <p>Glissez-déposez votre image ici</p>
+                    <span>ou cliquez pour parcourir vos fichiers</span>
+                    <input 
+                      type="file" 
+                      accept="image/png, image/jpeg, image/jpg" 
+                      ref={dropzoneInputRef} 
+                      style={{ display: 'none' }} 
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          handleFileSelect(e.target.files[0]);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className={styles.modalActions}>
-                <button className={styles.btnNext} onClick={handleWizardNext} disabled={!currentPhotoUrl.trim()}>
+                <button className={styles.btnNext} onClick={handleWizardNext} disabled={!currentPhotoFile}>
                   {wizardQueue.findIndex((q, idx) => idx > currentWizardIndex && q.needsPhoto) !== -1 
                     ? "Suivant" 
                     : "Terminer et Soumettre"}
