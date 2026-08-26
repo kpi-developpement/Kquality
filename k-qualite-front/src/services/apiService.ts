@@ -399,3 +399,15 @@ export async function deleteArticle(id: number) {
   if (!res.ok) throw new Error("Erreur suppression article");
   return await res.json();
 }
+
+export async function validerErreur(id: number) {
+  const res = await fetch(`${BASE_URL}/erreurs/${id}/valider`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Erreur lors de la validation");
+  }
+  return await res.json();
+}

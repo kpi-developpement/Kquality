@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { getErreurs, deposerContestation } from '@/services/apiService';
+import { getErreurs, deposerContestation, validerErreur } from '@/services/apiService';
 import { ErreurResponseDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; 
-import CustomSelect from '../admin/vue-globale/components/CustomSelect/CustomSelect'; // 🛡️ JDID
+import CustomSelect from '../admin/vue-globale/components/CustomSelect/CustomSelect'; 
 import * as XLSX from 'xlsx'; 
 import styles from './Erreurs.module.css';
 
@@ -37,9 +37,10 @@ export default function ErreursPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 🛡️ JDID: Filtres de période
+  // 🚀 FILTRES & RECHERCHE
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedCols, setSelectedCols] = useState<string[]>(EXPORT_COLUMNS.map(c => c.id));
@@ -47,6 +48,7 @@ export default function ErreursPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardQueue, setWizardQueue] = useState<WizardItem[]>([]);
+  const [validateQueue, setValidateQueue] = useState<number[]>([]); // 🛡️ JDID: File d'attente pour les validations
   const [currentWizardIndex, setCurrentWizardIndex] = useState(0);
   const [batchLoading, setBatchLoading] = useState(false);
   
@@ -58,27 +60,43 @@ export default function ErreursPage() {
   const fetchErreurs = () => {
     if (user?.partenaireId) {
       setLoading(true);
-      getErreurs(user.partenaireId, month, year) // 🛡️ JDID
+      getErreurs(user.partenaireId, month, year)
         .then(setErreurs)
         .catch(console.error)
         .finally(() => setLoading(false));
     }
   };
 
-  useEffect(() => { fetchErreurs(); }, [user, month, year]); // 🛡️ JDID
-  useEffect(() => { setCurrentPage(1); }, [month, year]);
+  useEffect(() => { fetchErreurs(); }, [user, month, year]);
+  useEffect(() => { setCurrentPage(1); }, [month, year, searchQuery]);
+
+  // 🚀 LOGIQUE RECHERCHE MULTI-EPS
+  const filteredErreurs = useMemo(() => {
+    if (!searchQuery.trim()) return erreurs;
+    const searchTerms = searchQuery.toLowerCase().split(/[\s,]+/).filter(Boolean);
+    return erreurs.filter(row => {
+      if (!row.dossierReference) return false;
+      const ref = row.dossierReference.toLowerCase();
+      return searchTerms.some(term => ref.includes(term));
+    });
+  }, [erreurs, searchQuery]);
 
   const handleExport = () => {
-    const dataToExport = erreurs.map(err => {
+    const dataToExport = filteredErreurs.map(err => {
       const row: any = { 'Dossier (EPS)': err.dossierReference }; 
+      
       if (selectedCols.includes('dateDetection')) row['Date Détection'] = new Date(err.dateDetection).toLocaleDateString();
       if (selectedCols.includes('technicienNomComplet')) row['Technicien'] = err.technicienNomComplet;
       if (selectedCols.includes('categorie')) row['Catégorie'] = err.categorie || 'N/A';
       if (selectedCols.includes('regleDescription')) row['Sous Catégorie'] = err.regleDescription;
       if (selectedCols.includes('impactEstime')) row['Impact (€)'] = err.impactEstime;
       if (selectedCols.includes('statut')) row['Statut'] = err.statut;
+      
+      // 🛡️ JDID: Colonne Décision explicite pour aider le partenaire
+      row['Décision (CONTESTER / VALIDER)'] = '';
       row['Analyse (Votre réponse)'] = '';
       row['Preuve Photo (Mettre X)'] = ''; 
+      
       return row;
     });
 
@@ -89,6 +107,7 @@ export default function ErreursPage() {
     setIsExportModalOpen(false);
   };
 
+  // 🚀 MOTEUR D'IMPORTATION INTELLIGENT (SMART MATCHER)
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -97,52 +116,69 @@ export default function ErreursPage() {
     reader.onload = (evt) => {
       const bstr = evt.target?.result;
       const wb = XLSX.read(bstr, { type: 'binary' });
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
+      const ws = wb.Sheets[wb.SheetNames[0]];
       const data = XLSX.utils.sheet_to_json(ws);
 
-      const queue: WizardItem[] = [];
+      const cQueue: WizardItem[] = [];
+      const vQueue: number[] = [];
 
       data.forEach((row: any) => {
         const epsKey = Object.keys(row).find(k => k.toLowerCase().includes('dossier') || k.toLowerCase().includes('eps'));
-        const analyseKey = Object.keys(row).find(k => k.toLowerCase().includes('analyse'));
+        const decisionKey = Object.keys(row).find(k => k.toLowerCase().includes('décision') || k.toLowerCase().includes('decision') || k.toLowerCase().includes('action') || k.toLowerCase().includes('statut'));
+        const analyseKey = Object.keys(row).find(k => k.toLowerCase().includes('analyse') || k.toLowerCase().includes('commentaire') || k.toLowerCase().includes('réponse'));
         const photoKey = Object.keys(row).find(k => k.toLowerCase().includes('preuve') || k.toLowerCase().includes('photo'));
 
-        if (epsKey && analyseKey) {
+        if (epsKey) {
           const eps = row[epsKey];
-          const analyse = row[analyseKey];
-          const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : '';
-          const needsPhoto = photoVal === 'x' || photoVal === 'oui' || photoVal === '1' || photoVal === 'true' || photoVal === 'vrai';
+          const decisionStr = decisionKey ? String(row[decisionKey]).toLowerCase() : '';
+          const analyseStr = analyseKey ? String(row[analyseKey]).toLowerCase() : '';
+          
+          // 🛡️ SMART INTENT DETECTION
+          let intent = 'UNKNOWN';
+          if (/(conteste|contester|ko|non|faux|refus|injustifi|rejet|erreur)/i.test(decisionStr)) intent = 'CONTEST';
+          else if (/(valide|valider|ok|oui|vrai|accepte|justifi|confirm)/i.test(decisionStr)) intent = 'VALIDATE';
+          else if (/(conteste|contester|ko|non|faux|refus|injustifi|rejet|erreur)/i.test(analyseStr)) intent = 'CONTEST';
+          else if (/(valide|valider|ok|oui|vrai|accepte|justifi|confirm)/i.test(analyseStr)) intent = 'VALIDATE';
 
-          if (analyse && analyse.trim() !== '') {
+          if (intent !== 'UNKNOWN') {
             const matchedErreur = erreurs.find(e => e.dossierReference === eps);
             if (matchedErreur && (matchedErreur.statut === 'NOUVEAU' || matchedErreur.statut === 'A_ANALYSER')) {
-              queue.push({
-                erreurId: matchedErreur.id,
-                eps: matchedErreur.dossierReference,
-                categorie: matchedErreur.categorie || 'N/A',
-                impact: matchedErreur.impactEstime,
-                analyse: analyse,
-                needsPhoto: needsPhoto,
-                photoFile: null
-              });
+              
+              if (intent === 'VALIDATE') {
+                vQueue.push(matchedErreur.id);
+              } else if (intent === 'CONTEST') {
+                const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : '';
+                const needsPhoto = photoVal === 'x' || photoVal === 'oui' || photoVal === '1' || photoVal === 'true' || photoVal === 'vrai';
+                
+                cQueue.push({
+                  erreurId: matchedErreur.id,
+                  eps: matchedErreur.dossierReference,
+                  categorie: matchedErreur.categorie || 'N/A',
+                  impact: matchedErreur.impactEstime,
+                  analyse: analyseStr || 'Contestation par lot',
+                  needsPhoto: needsPhoto,
+                  photoFile: null
+                });
+              }
             }
           }
         }
       });
 
-      if (queue.length > 0) {
-        setWizardQueue(queue);
-        const firstPhotoIdx = queue.findIndex(q => q.needsPhoto);
+      if (cQueue.length > 0 || vQueue.length > 0) {
+        setWizardQueue(cQueue);
+        setValidateQueue(vQueue);
+        
+        const firstPhotoIdx = cQueue.findIndex(q => q.needsPhoto);
         if (firstPhotoIdx !== -1) {
           setCurrentWizardIndex(firstPhotoIdx);
           resetDropzone();
           setIsWizardOpen(true);
         } else {
-          submitBatch(queue);
+          submitBatch(cQueue, vQueue);
         }
       } else {
-        alert("Aucune analyse trouvée ou les dossiers sont déjà contestés/expirés.");
+        alert("Aucune action valide (Contester/Valider) trouvée dans le fichier, ou les dossiers sont déjà traités.");
       }
     };
     reader.readAsBinaryString(file);
@@ -180,33 +216,45 @@ export default function ErreursPage() {
       resetDropzone();
     } else {
       setIsWizardOpen(false);
-      submitBatch(updatedQueue);
+      submitBatch(updatedQueue, validateQueue);
     }
   };
 
-  const submitBatch = async (queue: WizardItem[]) => {
+  const submitBatch = async (contestQ: WizardItem[], validateQ: number[]) => {
     setBatchLoading(true);
-    let success = 0; let failed = 0;
-    for (const item of queue) {
+    let successContest = 0, failedContest = 0;
+    let successValidate = 0, failedValidate = 0;
+
+    // 1. Process Validations
+    for (const id of validateQ) {
+      try {
+        await validerErreur(id);
+        successValidate++;
+      } catch (err) { failedValidate++; }
+    }
+
+    // 2. Process Contestations
+    for (const item of contestQ) {
       try {
         await deposerContestation(item.erreurId, "AUTRE", item.analyse, item.photoFile);
-        success++;
-      } catch (err) { failed++; }
+        successContest++;
+      } catch (err) { failedContest++; }
     }
+
     setBatchLoading(false);
-    alert(`Traitement par lot terminé !\n✅ Succès : ${success}\n❌ Échecs : ${failed}`);
+    alert(`Traitement terminé !\n\n✅ Contestations : ${successContest} soumises (${failedContest} échecs)\n✅ Validations : ${successValidate} confirmées (${failedValidate} échecs)`);
     fetchErreurs(); 
   };
 
-  const totalErreurs = erreurs.length;
-  const impactGlobal = erreurs.reduce((acc, err) => acc + (err.impactEstime || 0), 0);
-  const contestables = erreurs.filter(e => e.statut === 'NOUVEAU' || e.statut === 'A_ANALYSER').length;
+  const totalErreurs = filteredErreurs.length;
+  const impactGlobal = filteredErreurs.reduce((acc, err) => acc + (err.impactEstime || 0), 0);
+  const contestables = filteredErreurs.filter(e => e.statut === 'NOUVEAU' || e.statut === 'A_ANALYSER').length;
 
   const totalPages = Math.ceil(totalErreurs / ITEMS_PER_PAGE);
   const paginatedErreurs = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return erreurs.slice(start, start + ITEMS_PER_PAGE);
-  }, [erreurs, currentPage]);
+    return filteredErreurs.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredErreurs, currentPage]);
 
   const IconAlert = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
   const IconMoney = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>;
@@ -226,7 +274,7 @@ export default function ErreursPage() {
         <div className={styles.loadingOverlay}>
           <div className={styles.spinner}></div>
           <h2>Traitement par lot en cours</h2>
-          <p>Le système injecte vos contestations et téléverse vos images. Veuillez patienter...</p>
+          <p>Le système injecte vos contestations et valide vos dossiers. Veuillez patienter...</p>
         </div>
       )}
 
@@ -249,16 +297,30 @@ export default function ErreursPage() {
               <input type="file" accept=".xlsx,.xls" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImport} />
             </div>
           </div>
-          
-          <div className={styles.filtersWrapper}>
-            <div className={styles.filterLabel}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-              Période
-            </div>
-            <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="140px" />
-            <CustomSelect value={year} options={yearOptions} onChange={setYear} width="110px" />
-          </div>
         </header>
+
+        {/* 🚀 TABLE CONTROLS (SEARCH + FILTERS) */}
+        <div className={styles.tableControls}>
+          <div className={styles.searchBox}>
+            <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              type="text" 
+              className={styles.searchInput} 
+              placeholder="Rechercher EPS (ex: EPS-001, EPS-002...)" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.filtersWrapper}>
+            <div className={styles.filterLabel}>Période</div>
+            <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="120px" />
+            <CustomSelect value={year} options={yearOptions} onChange={setYear} width="100px" />
+          </div>
+        </div>
 
         <div className={styles.kpiGrid}>
           <InteractiveCard delayIndex={1}>
@@ -356,7 +418,7 @@ export default function ErreursPage() {
                   Configuration de l'Export
                 </h2>
                 <p style={{ color: '#64748b', fontSize: '14px', marginTop: '10px' }}>
-                  Le fichier contiendra obligatoirement la colonne <strong>Dossier (EPS)</strong>, ainsi que les colonnes <strong>Analyse</strong> et <strong>Preuve Photo (Mettre X)</strong> pour vos réponses.
+                  Le fichier contiendra obligatoirement la colonne <strong>Dossier (EPS)</strong>, ainsi que les colonnes <strong>Décision</strong>, <strong>Analyse</strong> et <strong>Preuve Photo (Mettre X)</strong> pour vos réponses.
                 </p>
               </div>
               

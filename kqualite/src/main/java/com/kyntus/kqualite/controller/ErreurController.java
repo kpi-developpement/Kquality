@@ -17,7 +17,6 @@ public class ErreurController {
 
     private final ErreurService erreurService;
 
-    // 🛡️ L'FIX HWA HNA: Ajout de month et year
     @GetMapping("/partenaire/{partenaireId}")
     public ResponseEntity<ApiResponse<List<ErreurResponseDTO>>> getErreursByPartenaire(
             @PathVariable Long partenaireId,
@@ -32,5 +31,12 @@ public class ErreurController {
     public ResponseEntity<ApiResponse<ErreurResponseDTO>> getErreurById(@PathVariable Long id) {
         ErreurResponseDTO erreur = erreurService.getErreurById(id);
         return ResponseEntity.ok(ApiResponse.success(erreur, "Détail de l'erreur récupéré"));
+    }
+
+    // 🛡️ JDID: Endpoint pour valider l'erreur
+    @PostMapping("/{id}/valider")
+    public ResponseEntity<ApiResponse<Void>> validerErreur(@PathVariable Long id) {
+        erreurService.validerErreurParPartenaire(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Erreur validée par le partenaire"));
     }
 }

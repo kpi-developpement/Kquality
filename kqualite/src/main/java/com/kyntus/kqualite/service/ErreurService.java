@@ -1,6 +1,7 @@
 package com.kyntus.kqualite.service;
 
 import com.kyntus.kqualite.domain.Erreur;
+import com.kyntus.kqualite.domain.StatutErreur;
 import com.kyntus.kqualite.dto.ErreurResponseDTO;
 import com.kyntus.kqualite.repository.ErreurRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,20 @@ public class ErreurService {
                 .orElseThrow(() -> new RuntimeException("Erreur introuvable"));
     }
 
+    // 🛡️ JDID: Le partenaire valide l'erreur (accepte la pénalité)
+    @Transactional
+    public void validerErreurParPartenaire(Long id) {
+        Erreur erreur = erreurRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Erreur introuvable"));
+
+        if (erreur.getStatut() == StatutErreur.NOUVEAU || erreur.getStatut() == StatutErreur.A_ANALYSER) {
+            erreur.setStatut(StatutErreur.CONFIRME);
+            erreurRepository.save(erreur);
+        } else {
+            throw new RuntimeException("L'erreur ne peut plus être validée (statut actuel: " + erreur.getStatut() + ")");
+        }
+    }
+
     private ErreurResponseDTO mapToDTO(Erreur erreur) {
         return ErreurResponseDTO.builder()
                 .id(erreur.getId())
@@ -44,8 +59,7 @@ public class ErreurService {
                 .preuveUrl(erreur.getPreuveUrl())
                 .impactEstime(erreur.getImpactEstime())
                 .echeanceContestation(erreur.getEcheanceContestation())
-                // 🛡️ L'FIX HWA HNA: On passe l'Enum directement, sans le .name() !
-                .statut(erreur.getStatut())
+                .statut(erreur.getStatut().name())
                 .dossierReference(erreur.getDossier().getReferenceID())
                 .dossierDateIntervention(erreur.getDossier().getDateIntervention())
                 .technicienNomComplet(erreur.getDossier().getTechnicien().getNomComplet())
