@@ -17,7 +17,7 @@
 
 .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 30px; position: relative; z-index: 10; }
 
-/* 🚀 IMPACT VAULT L'MEJNOUN */
+/* 🚀 IMPACT VAULT */
 .impactVault { display: flex; flex-direction: column; height: 100%; background: transparent; position: relative; z-index: 2; padding: 10px; }
 .vaultHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .vaultTitle { font-size: 14px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: 1px; text-transform: uppercase; }
@@ -40,25 +40,190 @@
 .kpiTitle { font-size: 14px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
 .kpiValue { font-size: 42px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -1.5px; }
 
-/* 🚀 ENERGY TRACKS (Progress Bars Luxe) */
 .energyTrack { width: 100%; height: 12px; background: rgba(15, 23, 42, 0.05); border-radius: 12px; overflow: visible; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); position: relative; padding: 2px; margin-top: 10px; }
 .energyFill { height: 100%; border-radius: 10px; position: relative; transition: width 1.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .energySpark { position: absolute; right: -4px; top: -2px; bottom: -2px; width: 8px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 15px 3px currentColor; animation: sparkPulse 2s infinite alternate; }
 @keyframes sparkPulse { 0% { opacity: 0.6; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }
 
-/* BADGES */
 .badgeAlert { background: linear-gradient(135deg, #fef2f2, #fee2e2); color: #ef4444; padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 12px; border: 1px solid rgba(252, 165, 165, 0.5); display: inline-block; margin-top: 10px; }
 .badgeInfo { background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #2563eb; padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 12px; border: 1px solid rgba(191, 219, 254, 0.5); display: inline-block; margin-top: 10px; }
 
+/* ========================================================================== */
+/* 🚀 SECTION K-NEWS (ARTICLES) - DESIGN HERRBAN                              */
+/* ========================================================================== */
+
+.newsContainer {
+  position: relative;
+  margin-top: 60px;
+  padding: 50px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(30px);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  animation: slideUpNews 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* 🚀 L'EFFET WATERMARK MEJNOUN f l'fond */
+.newsWatermark {
+  position: absolute;
+  top: -30px;
+  right: -20px;
+  font-size: 180px;
+  font-weight: 900;
+  color: transparent;
+  -webkit-text-stroke: 3px rgba(59, 130, 246, 0.05); /* Contour bleu ultra léger */
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.newsHeader {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.newsHeader h2 {
+  font-size: 32px;
+  font-weight: 900;
+  margin: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -1px;
+}
+
+.newsIcon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+}
+
+.blogGrid {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 30px;
+}
+
+/* 🚀 CARTE ARTICLE PREMIUM */
+.blogCard {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.blogCard:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.blogImgWrapper {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.blogImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.blogCard:hover .blogImg {
+  transform: scale(1.1);
+}
+
+.blogNoImg {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.blogBody {
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.blogDate {
+  font-size: 11px;
+  color: #3b82f6;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.blogTitle {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 15px 0;
+  line-height: 1.4;
+  letter-spacing: -0.5px;
+}
+
+.blogReadMore {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 800;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.3s;
+}
+
+.blogCard:hover .blogReadMore {
+  color: #2563eb;
+}
+
+.blogReadMore svg {
+  transition: transform 0.3s;
+}
+
+.blogCard:hover .blogReadMore svg {
+  transform: translateX(5px);
+}
+
 @keyframes fadeInDown { from { opacity: 0; transform: translate3d(0, -30px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
-/* SECTION BLOG PARTENAIRE */
-.blogSection { margin-top: 50px; animation: fadeInUp 0.8s ease-out forwards 0.5s; opacity: 0; }
-.blogHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-.blogHeader h2 { color: #0f172a; font-size: 22px; font-weight: 900; margin: 0; }
-.blogGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-.blogCard { background: rgba(255, 255, 255, 0.9); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; border: 1px solid #e2e8f0; text-decoration: none; display: block; }
-.blogCard:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(59, 130, 246, 0.15); border-color: #3b82f6; }
-.blogImg { width: 100%; height: 160px; object-fit: cover; background: #e2e8f0; }
-.blogBody { padding: 20px; }
-.blogDate { font-size: 11px; color: #64748b; font-weight: 800; text-transform: uppercase; }
-.blogTitle { font-size: 16px; font-weight: 900; color: #0f172a; margin: 8px 0 0 0; line-height: 1.4; }
+@keyframes slideUpNews { from { opacity: 0; transform: translate3d(0, 50px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }

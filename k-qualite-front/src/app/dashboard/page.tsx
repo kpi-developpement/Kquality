@@ -18,12 +18,13 @@ export default function DashboardPage() {
     if (user?.partenaireId) {
       setLoading(true);
       
-      // 🛡️ L'FIX HWA HNA: On sépare les requêtes pour ne pas bloquer le Dashboard
+      // 🛡️ L'FIX: On charge le Dashboard en priorité
       getDashboardData(user.partenaireId)
         .then(setData)
         .catch(console.error)
         .finally(() => setLoading(false));
 
+      // 🛡️ L'FIX: On charge les articles en arrière-plan sans bloquer
       getArticles()
         .then(setArticles)
         .catch(console.error);
@@ -50,6 +51,7 @@ export default function DashboardPage() {
         </header>
 
         <div className={styles.grid}>
+          {/* IMPACT VAULT */}
           <div style={{ gridColumn: 'span 2' }}>
             <InteractiveCard delayIndex={1}>
               <div className={styles.impactVault}>
@@ -103,23 +105,36 @@ export default function DashboardPage() {
           </InteractiveCard>
         </div>
 
+        {/* 🚀 SECTION K-NEWS (ARTICLES) HERRBANA */}
         {articles.length > 0 && (
-          <div className={styles.blogSection}>
-            <div className={styles.blogHeader}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path></svg>
-              <h2>Actualités & Mises à jour</h2>
+          <div className={styles.newsContainer}>
+            {/* L'effet Watermark f l'fond */}
+            <div className={styles.newsWatermark}>ARTICLES</div>
+            
+            <div className={styles.newsHeader}>
+              <div className={styles.newsIcon}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path></svg>
+              </div>
+              <h2>K-News & Mises à jour</h2>
             </div>
+
             <div className={styles.blogGrid}>
               {articles.map(a => (
                 <Link href={`/dashboard/blog/${a.id}`} key={a.id} className={styles.blogCard}>
-                  {a.imageUrl ? (
-                    <img src={`${getServerUrl()}${a.imageUrl}`} alt="Cover" className={styles.blogImg} />
-                  ) : (
-                    <div className={styles.blogImg} style={{display:'flex', alignItems:'center', justifyContent:'center', color:'#94a3b8', fontWeight:'bold'}}>Actualité</div>
-                  )}
+                  <div className={styles.blogImgWrapper}>
+                    {a.imageUrl ? (
+                      <img src={`${getServerUrl()}${a.imageUrl}`} alt="Cover" className={styles.blogImg} />
+                    ) : (
+                      <div className={styles.blogNoImg}>K-NEWS</div>
+                    )}
+                  </div>
                   <div className={styles.blogBody}>
-                    <div className={styles.blogDate}>{new Date(a.dateCreation).toLocaleDateString()}</div>
+                    <span className={styles.blogDate}>{new Date(a.dateCreation).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                     <h3 className={styles.blogTitle}>{a.titre}</h3>
+                    <div className={styles.blogReadMore}>
+                      Lire l'article
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </div>
                   </div>
                 </Link>
               ))}
