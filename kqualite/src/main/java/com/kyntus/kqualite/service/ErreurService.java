@@ -16,9 +16,10 @@ public class ErreurService {
 
     private final ErreurRepository erreurRepository;
 
+    // 🛡️ L'FIX HWA HNA: On ajoute month et year
     @Transactional(readOnly = true)
-    public List<ErreurResponseDTO> getErreursByPartenaire(Long partenaireId) {
-        return erreurRepository.findAllByPartenaireId(partenaireId).stream()
+    public List<ErreurResponseDTO> getErreursByPartenaire(Long partenaireId, int month, int year) {
+        return erreurRepository.findByPartenaireIdAndMoisAndAnnee(partenaireId, month, year).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -30,7 +31,6 @@ public class ErreurService {
                 .collect(Collectors.toList());
     }
 
-    // 🛡️ L'FIX HWA HNA: Nouvelle méthode pour récupérer une seule erreur par son ID
     @Transactional(readOnly = true)
     public ErreurResponseDTO getErreurById(Long id) {
         return erreurRepository.findById(id)
@@ -45,7 +45,7 @@ public class ErreurService {
                 .preuveUrl(erreur.getPreuveUrl())
                 .impactEstime(erreur.getImpactEstime())
                 .echeanceContestation(erreur.getEcheanceContestation())
-                .statut(erreur.getStatut())
+                .statut(erreur.getStatut().name())
                 .dossierReference(erreur.getDossier().getReferenceID())
                 .dossierDateIntervention(erreur.getDossier().getDateIntervention())
                 .technicienNomComplet(erreur.getDossier().getTechnicien().getNomComplet())

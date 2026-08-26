@@ -57,8 +57,10 @@ export async function getDashboardData(partenaireId: number = 1): Promise<Dashbo
   return json.data;
 }
 
-export async function getErreurs(partenaireId: number = 1): Promise<ErreurResponseDTO[]> {
-  const res = await fetch(`${BASE_URL}/erreurs/partenaire/${partenaireId}`, { headers: getAuthHeaders(), cache: 'no-store' });
+
+
+export async function getErreurs(partenaireId: number, month: number, year: number): Promise<ErreurResponseDTO[]> {
+  const res = await fetch(`${BASE_URL}/erreurs/partenaire/${partenaireId}?month=${month}&year=${year}`, { headers: getAuthHeaders(), cache: 'no-store' });
   if (!res.ok) throw new Error(`Erreur Backend HTTP ${res.status}`);
   const json: ApiResponse<ErreurResponseDTO[]> = await res.json();
   return json.data;

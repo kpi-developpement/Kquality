@@ -17,15 +17,17 @@ public class ErreurController {
 
     private final ErreurService erreurService;
 
+    // 🛡️ L'FIX HWA HNA: Ajout de month et year
     @GetMapping("/partenaire/{partenaireId}")
     public ResponseEntity<ApiResponse<List<ErreurResponseDTO>>> getErreursByPartenaire(
-            @PathVariable Long partenaireId) {
+            @PathVariable Long partenaireId,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
 
-        List<ErreurResponseDTO> erreurs = erreurService.getErreursByPartenaire(partenaireId);
+        List<ErreurResponseDTO> erreurs = erreurService.getErreursByPartenaire(partenaireId, month, year);
         return ResponseEntity.ok(ApiResponse.success(erreurs, "Liste des erreurs récupérée avec succès"));
     }
 
-    // 🛡️ L'FIX HWA HNA: Endpoint dédié pour le détail d'une erreur
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ErreurResponseDTO>> getErreurById(@PathVariable Long id) {
         ErreurResponseDTO erreur = erreurService.getErreurById(id);

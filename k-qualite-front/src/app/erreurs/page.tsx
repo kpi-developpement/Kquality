@@ -6,6 +6,7 @@ import { ErreurResponseDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; 
+import CustomSelect from '../admin/vue-globale/components/CustomSelect/CustomSelect'; // 🛡️ JDID
 import * as XLSX from 'xlsx'; 
 import styles from './Erreurs.module.css';
 
@@ -27,7 +28,7 @@ interface WizardItem {
   impact: number;
   analyse: string;
   needsPhoto: boolean;
-  photoFile: File | null; // 🛡️ On stocke le fichier physique
+  photoFile: File | null;
 }
 
 export default function ErreursPage() {
@@ -35,6 +36,10 @@ export default function ErreursPage() {
   const [erreurs, setErreurs] = useState<ErreurResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // 🛡️ JDID: Filtres de période
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedCols, setSelectedCols] = useState<string[]>(EXPORT_COLUMNS.map(c => c.id));
@@ -45,7 +50,6 @@ export default function ErreursPage() {
   const [currentWizardIndex, setCurrentWizardIndex] = useState(0);
   const [batchLoading, setBatchLoading] = useState(false);
   
-  // 🚀 DRAG & DROP STATES
   const [currentPhotoFile, setCurrentPhotoFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -54,38 +58,33 @@ export default function ErreursPage() {
   const fetchErreurs = () => {
     if (user?.partenaireId) {
       setLoading(true);
-      getErreurs(user.partenaireId)
+      getErreurs(user.partenaireId, month, year) // 🛡️ JDID
         .then(setErreurs)
         .catch(console.error)
         .finally(() => setLoading(false));
     }
   };
 
-  useEffect(() => { fetchErreurs(); }, [user]);
+  useEffect(() => { fetchErreurs(); }, [user, month, year]); // 🛡️ JDID
+  useEffect(() => { setCurrentPage(1); }, [month, year]);
 
   const handleExport = () => {
     const dataToExport = erreurs.map(err => {
       const row: any = { 'Dossier (EPS)': err.dossierReference }; 
-      
       if (selectedCols.includes('dateDetection')) row['Date Détection'] = new Date(err.dateDetection).toLocaleDateString();
       if (selectedCols.includes('technicienNomComplet')) row['Technicien'] = err.technicienNomComplet;
       if (selectedCols.includes('categorie')) row['Catégorie'] = err.categorie || 'N/A';
       if (selectedCols.includes('regleDescription')) row['Sous Catégorie'] = err.regleDescription;
       if (selectedCols.includes('impactEstime')) row['Impact (€)'] = err.impactEstime;
       if (selectedCols.includes('statut')) row['Statut'] = err.statut;
-      
       row['Analyse (Votre réponse)'] = '';
       row['Preuve Photo (Mettre X)'] = ''; 
-      
       return row;
     });
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Contestations");
-    
-    const month = new Date().getMonth() + 1;
-    const year = new Date().getFullYear();
     XLSX.writeFile(wb, `Export_Erreurs_${month}_${year}.xlsx`);
     setIsExportModalOpen(false);
   };
@@ -112,7 +111,6 @@ export default function ErreursPage() {
         if (epsKey && analyseKey) {
           const eps = row[epsKey];
           const analyse = row[analyseKey];
-          
           const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : '';
           const needsPhoto = photoVal === 'x' || photoVal === 'oui' || photoVal === '1' || photoVal === 'true' || photoVal === 'vrai';
 
@@ -135,7 +133,6 @@ export default function ErreursPage() {
 
       if (queue.length > 0) {
         setWizardQueue(queue);
-        
         const firstPhotoIdx = queue.findIndex(q => q.needsPhoto);
         if (firstPhotoIdx !== -1) {
           setCurrentWizardIndex(firstPhotoIdx);
@@ -152,11 +149,7 @@ export default function ErreursPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // 🚀 LOGIQUE DRAG & DROP
-  const resetDropzone = () => {
-    setCurrentPhotoFile(null);
-    setPreviewUrl(null);
-  };
+  const resetDropzone = () => { setCurrentPhotoFile(null); setPreviewUrl(null); };
 
   const handleFileSelect = (file: File) => {
     if (file && file.type.startsWith('image/')) {
@@ -193,18 +186,13 @@ export default function ErreursPage() {
 
   const submitBatch = async (queue: WizardItem[]) => {
     setBatchLoading(true);
-    let success = 0;
-    let failed = 0;
-
+    let success = 0; let failed = 0;
     for (const item of queue) {
       try {
         await deposerContestation(item.erreurId, "AUTRE", item.analyse, item.photoFile);
         success++;
-      } catch (err) {
-        failed++;
-      }
+      } catch (err) { failed++; }
     }
-
     setBatchLoading(false);
     alert(`Traitement par lot terminé !\n✅ Succès : ${success}\n❌ Échecs : ${failed}`);
     fetchErreurs(); 
@@ -223,6 +211,9 @@ export default function ErreursPage() {
   const IconAlert = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
   const IconMoney = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>;
   const IconClock = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+
+  const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
+  const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
 
   if (loading) return <div className={styles.pageWrapper}><div style={{ textAlign: 'center', padding: '100px', fontWeight: 'bold', color: '#64748b' }}>Chargement sécurisé...</div></div>;
 
@@ -245,18 +236,27 @@ export default function ErreursPage() {
             <div className={styles.partnerBadge}>PORTAIL QUALITÉ</div>
             <h1>Registre des Erreurs</h1>
             <p>Consultez et contestez les écarts détectés sur vos interventions.</p>
+            
+            <div className={styles.actionHeaderGroup} style={{ marginTop: '20px' }}>
+              <button className={styles.btnExport} onClick={() => setIsExportModalOpen(true)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Générer Excel d'Analyse
+              </button>
+              <button className={styles.btnImport} onClick={() => fileInputRef.current?.click()}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Importer les Contestations
+              </button>
+              <input type="file" accept=".xlsx,.xls" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImport} />
+            </div>
           </div>
           
-          <div className={styles.actionHeaderGroup}>
-            <button className={styles.btnExport} onClick={() => setIsExportModalOpen(true)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              Générer Excel d'Analyse
-            </button>
-            <button className={styles.btnImport} onClick={() => fileInputRef.current?.click()}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-              Importer les Contestations
-            </button>
-            <input type="file" accept=".xlsx,.xls" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImport} />
+          <div className={styles.filtersWrapper}>
+            <div className={styles.filterLabel}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+              Période
+            </div>
+            <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="140px" />
+            <CustomSelect value={year} options={yearOptions} onChange={setYear} width="110px" />
           </div>
         </header>
 
