@@ -214,6 +214,24 @@ export async function importMultiCqExcel(file: File, month: number, year: number
   return await res.json();
 }
 
+export async function importSingleCqExcel(file: File, month: number, year: number, typeFeuille: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('month', month.toString());
+  formData.append('year', year.toString());
+  formData.append('typeFeuille', typeFeuille);
+  
+  const res = await fetch(`${BASE_URL}/admin/erreurs/import-single-cq`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` },
+    body: formData
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Erreur lors de l'importation de ${typeFeuille}`);
+  }
+  return await res.json();
+}
 export async function getCqDataByPartenaire(partenaireId: number, typeFeuille: string, month: number, year: number): Promise<CqDataDTO[]> {
   const res = await fetch(`${BASE_URL}/cq-data/partenaire/${partenaireId}?type=${encodeURIComponent(typeFeuille)}&month=${month}&year=${year}`, { 
     headers: getAuthHeaders(), cache: 'no-store' 

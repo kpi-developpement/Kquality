@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { 
   importErreursExcel, 
   importMultiCqExcel, 
+  importSingleCqExcel, // 🛡️ JDID
   importCqPartenaireExcel, 
   importSacliPartenaireExcel, 
   importSarcliPartenaireExcel, 
@@ -27,7 +28,6 @@ export default function ImportErreursPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
-  // 🛡️ JDID: State pour la purge & Custom Dropdown
   const [purgeTarget, setPurgeTarget] = useState("ALL");
   const [isDangerDropdownOpen, setDangerDropdownOpen] = useState(false);
   const dangerDropdownRef = useRef<HTMLDivElement>(null);
@@ -44,7 +44,12 @@ export default function ImportErreursPage() {
   const fileInputCadrageRef = useRef<HTMLInputElement>(null);
   const fileInputPlainteRef = useRef<HTMLInputElement>(null);
 
-  // Close dropdown when clicking outside
+  // 🛡️ JDID: Refs pour les imports CQ isolés
+  const fileInputAuditsRef = useRef<HTMLInputElement>(null);
+  const fileInputVoisinageRef = useRef<HTMLInputElement>(null);
+  const fileInputExpertisesRef = useRef<HTMLInputElement>(null);
+  const fileInputCoupuresRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dangerDropdownRef.current && !dangerDropdownRef.current.contains(event.target as Node)) {
@@ -74,6 +79,30 @@ export default function ImportErreursPage() {
         : await apiCall(e.target.files[0], month, year);
         
       setSummary({ type: typeName, data: res.data });
+    } catch (err: any) { 
+      setError(err.message); 
+    } finally { 
+      setLoading(false); 
+      if(ref.current) ref.current.value = ""; 
+    }
+  };
+
+  // 🛡️ JDID: Handler pour les imports CQ isolés
+  const handleUploadSingleCq = async (
+    e: React.ChangeEvent<HTMLInputElement>, 
+    typeFeuille: string, 
+    ref: React.RefObject<HTMLInputElement | null>
+  ) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    
+    setLoading(true); 
+    setLoadingMsg(`Extraction et traitement de ${typeFeuille}...`);
+    setError(""); 
+    setSummary(null);
+    
+    try {
+      const res = await importSingleCqExcel(e.target.files[0], month, year, typeFeuille);
+      setSummary({ type: typeFeuille, data: res.data });
     } catch (err: any) { 
       setError(err.message); 
     } finally { 
@@ -143,7 +172,6 @@ export default function ImportErreursPage() {
           <p>Injectez vos rapports Excel/CSV. Le système distribuera automatiquement et intelligemment les métriques aux partenaires via le matricule KYN.</p>
         </header>
 
-        {/* 🚀 1. CONTROL PANEL (MOIS / ANNEE) */}
         <div className={styles.controlPanel}>
           <div className={styles.filterGroup}>
             <label>Mois Cible</label>
@@ -157,7 +185,6 @@ export default function ImportErreursPage() {
 
         {error && <div style={{ color: '#ef4444', background: 'rgba(254, 242, 242, 0.9)', padding: '20px', borderRadius: '16px', border: '1px solid #fecaca', marginBottom: '30px', fontWeight: '800', textAlign: 'center', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.1)', backdropFilter: 'blur(10px)' }}>⚠️ Erreur système : {error}</div>}
 
-        {/* 🚀 2. DANGER ZONE PREMIUM (TOP PLACEMENT) */}
         <div className={styles.dangerCard}>
           <div className={styles.dangerInfo}>
             <h3>
@@ -168,7 +195,6 @@ export default function ImportErreursPage() {
           </div>
           
           <div className={styles.dangerActions}>
-            {/* Custom Dropdown Bde3 */}
             <div className={styles.dangerSelectContainer} ref={dangerDropdownRef}>
               <button 
                 type="button"
@@ -203,7 +229,6 @@ export default function ImportErreursPage() {
           </div>
         </div>
 
-        {/* --- SUMMARY SUCCESS CARD --- */}
         {summary && !loading && (
           <div className={styles.summaryCard}>
             <h3>
@@ -227,7 +252,7 @@ export default function ImportErreursPage() {
           </div>
         )}
 
-        {/* GROUP 1 */}
+        {/* GROUP 1: GLOBAL */}
         <h2 className={styles.sectionTitle}>
           <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#3b82f6" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
           Sources Principales & Agrégeurs
@@ -280,7 +305,60 @@ export default function ImportErreursPage() {
 
         </div>
 
-        {/* GROUP 2 */}
+        {/* 🛡️ JDID: GROUP 2 - IMPORTS ISOLÉS CQ */}
+        <h2 className={styles.sectionTitle}>
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#10b981" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Imports CQ Isolés (Fichiers Séparés)
+        </h2>
+        <div className={styles.grid}>
+          
+          <InteractiveCard delayIndex={1}>
+            <div className={`${styles.uploadBox} ${styles.boxBlue}`} onClick={() => fileInputAuditsRef.current?.click()}>
+              <input type="file" accept=".xlsx,.xls" ref={fileInputAuditsRef} onChange={(e) => handleUploadSingleCq(e, 'Audits tech', fileInputAuditsRef)} className={styles.fileInput} />
+              <div className={styles.iconWrapper}>
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+              </div>
+              <h3 style={{ color: '#3b82f6' }}>Audits Techniques</h3>
+              <p>Import isolé de la feuille Audits</p>
+            </div>
+          </InteractiveCard>
+
+          <InteractiveCard delayIndex={2}>
+            <div className={`${styles.uploadBox} ${styles.boxOrange}`} onClick={() => fileInputVoisinageRef.current?.click()}>
+              <input type="file" accept=".xlsx,.xls" ref={fileInputVoisinageRef} onChange={(e) => handleUploadSingleCq(e, 'Check-voisinage', fileInputVoisinageRef)} className={styles.fileInput} />
+              <div className={styles.iconWrapper}>
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              </div>
+              <h3 style={{ color: '#f59e0b' }}>Check Voisinage</h3>
+              <p>Import isolé de la feuille Voisinage</p>
+            </div>
+          </InteractiveCard>
+
+          <InteractiveCard delayIndex={3}>
+            <div className={`${styles.uploadBox} ${styles.boxPurple}`} onClick={() => fileInputExpertisesRef.current?.click()}>
+              <input type="file" accept=".xlsx,.xls" ref={fileInputExpertisesRef} onChange={(e) => handleUploadSingleCq(e, 'Expertises SAV', fileInputExpertisesRef)} className={styles.fileInput} />
+              <div className={styles.iconWrapper}>
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+              </div>
+              <h3 style={{ color: '#8b5cf6' }}>Expertises SAV</h3>
+              <p>Import isolé de la feuille Expertises</p>
+            </div>
+          </InteractiveCard>
+
+          <InteractiveCard delayIndex={4}>
+            <div className={`${styles.uploadBox} ${styles.boxGreen}`} onClick={() => fileInputCoupuresRef.current?.click()}>
+              <input type="file" accept=".xlsx,.xls" ref={fileInputCoupuresRef} onChange={(e) => handleUploadSingleCq(e, 'Taux de coupures', fileInputCoupuresRef)} className={styles.fileInput} />
+              <div className={styles.iconWrapper}>
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              </div>
+              <h3 style={{ color: '#10b981' }}>Taux de Coupures</h3>
+              <p>Import isolé de la feuille Coupures</p>
+            </div>
+          </InteractiveCard>
+
+        </div>
+
+        {/* GROUP 3: RACC ISOLES */}
         <h2 className={styles.sectionTitle}>
           <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
           Indicateurs Isolés (RACC)
@@ -354,6 +432,7 @@ export default function ImportErreursPage() {
           </InteractiveCard>
 
         </div>
+
       </div>
     </div>
   );

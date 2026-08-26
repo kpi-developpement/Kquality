@@ -3,6 +3,7 @@ package com.kyntus.kqualite.repository;
 import com.kyntus.kqualite.domain.CqData;
 import com.kyntus.kqualite.domain.Partenaire;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -22,10 +23,15 @@ public interface CqDataRepository extends JpaRepository<CqData, Long> {
     @Transactional
     void deleteByMoisAndAnnee(int mois, int annee);
 
+    // 🛡️ JDID: Supprimer uniquement un type spécifique de CQ Data
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM CqData c WHERE c.mois = :mois AND c.annee = :annee AND c.typeFeuille = :typeFeuille")
+    void deleteByMoisAndAnneeAndTypeFeuilleQuery(@Param("mois") int mois, @Param("annee") int annee, @Param("typeFeuille") String typeFeuille);
+
     @Query("SELECT DISTINCT c.partenaire FROM CqData c WHERE c.mois = :mois AND c.annee = :annee")
     List<Partenaire> findDistinctPartenairesByMoisAndAnnee(@Param("mois") int mois, @Param("annee") int annee);
 
-    // 🛡️ JDID: Récupérer toutes les lignes CQ qui ont une contestation
     @Query("SELECT c FROM CqData c WHERE c.statutContestation IS NOT NULL AND c.statutContestation != 'NON_CONTESTE'")
     List<CqData> findContestedCqData();
 }

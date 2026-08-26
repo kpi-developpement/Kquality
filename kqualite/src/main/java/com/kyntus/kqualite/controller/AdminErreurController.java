@@ -23,7 +23,6 @@ public class AdminErreurController {
     private final CqMultiSheetImportService cqMultiSheetImportService;
     private final ErreurService erreurService;
 
-    // 🛡️ JDID: Ajout des paramètres month et year
     @GetMapping
     public ResponseEntity<ApiResponse<List<ErreurResponseDTO>>> getAllErreurs(
             @RequestParam(value = "partenaireId", required = false) Long partenaireId,
@@ -48,5 +47,17 @@ public class AdminErreurController {
         if (file.isEmpty()) return ResponseEntity.badRequest().build();
         ImportSummaryDTO summary = cqMultiSheetImportService.importMultiSheetExcel(file, month, year);
         return ResponseEntity.ok(ApiResponse.success(summary, "Fichier Multi-feuilles traité"));
+    }
+
+    // 🛡️ JDID: Endpoint pour importer une seule feuille CQ
+    @PostMapping("/import-single-cq")
+    public ResponseEntity<ApiResponse<ImportSummaryDTO>> importSingleCq(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("month") int month,
+            @RequestParam("year") int year,
+            @RequestParam("typeFeuille") String typeFeuille) {
+        if (file.isEmpty()) return ResponseEntity.badRequest().build();
+        ImportSummaryDTO summary = cqMultiSheetImportService.importSingleSheetExcel(file, month, year, typeFeuille);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Fichier " + typeFeuille + " traité"));
     }
 }
