@@ -32,16 +32,16 @@ export default function VueGlobalePage() {
   const [totalCqPenalties, setTotalCqPenalties] = useState<number>(0);
   const [contestationsCount, setContestationsCount] = useState<number>(0);
 
-  useEffect(() => {
-    getAdminPartenaires().then(setPartenaires).catch(console.error);
-  }, []);
+  // 🛡️ L'FIX: Helper
+  const formatPenalty = (val: number) => val === 0 ? '0 €' : `-${Math.abs(val).toLocaleString('fr-FR')} €`;
+
+  useEffect(() => { getAdminPartenaires().then(setPartenaires).catch(console.error); }, []);
 
   const fetchTrendData = async (currentMonth: number, currentYear: number) => {
     setChartLoading(true);
     try {
       const labels = [];
       const promises = [];
-
       for (let i = 5; i >= 0; i--) {
         let m = currentMonth - i;
         let y = currentYear;
@@ -50,28 +50,19 @@ export default function VueGlobalePage() {
         labels.push(date.toLocaleString('fr-FR', { month: 'short' }).charAt(0).toUpperCase() + date.toLocaleString('fr-FR', { month: 'short' }).slice(1) + '.');
         promises.push(getKpiGlobalAdmin(m, y));
       }
-
       const results = await Promise.all(promises);
       const raccScores: number[] = [];
       const savScores: number[] = [];
-
       results.forEach(monthData => {
-        if (!monthData || monthData.length === 0) {
-          raccScores.push(0); savScores.push(0); return;
-        }
+        if (!monthData || monthData.length === 0) { raccScores.push(0); savScores.push(0); return; }
         const raccProcessus = ["SACLI_OK", "SARCLI_NOK", "GEM_NOK", "TAUX_20J", "ZMD_AMII", "ZMD_RIP", "ZTD", "TNH", "PERF_RANG_1_A", "PERF_RANG_1_B", "PERF_RANG_1_C", "HOTLINE_RANG_1_A", "HOTLINE_RANG_1_B", "HOTLINE_RANG_1_C", "CONSTRUCTION_RANG_1_A", "CONSTRUCTION_RANG_1_B", "CONSTRUCTION_RANG_1_C", "PERF_RANG_2_A", "PERF_RANG_2_B", "PERF_RANG_2_C", "INCOHERENCE_PTO", "CADRAGE", "TAUX_PLAINTE"];
         const rData = monthData.filter(item => raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
         const sData = monthData.filter(item => !raccProcessus.includes(item.processus) && item.departement === "GLOBAL");
-        
         raccScores.push(Math.min(100, 90 + rData.reduce((sum, item) => sum + item.bonus, 0)));
         savScores.push(Math.min(100, 90 + sData.reduce((sum, item) => sum + item.bonus, 0)));
       });
       setChartLabels(labels); setChartDataRacc(raccScores); setChartDataSav(savScores);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setChartLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setChartLoading(false); }
   };
 
   const fetchData = async () => {
@@ -79,7 +70,6 @@ export default function VueGlobalePage() {
     try {
       const result = await getKpiGlobalAdmin(month, year);
       setData(result);
-      
       const depts = new Set<string>();
       result.forEach(item => depts.add(item.departement));
       const sortedDepts = Array.from(depts).sort((a, b) => a === "GLOBAL" ? -1 : b === "GLOBAL" ? 1 : a.localeCompare(b));
@@ -90,17 +80,12 @@ export default function VueGlobalePage() {
       const cqResults = await Promise.all(cqPromises);
       const flatCqData = cqResults.flat();
       
-      const calculatedTotal = flatCqData.reduce((sum, row) => sum + (visionMode === 'ADMIN' ? (row.montant || 0) : (row.mtSst || 0)), 0);
+      const calculatedTotal = flatCqData.reduce((sum, row) => sum + Math.abs(visionMode === 'ADMIN' ? (row.montant || 0) : (row.mtSst || 0)), 0);
       setTotalCqPenalties(calculatedTotal);
 
       const count = await getContestationsCount(month, year);
       setContestationsCount(count);
-
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, [month, year, visionMode]);
@@ -108,7 +93,6 @@ export default function VueGlobalePage() {
 
   const filteredData = data.filter(item => item.departement === selectedDept);
   const raccProcessus = ["SACLI_OK", "SARCLI_NOK", "GEM_NOK", "TAUX_20J", "ZMD_AMII", "ZMD_RIP", "ZTD", "TNH", "PERF_RANG_1_A", "PERF_RANG_1_B", "PERF_RANG_1_C", "HOTLINE_RANG_1_A", "HOTLINE_RANG_1_B", "HOTLINE_RANG_1_C", "CONSTRUCTION_RANG_1_A", "CONSTRUCTION_RANG_1_B", "CONSTRUCTION_RANG_1_C", "PERF_RANG_2_A", "PERF_RANG_2_B", "PERF_RANG_2_C", "INCOHERENCE_PTO", "CADRAGE", "TAUX_PLAINTE"];
-  
   const totalRaccBonus = filteredData.filter(item => raccProcessus.includes(item.processus)).reduce((sum, item) => sum + item.bonus, 0);
   const totalSavBonus = filteredData.filter(item => !raccProcessus.includes(item.processus)).reduce((sum, item) => sum + item.bonus, 0);
 
@@ -118,23 +102,18 @@ export default function VueGlobalePage() {
     if (p.startsWith('CONSTRUCTION_RANG_1_')) return { cat: 'PERF', niv: 'RANG 1', ind: 'CONSTRUCTION', zone: p.split('_')[3] };
     if (p.startsWith('PERF_RANG_2_')) return { cat: 'PERF', niv: 'RANG 2', ind: 'RANG 2', zone: p.split('_')[3] };
     if (p === 'TNH') return { cat: 'PERF', niv: 'TNH', ind: 'TNH', zone: 'GLOBAL' };
-    
     if (p === 'SACLI_OK') return { cat: 'QUALITE', niv: 'GLOBAL', ind: 'SACLI OK', zone: 'GLOBAL' };
     if (p === 'SARCLI_NOK') return { cat: 'QUALITE', niv: 'GLOBAL', ind: 'SARCLI NOK', zone: 'GLOBAL' };
     if (p === 'TAUX_PLAINTE') return { cat: 'QUALITE', niv: 'GLOBAL', ind: 'TAUX PLAINTE', zone: 'GLOBAL' };
     if (p === 'CCR') return { cat: 'QUALITE', niv: 'GLOBAL', ind: 'CCR', zone: 'GLOBAL' };
     if (p === 'SATCLI_SAV') return { cat: 'QUALITE', niv: 'GLOBAL', ind: 'SATCLI SAV', zone: 'GLOBAL' };
-
     if (p === 'GEM_NOK') return { cat: 'CONFORMITE', niv: 'GLOBAL', ind: 'GEM NOK', zone: 'GLOBAL' };
     if (p === 'INCOHERENCE_PTO') return { cat: 'CONFORMITE', niv: 'GLOBAL', ind: 'INCOHERENCE PTO', zone: 'GLOBAL' };
     if (p === 'CADRAGE') return { cat: 'CONFORMITE', niv: 'GLOBAL', ind: 'CADRAGE', zone: 'GLOBAL' };
-
     if (['TAUX_20J', 'ZMD_AMII', 'ZMD_RIP', 'ZTD'].includes(p)) return { cat: 'DELAIS', niv: 'GLOBAL', ind: p, zone: 'GLOBAL' };
-    
     if (p === 'SECURISATION') return { cat: 'PERF', niv: 'GLOBAL', ind: 'SECURISATION', zone: 'GLOBAL' };
     if (p === 'TNH_SAV') return { cat: 'PERF', niv: 'GLOBAL', ind: 'TNH SAV', zone: 'GLOBAL' };
     if (p === 'SAV_PERF') return { cat: 'PERF', niv: 'GLOBAL', ind: 'SAV PERF', zone: 'GLOBAL' };
-
     return { cat: 'AUTRES', niv: 'GLOBAL', ind: p, zone: 'GLOBAL' };
   }
 
@@ -155,23 +134,18 @@ export default function VueGlobalePage() {
     return a.zone.localeCompare(b.zone);
   });
 
-  // 🚀 Helper pour générer les lignes avec RowSpan (SANS LA COLONNE DOMAINE)
   const generateRowsForDomaine = (domaine: string) => {
     const dRows = mappedData.filter(r => r.domaine === domaine);
     const renderRows: any[] = [];
-    
     const categories = Array.from(new Set(dRows.map(r => r.cat)));
     categories.forEach((cat) => {
       const cRows = dRows.filter(r => r.cat === cat);
       const niveaux = Array.from(new Set(cRows.map(r => r.niv)));
-      
       niveaux.forEach((niv, nivIdx) => {
         const nRows = cRows.filter(r => r.niv === niv);
         const indicateurs = Array.from(new Set(nRows.map(r => r.ind)));
-        
         indicateurs.forEach((ind, indIdx) => {
           const iRows = nRows.filter(r => r.ind === ind);
-          
           iRows.forEach((row, rowIdx) => {
             renderRows.push({
               ...row,
@@ -215,29 +189,16 @@ export default function VueGlobalePage() {
       <div className={styles.bgBlob2}></div>
 
       <div className={styles.container}>
-        
         <header className={styles.header}>
           <div className={styles.titleBox}>
             <h1>Supervision Globale</h1>
             <p>Analyse des performances et suivi des pénalités réseau.</p>
           </div>
-          
           <div className={styles.controlsWrapper}>
             <div className={styles.visionToggle}>
-              <button 
-                className={`${styles.visionBtn} ${visionMode === 'ADMIN' ? styles.activeAdmin : ''}`}
-                onClick={() => setVisionMode('ADMIN')}
-              >
-                Vision Admin (Montant)
-              </button>
-              <button 
-                className={`${styles.visionBtn} ${visionMode === 'PARTENAIRE' ? styles.activePartenaire : ''}`}
-                onClick={() => setVisionMode('PARTENAIRE')}
-              >
-                Vision Partenaire (MT SST)
-              </button>
+              <button className={`${styles.visionBtn} ${visionMode === 'ADMIN' ? styles.activeAdmin : ''}`} onClick={() => setVisionMode('ADMIN')}>Vision Admin (Montant)</button>
+              <button className={`${styles.visionBtn} ${visionMode === 'PARTENAIRE' ? styles.activePartenaire : ''}`} onClick={() => setVisionMode('PARTENAIRE')}>Vision Partenaire (MT SST)</button>
             </div>
-
             <div className={styles.controls}>
               <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="140px" />
               <CustomSelect value={year} options={yearOptions} onChange={setYear} width="110px" />
@@ -247,153 +208,44 @@ export default function VueGlobalePage() {
         </header>
 
         <div className={styles.topGrid}>
-          <InteractiveCard delayIndex={1}>
-            <StatCard title="Résultat CQ RACC" value={`${Math.min(100, 90 + totalRaccBonus).toFixed(2)}%`} icon={IconRacc} colorBg="#fef2f2" colorIcon="#ef4444" trend={`+${totalRaccBonus.toFixed(2)}% Bonus`} trendType="positive" />
-          </InteractiveCard>
-          <InteractiveCard delayIndex={2}>
-            <StatCard title="Résultat CQ SAV" value={`${Math.min(100, 90 + totalSavBonus).toFixed(2)}%`} icon={IconSav} colorBg="#ecfdf5" colorIcon="#10b981" trend={`+${totalSavBonus.toFixed(2)}% Bonus`} trendType="positive" />
-          </InteractiveCard>
-          <InteractiveCard delayIndex={3}>
-            <StatCard title="Nombre de Contestations" value={contestationsCount.toString()} icon={IconAlert} colorBg="#fffbeb" colorIcon="#d97706" />
-          </InteractiveCard>
-          <InteractiveCard delayIndex={4}>
-            <StatCard title={`Penalty (Estimatif)`} value={`${totalCqPenalties.toLocaleString('fr-FR')} €`} icon={IconMoney} colorBg="#eff6ff" colorIcon="#3b82f6" />
-          </InteractiveCard>
+          <InteractiveCard delayIndex={1}><StatCard title="Résultat CQ RACC" value={`${Math.min(100, 90 + totalRaccBonus).toFixed(2)}%`} icon={IconRacc} colorBg="#fef2f2" colorIcon="#ef4444" trend={`+${totalRaccBonus.toFixed(2)}% Bonus`} trendType="positive" /></InteractiveCard>
+          <InteractiveCard delayIndex={2}><StatCard title="Résultat CQ SAV" value={`${Math.min(100, 90 + totalSavBonus).toFixed(2)}%`} icon={IconSav} colorBg="#ecfdf5" colorIcon="#10b981" trend={`+${totalSavBonus.toFixed(2)}% Bonus`} trendType="positive" /></InteractiveCard>
+          <InteractiveCard delayIndex={3}><StatCard title="Nombre de Contestations" value={contestationsCount.toString()} icon={IconAlert} colorBg="#fffbeb" colorIcon="#d97706" /></InteractiveCard>
+          <InteractiveCard delayIndex={4}><StatCard title={`Penalty (Estimatif)`} value={formatPenalty(totalCqPenalties)} icon={IconMoney} colorBg="#eff6ff" colorIcon="#3b82f6" /></InteractiveCard>
         </div>
 
         <div className={styles.middleGrid}>
-          <InteractiveCard delayIndex={5}>
-            <TrendChart dataRacc={chartDataRacc} dataSav={chartDataSav} labels={chartLabels} isLoading={chartLoading} />
-          </InteractiveCard>
-          
-          <InteractiveCard delayIndex={6}>
-            <PenaltyPipeline 
-              detectees={totalCqPenalties} 
-              contestees={Math.floor(totalCqPenalties * 0.4)}
-              validees={Math.floor(totalCqPenalties * 0.25)} 
-              vision={visionMode}
-            />
-          </InteractiveCard>
+          <InteractiveCard delayIndex={5}><TrendChart dataRacc={chartDataRacc} dataSav={chartDataSav} labels={chartLabels} isLoading={chartLoading} /></InteractiveCard>
+          <InteractiveCard delayIndex={6}><PenaltyPipeline detectees={totalCqPenalties} contestees={Math.floor(totalCqPenalties * 0.4)} validees={Math.floor(totalCqPenalties * 0.25)} vision={visionMode} /></InteractiveCard>
         </div>
 
-        {loading ? (
-          <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des données en temps réel...</div>
-        ) : (
-          <>
-            {/* 🔴 TABLEAU RACC */}
-            <div className={styles.domainSection}>
-              <div className={`${styles.domainHeader} ${styles.domainHeaderRacc}`}>
-                <div className={`${styles.domainIcon} ${styles.iconRacc}`}>{IconRacc}</div>
-                <h2>RACC - Déploiement & Raccordement</h2>
-              </div>
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={{width: '15%'}}>Catégorie</th>
-                      <th style={{width: '15%'}}>Niveau</th>
-                      <th style={{width: '20%'}}>Indicateur</th>
-                      <th style={{width: '10%'}}>Zone</th>
-                      <th style={{width: '8%'}}>NUM</th>
-                      <th style={{width: '8%'}}>DENUM</th>
-                      <th style={{width: '16%'}}>Résultat Brut</th>
-                      <th style={{width: '8%'}}>Bonus</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {raccRows.map((row, index) => {
-                      const isNok = row.ind.includes('NOK') || row.ind.includes('PLAINTE') || row.ind.includes('INCOHERENCE');
-                      return (
-                        <tr key={`racc-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.1 + index * 0.02}s` }}>
-                          {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
-                          {row.nivSpan > 0 && <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>}
-                          {row.indSpan > 0 && <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>}
-                          <td><span className={styles.zoneBadge}>{row.zone}</span></td>
-                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
-                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.denum.toLocaleString()}</td>
-                          <td>
-                            <div className={styles.gaugeContainer}>
-                              <div className={styles.gaugeTrack}>
-                                <div 
-                                  className={styles.gaugeFill} 
-                                  style={{ width: `${Math.min(row.resultat, 100)}%`, background: getGaugeColor(row.resultat, isNok) }}
-                                />
-                              </div>
-                              <span className={styles.gaugeText} style={{ color: getGaugeColor(row.resultat, isNok) }}>{row.resultat}%</span>
-                            </div>
-                          </td>
-                          <td>
-                            <span className={row.bonus > 0 ? styles.badgeBonus : styles.badgeBonusZero}>
-                              {row.bonus > 0 ? '+' : ''}{row.bonus}%
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {raccRows.length === 0 && <tr><td colSpan={8} className={styles.empty}>Aucune donnée RACC trouvée pour cette période.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* 🟢 TABLEAU SAV */}
-            <div className={styles.domainSection}>
-              <div className={`${styles.domainHeader} ${styles.domainHeaderSav}`}>
-                <div className={`${styles.domainIcon} ${styles.iconSav}`}>{IconSav}</div>
-                <h2>SAV - Service Après Vente</h2>
-              </div>
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={{width: '15%'}}>Catégorie</th>
-                      <th style={{width: '15%'}}>Niveau</th>
-                      <th style={{width: '20%'}}>Indicateur</th>
-                      <th style={{width: '10%'}}>Zone</th>
-                      <th style={{width: '8%'}}>NUM</th>
-                      <th style={{width: '8%'}}>DENUM</th>
-                      <th style={{width: '16%'}}>Résultat Brut</th>
-                      <th style={{width: '8%'}}>Bonus</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {savRows.map((row, index) => {
-                      const isNok = false;
-                      return (
-                        <tr key={`sav-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.1 + index * 0.02}s` }}>
-                          {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
-                          {row.nivSpan > 0 && <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>}
-                          {row.indSpan > 0 && <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>}
-                          <td><span className={styles.zoneBadge}>{row.zone}</span></td>
-                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
-                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.denum.toLocaleString()}</td>
-                          <td>
-                            <div className={styles.gaugeContainer}>
-                              <div className={styles.gaugeTrack}>
-                                <div 
-                                  className={styles.gaugeFill} 
-                                  style={{ width: `${Math.min(row.resultat, 100)}%`, background: getGaugeColor(row.resultat, isNok) }}
-                                />
-                              </div>
-                              <span className={styles.gaugeText} style={{ color: getGaugeColor(row.resultat, isNok) }}>{row.resultat}%</span>
-                            </div>
-                          </td>
-                          <td>
-                            <span className={row.bonus > 0 ? styles.badgeBonus : styles.badgeBonusZero}>
-                              {row.bonus > 0 ? '+' : ''}{row.bonus}%
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {savRows.length === 0 && <tr><td colSpan={8} className={styles.empty}>Aucune donnée SAV trouvée pour cette période.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
-        )}
-
+        <div className={styles.tableWrapper}>
+          {loading ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des données en temps réel...</div>
+          ) : (
+            <table className={styles.table}>
+              <thead>
+                <tr><th>Domaine</th><th>Catégorie</th><th>Niveau</th><th>Indicateur</th><th>Zone/Détail</th><th>NUM</th><th>DENUM</th><th>Résultat Brut</th><th>Bonus</th></tr>
+              </thead>
+              <tbody>
+                {renderRows.map((row, index) => (
+                  <tr key={`${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.6 + index * 0.02}s` }}>
+                    {row.domaineSpan > 0 && <td rowSpan={row.domaineSpan} className={styles.groupCellDomaine}><div className={styles.verticalText}><span className={row.domaine === 'RACC' ? styles.badgeRacc : styles.badgeSav}>{row.domaine}</span></div></td>}
+                    {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
+                    {row.nivSpan > 0 && <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>}
+                    {row.indSpan > 0 && <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>}
+                    <td><span className={styles.zoneBadge}>{row.zone}</span></td>
+                    <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
+                    <td style={{fontWeight: '900', color: '#0f172a'}}>{row.denum.toLocaleString()}</td>
+                    <td><span className={styles.badgeSuccess}>{row.resultat}%</span></td>
+                    <td><span className={styles.badgeBonus}>{row.bonus > 0 ? '+' : ''}{row.bonus}%</span></td>
+                  </tr>
+                ))}
+                {renderRows.length === 0 && <tr><td colSpan={9} className={styles.empty}>Aucune donnée trouvée pour cette période.</td></tr>}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );

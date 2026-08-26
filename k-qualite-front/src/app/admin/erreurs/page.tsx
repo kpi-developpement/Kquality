@@ -15,12 +15,13 @@ export default function AdminErreursPage() {
   const [partenaires, setPartenaires] = useState<PartenaireDTO[]>([]);
   const [selectedPartenaire, setSelectedPartenaire] = useState("ALL");
   
-  // 🛡️ JDID: Filtres de période
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const formatPenalty = (val: number) => val === 0 ? '0 €' : `-${Math.abs(val).toLocaleString('fr-FR')} €`;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -32,7 +33,6 @@ export default function AdminErreursPage() {
 
   useEffect(() => {
     setLoading(true);
-    // 🛡️ JDID: Envoi de month et year
     getAdminErreurs(month, year, selectedPartenaire)
       .then(setErreurs)
       .catch(console.error)
@@ -40,15 +40,15 @@ export default function AdminErreursPage() {
   }, [selectedPartenaire, month, year]);
 
   const totalErreurs = erreurs.length;
-  const impactGlobal = erreurs.reduce((acc, err) => acc + (err.impactEstime || 0), 0);
+  const impactGlobal = erreurs.reduce((acc, err) => acc + Math.abs(err.impactEstime || 0), 0);
   
   const partenaireOptions = [
     { value: "ALL", label: `Vue Globale (Tous les partenaires)` },
     ...partenaires.map(p => ({ value: p.id.toString(), label: p.nomEntreprise }))
   ];
   
-  const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
-  const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
+  const monthOptions = [{ value: 0, label: 'Tous les mois' }, ...[1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }))];
+  const yearOptions = [{ value: 0, label: 'Toutes les années' }, ...[2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }))];
 
   const totalPages = Math.ceil(totalErreurs / ITEMS_PER_PAGE);
   const paginatedErreurs = useMemo(() => {
@@ -79,7 +79,6 @@ export default function AdminErreursPage() {
               <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
               Filtrer l'Analyse
             </div>
-            {/* 🛡️ JDID: Ajout des CustomSelect pour le mois et l'année */}
             <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="120px" />
             <CustomSelect value={year} options={yearOptions} onChange={setYear} width="100px" />
             <CustomSelect value={selectedPartenaire} options={partenaireOptions} onChange={setSelectedPartenaire} width="300px" />
@@ -103,7 +102,7 @@ export default function AdminErreursPage() {
                 <div className={styles.kpiIcon} style={{ background: '#fef2f2', color: '#ef4444' }}>{IconMoney}</div>
                 <h3 className={styles.kpiTitle}>Impact Financier Estimé</h3>
               </div>
-              <p className={`${styles.kpiValue} ${styles.valueRed}`}>{impactGlobal.toLocaleString('fr-FR')} €</p>
+              <p className={`${styles.kpiValue} ${styles.valueRed}`}>{formatPenalty(impactGlobal)}</p>
             </div>
           </InteractiveCard>
 
@@ -154,7 +153,7 @@ export default function AdminErreursPage() {
                       </span>
                     </td>
                     <td style={{ color: '#475569', fontWeight: '700' }}>{erreur.regleDescription}</td>
-                    <td className={styles.impact}>{erreur.impactEstime} €</td>
+                    <td className={styles.impact}>{formatPenalty(erreur.impactEstime)}</td>
                     <td>
                       <span className={`${styles.badge} ${styles[erreur.statut.toLowerCase()] || styles.badge_default}`}>
                         {erreur.statut.replace('_', ' ')}

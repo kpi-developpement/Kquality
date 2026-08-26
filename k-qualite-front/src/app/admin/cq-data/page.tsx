@@ -27,25 +27,19 @@ export default function AdminCqDataPage() {
   const [visionMode, setVisionMode] = useState<'ADMIN' | 'PARTENAIRE'>('ADMIN');
   const [loading, setLoading] = useState(false);
 
-  // 🚀 NOUVEAUX STATES : Recherche et Pagination Dynamique
   const [searchQuery, setSearchQuery] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Reset pagination quand on change les filtres
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, month, year, selectedPartenaire, visionMode, searchQuery, itemsPerPage]);
+  const formatPenalty = (val: number) => val === 0 ? '0 €' : `-${Math.abs(val).toLocaleString('fr-FR')} €`;
+
+  useEffect(() => { setCurrentPage(1); }, [activeTab, month, year, selectedPartenaire, visionMode, searchQuery, itemsPerPage]);
 
   useEffect(() => {
-    getActivePartenairesForCq(month, year)
-      .then(activeList => {
-        setPartenaires(activeList);
-        if (selectedPartenaire !== "ALL" && !activeList.find(p => p.id.toString() === selectedPartenaire)) {
-          setSelectedPartenaire("ALL");
-        }
-      })
-      .catch(console.error);
+    getActivePartenairesForCq(month, year).then(activeList => {
+      setPartenaires(activeList);
+      if (selectedPartenaire !== "ALL" && !activeList.find(p => p.id.toString() === selectedPartenaire)) setSelectedPartenaire("ALL");
+    }).catch(console.error);
   }, [month, year]);
 
   const fetchData = async () => {
@@ -53,41 +47,30 @@ export default function AdminCqDataPage() {
     try {
       const res = await getAdminCqData(activeTab, month, year, selectedPartenaire === "ALL" ? undefined : selectedPartenaire);
       setData(res);
-
       const allPromises = TABS_CONFIG.map(tab => getAdminCqData(tab.id, month, year, selectedPartenaire === "ALL" ? undefined : selectedPartenaire));
       const allResults = await Promise.all(allPromises);
       setAllData(allResults.flat());
-
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, [activeTab, month, year, selectedPartenaire]);
 
   const calculateTotal = (sheetName?: string) => {
     const targetData = sheetName ? allData.filter(d => d.typeFeuille === sheetName) : allData;
-    return targetData.reduce((sum, row) => sum + (visionMode === 'ADMIN' ? (row.montant || 0) : (row.mtSst || 0)), 0);
+    return targetData.reduce((sum, row) => sum + Math.abs(visionMode === 'ADMIN' ? (row.montant || 0) : (row.mtSst || 0)), 0);
   };
   const totalGlobal = calculateTotal();
 
-  // 🚀 LOGIQUE DE RECHERCHE MULTI-EPS (Séparateur: Espace ou Virgule)
   const filteredData = useMemo(() => {
     if (!searchQuery.trim()) return data;
-    
     const searchTerms = searchQuery.toLowerCase().split(/[\s,]+/).filter(Boolean);
-    
     return data.filter(row => {
       if (!row.reference) return false;
       const ref = row.reference.toLowerCase();
-      // Retourne true si la référence contient AU MOINS UN des termes recherchés
       return searchTerms.some(term => ref.includes(term));
     });
   }, [data, searchQuery]);
 
-  // 🚀 LOGIQUE PAGINATION DYNAMIQUE
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -96,10 +79,7 @@ export default function AdminCqDataPage() {
 
   const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
   const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
-  const partenaireOptions = [
-    { value: "ALL", label: `Tous les partenaires (${partenaires.length})` },
-    ...partenaires.map(p => ({ value: p.id.toString(), label: p.nomEntreprise }))
-  ];
+  const partenaireOptions = [{ value: "ALL", label: `Tous les partenaires (${partenaires.length})` }, ...partenaires.map(p => ({ value: p.id.toString(), label: p.nomEntreprise }))];
 
   return (
     <div className={styles.pageWrapper}>
@@ -136,34 +116,26 @@ export default function AdminCqDataPage() {
               <div className={styles.impactVault}>
                 <div className={styles.vaultHeader}>
                   <h3 className={styles.vaultTitle}>Impact Financier</h3>
-                  <div className={styles.liveIndicator}>
-                    <div className={styles.dot}></div> LIVE
-                  </div>
+                  <div className={styles.liveIndicator}><div className={styles.dot}></div> LIVE</div>
                 </div>
-
                 <div className={styles.vaultMain}>
                   <div className={styles.radarRing1}></div>
                   <div className={styles.radarRing2}></div>
-                  <h2 className={styles.vaultAmount}>{totalGlobal.toLocaleString('fr-FR')} €</h2>
+                  <h2 className={styles.vaultAmount}>{formatPenalty(totalGlobal)}</h2>
                   <span className={styles.vaultSub}>Estimation à la clôture</span>
                 </div>
-
                 <div className={styles.vaultMetrics}>
                   {TABS_CONFIG.map(tab => {
                     const tabTotal = calculateTotal(tab.id);
                     const percentage = totalGlobal > 0 ? (tabTotal / totalGlobal) * 100 : 0;
-                    
                     return (
                       <div key={tab.id} className={styles.metricItem}>
                         <div className={styles.metricHeader}>
                           <span>{tab.title}</span>
-                          <span style={{ color: tab.color }}>{tabTotal.toLocaleString('fr-FR')} €</span>
+                          <span style={{ color: tab.color }}>{formatPenalty(tabTotal)}</span>
                         </div>
                         <div className={styles.energyTrack}>
-                          <div 
-                            className={styles.energyFill} 
-                            style={{ width: `${percentage}%`, backgroundColor: tab.color, boxShadow: `0 0 15px ${tab.color}90` }}
-                          >
+                          <div className={styles.energyFill} style={{ width: `${percentage}%`, backgroundColor: tab.color, boxShadow: `0 0 15px ${tab.color}90` }}>
                             <div className={styles.energySpark} style={{ color: tab.color }}></div>
                           </div>
                         </div>
@@ -177,48 +149,21 @@ export default function AdminCqDataPage() {
 
           <div>
             <div className={styles.visionToggle}>
-              <button 
-                className={`${styles.visionBtn} ${visionMode === 'ADMIN' ? styles.active : ''}`}
-                onClick={() => setVisionMode('ADMIN')}
-              >
-                Vision Admin (Montant)
-              </button>
-              <button 
-                className={`${styles.visionBtn} ${visionMode === 'PARTENAIRE' ? styles.active : ''}`}
-                onClick={() => setVisionMode('PARTENAIRE')}
-              >
-                Vision Partenaire (MT SST)
-              </button>
+              <button className={`${styles.visionBtn} ${visionMode === 'ADMIN' ? styles.active : ''}`} onClick={() => setVisionMode('ADMIN')}>Vision Admin (Montant)</button>
+              <button className={`${styles.visionBtn} ${visionMode === 'PARTENAIRE' ? styles.active : ''}`} onClick={() => setVisionMode('PARTENAIRE')}>Vision Partenaire (MT SST)</button>
             </div>
 
-            {/* 🚀 TABS + SEARCH BAR */}
             <div className={styles.tableControls}>
               <div className={styles.tabs}>
                 {TABS_CONFIG.map(tab => (
-                  <button 
-                    key={tab.id} 
-                    className={`${styles.tabBtn} ${activeTab === tab.id ? styles.active : ''}`} 
-                    onClick={() => setActiveTab(tab.id)}
-                    style={activeTab === tab.id ? { border: `2px solid ${tab.color}`, color: tab.color } : {}}
-                  >
-                    <span style={{ width: '18px', height: '18px', display: 'flex' }}>{tab.icon}</span>
-                    {tab.title}
+                  <button key={tab.id} className={`${styles.tabBtn} ${activeTab === tab.id ? styles.active : ''}`} onClick={() => setActiveTab(tab.id)} style={activeTab === tab.id ? { border: `2px solid ${tab.color}`, color: tab.color } : {}}>
+                    <span style={{ width: '18px', height: '18px', display: 'flex' }}>{tab.icon}</span>{tab.title}
                   </button>
                 ))}
               </div>
-
               <div className={styles.searchBox}>
-                <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <input 
-                  type="text" 
-                  className={styles.searchInput} 
-                  placeholder="Rechercher EPS (ex: EPS-001, EPS-002...)" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+                <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" className={styles.searchInput} placeholder="Rechercher EPS..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
             </div>
 
@@ -238,86 +183,41 @@ export default function AdminCqDataPage() {
                   </thead>
                   <tbody>
                     {paginatedData.map((row, index) => {
-                      const montantToDisplay = visionMode === 'ADMIN' ? row.montant : row.mtSst;
+                      const montantToDisplay = Math.abs(visionMode === 'ADMIN' ? (row.montant || 0) : (row.mtSst || 0));
                       return (
                         <tr key={`${row.id}-${currentPage}`} className={styles.tableRow} style={{ animationDelay: `${index * 0.04}s` }}>
-                          <td className={styles.partenaireName}>
-                            <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#3b82f6', display:'inline-block', boxShadow: '0 0 8px rgba(59,130,246,0.5)' }}></span>
-                            {row.partenaireNom}
-                          </td>
-                          {activeTab === "Audits tech" && <><td style={{fontWeight:'900', color:'#334155'}}>{row.reference}</td><td>DPT {row.departement}</td><td><span className={styles.badgeSst}>{montantToDisplay || 0} €</span></td><td><span className={styles.kynBadge}>{row.kyn}</span></td></>}
-                          {activeTab === "Check-voisinage" && <><td style={{fontWeight:'900', color:'#334155'}}>{row.reference}</td><td>{row.valeurMetrique}</td><td><span className={styles.badgeSst}>{montantToDisplay || 0} €</span></td><td><span className={styles.kynBadge}>{row.kyn}</span></td></>}
-                          {activeTab === "Expertises SAV" && <><td style={{fontWeight:'900', color:'#334155'}}>{row.reference}</td><td><span className={styles.badgeSst}>{montantToDisplay || 0} €</span></td><td><span className={styles.kynBadge}>{row.kyn}</span></td></>}
-                          {activeTab === "Taux de coupures" && <><td style={{fontWeight:'900', color:'#334155'}}>{row.reference}</td><td>{row.valeurMetrique}</td><td>DPT {row.departement}</td><td><span className={styles.badgeSst}>{montantToDisplay || 0} €</span></td><td><span className={styles.kynBadge}>{row.kyn}</span></td></>}
+                          <td className={styles.partenaireName}><span style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#3b82f6', display:'inline-block', boxShadow: '0 0 8px rgba(59,130,246,0.5)' }}></span>{row.partenaireNom}</td>
+                          {activeTab === "Audits tech" && <><td style={{fontWeight:'900', color:'#334155'}}>{row.reference}</td><td>DPT {row.departement}</td><td><span className={styles.badgeSst}>{formatPenalty(montantToDisplay)}</span></td><td><span className={styles.kynBadge}>{row.kyn}</span></td></>}
+                          {activeTab === "Check-voisinage" && <><td style={{fontWeight:'900', color:'#334155'}}>{row.reference}</td><td>{row.valeurMetrique}</td><td><span className={styles.badgeSst}>{formatPenalty(montantToDisplay)}</span></td><td><span className={styles.kynBadge}>{row.kyn}</span></td></>}
+                          {activeTab === "Expertises SAV" && <><td style={{fontWeight:'900', color:'#334155'}}>{row.reference}</td><td><span className={styles.badgeSst}>{formatPenalty(montantToDisplay)}</span></td><td><span className={styles.kynBadge}>{row.kyn}</span></td></>}
+                          {activeTab === "Taux de coupures" && <><td style={{fontWeight:'900', color:'#334155'}}>{row.reference}</td><td>{row.valeurMetrique}</td><td>DPT {row.departement}</td><td><span className={styles.badgeSst}>{formatPenalty(montantToDisplay)}</span></td><td><span className={styles.kynBadge}>{row.kyn}</span></td></>}
                         </tr>
                       );
                     })}
-                    {paginatedData.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className={styles.empty}>Aucune anomalie trouvée pour cette recherche.</td>
-                      </tr>
-                    )}
+                    {paginatedData.length === 0 && <tr><td colSpan={6} className={styles.empty}>Aucune anomalie trouvée pour cette recherche.</td></tr>}
                   </tbody>
                 </table>
               )}
             </div>
 
-            {/* 🚀 PAGINATION BAR AVEC SELECTEUR DE TAILLE */}
             {!loading && (
               <div className={styles.paginationWrapper}>
                 <div className={styles.pageInfo}>
-                  <span>
-                    Affichage {filteredData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} à {Math.min(currentPage * itemsPerPage, filteredData.length)} sur {filteredData.length}
-                  </span>
-                  
-                  <select 
-                    className={styles.pageSizeSelect} 
-                    value={itemsPerPage} 
-                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  >
-                    <option value={5}>5 par page</option>
-                    <option value={10}>10 par page</option>
-                    <option value={25}>25 par page</option>
-                    <option value={50}>50 par page</option>
+                  <span>Affichage {filteredData.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} à {Math.min(currentPage * itemsPerPage, filteredData.length)} sur {filteredData.length}</span>
+                  <select className={styles.pageSizeSelect} value={itemsPerPage} onChange={(e) => setItemsPerPage(Number(e.target.value))}>
+                    <option value={5}>5 par page</option><option value={10}>10 par page</option><option value={25}>25 par page</option><option value={50}>50 par page</option>
                   </select>
                 </div>
-
                 {totalPages > 1 && (
                   <div className={styles.pageControls}>
-                    <button 
-                      className={styles.pageBtn} 
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(prev => prev - 1)}
-                    >
-                      &lt;
-                    </button>
-                    
+                    <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>&lt;</button>
                     {Array.from({ length: totalPages }).map((_, i) => {
                       const page = i + 1;
-                      if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
-                        return (
-                          <button 
-                            key={page}
-                            className={`${styles.pageBtn} ${currentPage === page ? styles.activePage : ''}`}
-                            onClick={() => setCurrentPage(page)}
-                          >
-                            {page}
-                          </button>
-                        );
-                      }
-                      if (page === currentPage - 2 || page === currentPage + 2) {
-                        return <span key={page} style={{ color: '#94a3b8', padding: '0 5px' }}>...</span>;
-                      }
+                      if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) return <button key={page} className={`${styles.pageBtn} ${currentPage === page ? styles.activePage : ''}`} onClick={() => setCurrentPage(page)}>{page}</button>;
+                      if (page === currentPage - 2 || page === currentPage + 2) return <span key={page} style={{ color: '#94a3b8', padding: '0 5px' }}>...</span>;
                       return null;
                     })}
-
-                    <button 
-                      className={styles.pageBtn} 
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(prev => prev + 1)}
-                    >
-                      &gt;
-                    </button>
+                    <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage(prev => prev + 1)}>&gt;</button>
                   </div>
                 )}
               </div>

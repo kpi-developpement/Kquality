@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getDashboardData, getArticles, getFullImageUrl } from '@/services/apiService'; 
+import { getDashboardData, getArticles, getServerUrl } from '@/services/apiService'; 
 import { DashboardPartenaireDTO, ArticleDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link'; 
@@ -13,6 +13,8 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardPartenaireDTO | null>(null);
   const [articles, setArticles] = useState<ArticleDTO[]>([]); 
   const [loading, setLoading] = useState(true);
+
+  const formatPenalty = (val: number) => val === 0 ? '0 €' : `-${Math.abs(val).toLocaleString('fr-FR')} €`;
 
   useEffect(() => {
     if (user?.partenaireId) {
@@ -59,7 +61,7 @@ export default function DashboardPage() {
                 <div className={styles.vaultMain}>
                   <div className={styles.radarRing1}></div>
                   <div className={styles.radarRing2}></div>
-                  <h2 className={styles.vaultAmount}>{data.penalitesEstimees.toLocaleString('fr-FR')} €</h2>
+                  <h2 className={styles.vaultAmount}>{formatPenalty(data.penalitesEstimees)}</h2>
                   <span className={styles.vaultSub}>Estimation à la clôture</span>
                 </div>
               </div>
@@ -117,7 +119,7 @@ export default function DashboardPage() {
                 <Link href={`/dashboard/blog/${a.id}`} key={a.id} className={styles.blogCard}>
                   <div className={styles.blogImgWrapper}>
                     {a.imageUrl ? (
-                      <img src={getFullImageUrl(a.imageUrl)} alt="Cover" className={styles.blogImg} />
+                      <img src={`${getServerUrl()}${a.imageUrl}`} alt="Cover" className={styles.blogImg} />
                     ) : (
                       <div className={styles.blogNoImg}>K-NEWS</div>
                     )}

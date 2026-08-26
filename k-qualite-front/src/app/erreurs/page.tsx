@@ -37,7 +37,6 @@ export default function ErreursPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 🚀 FILTRES & RECHERCHE
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -58,10 +57,11 @@ export default function ErreursPage() {
   const [isDragging, setIsDragging] = useState(false);
   const dropzoneInputRef = useRef<HTMLInputElement>(null);
 
+  const formatPenalty = (val: number) => val === 0 ? '0 €' : `-${Math.abs(val).toLocaleString('fr-FR')} €`;
+
   const fetchErreurs = () => {
     if (user?.partenaireId) {
       setLoading(true);
-      // 🛡️ L'API backend gère month=0 et year=0 comme "All Time"
       getErreurs(user.partenaireId, month, year)
         .then(setErreurs)
         .catch(console.error)
@@ -72,10 +72,8 @@ export default function ErreursPage() {
   useEffect(() => { fetchErreurs(); }, [user, month, year]);
   useEffect(() => { setCurrentPage(1); }, [month, year, searchQuery, statusFilter]);
 
-  // 🚀 LOGIQUE RECHERCHE MULTI-EPS ET FILTRE STATUT
   const filteredErreurs = useMemo(() => {
     let result = erreurs;
-
     if (searchQuery.trim()) {
       const searchTerms = searchQuery.toLowerCase().split(/[\s,]+/).filter(Boolean);
       result = result.filter(row => {
@@ -84,33 +82,28 @@ export default function ErreursPage() {
         return searchTerms.some(term => ref.includes(term));
       });
     }
-
     if (statusFilter !== 'ALL') {
       result = result.filter(row => {
         if (statusFilter === 'A_TRAITER') return row.statut === 'NOUVEAU' || row.statut === 'A_ANALYSER';
-        if (statusFilter === 'VALIDE') return row.statut === 'CONFIRME'; // Validé par le partenaire
+        if (statusFilter === 'VALIDE') return row.statut === 'CONFIRME'; 
         return row.statut === statusFilter;
       });
     }
-
     return result;
   }, [erreurs, searchQuery, statusFilter]);
 
   const handleExport = () => {
     const dataToExport = filteredErreurs.map(err => {
       const row: any = { 'Dossier (EPS)': err.dossierReference }; 
-      
       if (selectedCols.includes('dateDetection')) row['Date Détection'] = new Date(err.dateDetection).toLocaleDateString();
       if (selectedCols.includes('technicienNomComplet')) row['Technicien'] = err.technicienNomComplet;
       if (selectedCols.includes('categorie')) row['Catégorie'] = err.categorie || 'N/A';
       if (selectedCols.includes('regleDescription')) row['Sous Catégorie'] = err.regleDescription;
-      if (selectedCols.includes('impactEstime')) row['Impact (€)'] = err.impactEstime;
+      if (selectedCols.includes('impactEstime')) row['Impact (€)'] = -Math.abs(err.impactEstime);
       if (selectedCols.includes('statut')) row['Statut'] = err.statut;
-      
       row['Décision (CONTESTER / VALIDER)'] = '';
       row['Analyse (Votre réponse)'] = '';
       row['Preuve Photo (Mettre X)'] = ''; 
-      
       return row;
     });
 
@@ -155,18 +148,16 @@ export default function ErreursPage() {
           if (intent !== 'UNKNOWN') {
             const matchedErreur = erreurs.find(e => e.dossierReference === eps);
             if (matchedErreur && (matchedErreur.statut === 'NOUVEAU' || matchedErreur.statut === 'A_ANALYSER')) {
-              
               if (intent === 'VALIDATE') {
                 vQueue.push(matchedErreur.id);
               } else if (intent === 'CONTEST') {
                 const photoVal = photoKey ? String(row[photoKey]).trim().toLowerCase() : '';
                 const needsPhoto = photoVal === 'x' || photoVal === 'oui' || photoVal === '1' || photoVal === 'true' || photoVal === 'vrai';
-                
                 cQueue.push({
                   erreurId: matchedErreur.id,
                   eps: matchedErreur.dossierReference,
                   categorie: matchedErreur.categorie || 'N/A',
-                  impact: matchedErreur.impactEstime,
+                  impact: Math.abs(matchedErreur.impactEstime),
                   analyse: analyseStr || 'Contestation par lot',
                   needsPhoto: needsPhoto,
                   photoFile: null
@@ -180,7 +171,6 @@ export default function ErreursPage() {
       if (cQueue.length > 0 || vQueue.length > 0) {
         setWizardQueue(cQueue);
         setValidateQueue(vQueue);
-        
         const firstPhotoIdx = cQueue.findIndex(q => q.needsPhoto);
         if (firstPhotoIdx !== -1) {
           setCurrentWizardIndex(firstPhotoIdx);
@@ -257,7 +247,7 @@ export default function ErreursPage() {
   };
 
   const totalErreurs = filteredErreurs.length;
-  const impactGlobal = filteredErreurs.reduce((acc, err) => acc + (err.impactEstime || 0), 0);
+  const impactGlobal = filteredErreurs.reduce((acc, err) => acc + Math.abs(err.impactEstime || 0), 0);
   const contestables = filteredErreurs.filter(e => e.statut === 'NOUVEAU' || e.statut === 'A_ANALYSER').length;
 
   const totalPages = Math.ceil(totalErreurs / ITEMS_PER_PAGE);
@@ -270,15 +260,8 @@ export default function ErreursPage() {
   const IconMoney = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>;
   const IconClock = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
 
-  // 🚀 OPTIONS DE FILTRES
-  const monthOptions = [
-    { value: 0, label: 'Tous les mois' }, // 🛡️ JDID
-    ...[1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }))
-  ];
-  const yearOptions = [
-    { value: 0, label: 'Toutes les années' }, // 🛡️ JDID
-    ...[2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }))
-  ];
+  const monthOptions = [{ value: 0, label: 'Tous les mois' }, ...[1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }))];
+  const yearOptions = [{ value: 0, label: 'Toutes les années' }, ...[2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }))];
   const statusOptions = [
     { value: 'ALL', label: 'Tous les statuts' },
     { value: 'A_TRAITER', label: 'À Traiter (Nouveau)' },
@@ -324,7 +307,6 @@ export default function ErreursPage() {
           </div>
         </header>
 
-        {/* 🚀 TABLE CONTROLS (SEARCH + FILTERS) */}
         <div className={styles.tableControls}>
           <div className={styles.searchBox}>
             <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -365,7 +347,7 @@ export default function ErreursPage() {
                 <div className={styles.kpiIcon} style={{ background: '#fef2f2', color: '#ef4444' }}>{IconMoney}</div>
                 <h3 className={styles.kpiTitle}>Impact Financier</h3>
               </div>
-              <p className={`${styles.kpiValue} ${styles.valueRed}`}>{impactGlobal.toLocaleString('fr-FR')} €</p>
+              <p className={`${styles.kpiValue} ${styles.valueRed}`}>{formatPenalty(impactGlobal)}</p>
             </div>
           </InteractiveCard>
 
@@ -396,7 +378,7 @@ export default function ErreursPage() {
                     <td style={{ fontWeight: '800', color: '#64748b' }}>{new Date(erreur.dateDetection).toLocaleDateString()}</td>
                     <td style={{ fontWeight: '800' }}>{erreur.technicienNomComplet}</td>
                     <td style={{ color: '#475569', fontWeight: '600' }}>{erreur.regleDescription}</td>
-                    <td className={styles.impact}>{erreur.impactEstime} €</td>
+                    <td className={styles.impact}>{formatPenalty(erreur.impactEstime)}</td>
                     <td style={{ fontWeight: '700', color: isExpired ? '#ef4444' : '#10b981' }}>
                       {new Date(erreur.echeanceContestation).toLocaleDateString()}
                     </td>
@@ -489,7 +471,7 @@ export default function ErreursPage() {
               <div className={styles.wizardInfo}>
                 <p>Dossier EPS : <span>{wizardQueue[currentWizardIndex].eps}</span></p>
                 <p>Catégorie : <span style={{ color: '#0f172a' }}>{wizardQueue[currentWizardIndex].categorie}</span></p>
-                <p>Impact : <span style={{ color: '#ef4444' }}>{wizardQueue[currentWizardIndex].impact} €</span></p>
+                <p>Impact : <span style={{ color: '#ef4444' }}>{formatPenalty(wizardQueue[currentWizardIndex].impact)}</span></p>
               </div>
 
               <div className={styles.formGroup}>

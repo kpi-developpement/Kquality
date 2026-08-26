@@ -9,6 +9,8 @@ interface Props {
 }
 
 export default function PenaltyPipeline({ detectees, contestees, validees, vision }: Props) {
+  const formatPenalty = (val: number) => val === 0 ? '0 €' : `-${Math.abs(val).toLocaleString('fr-FR')} €`;
+
   return (
     <div className={styles.pipelineContainer}>
       <div className={styles.header}>
@@ -20,19 +22,19 @@ export default function PenaltyPipeline({ detectees, contestees, validees, visio
         <div className={`${styles.step} ${styles.danger}`}>
           <div className={styles.circle}>1</div>
           <span className={styles.label}>Détectées</span>
-          <span className={styles.amount}>{detectees.toLocaleString('fr-FR')} €</span>
+          <span className={styles.amount}>{formatPenalty(detectees)}</span>
         </div>
         
         <div className={`${styles.step} ${styles.active}`}>
           <div className={styles.circle}>2</div>
           <span className={styles.label}>En Contestation</span>
-          <span className={styles.amount}>{contestees.toLocaleString('fr-FR')} €</span>
+          <span className={styles.amount}>{formatPenalty(contestees)}</span>
         </div>
         
         <div className={`${styles.step} ${styles.success}`}>
           <div className={styles.circle}>3</div>
           <span className={styles.label}>Validées</span>
-          <span className={styles.amount}>{validees.toLocaleString('fr-FR')} €</span>
+          <span className={styles.amount}>{formatPenalty(validees)}</span>
         </div>
       </div>
     </div>

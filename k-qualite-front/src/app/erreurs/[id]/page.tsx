@@ -17,6 +17,8 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  const formatPenalty = (val: number) => val === 0 ? '0 €' : `-${Math.abs(val).toLocaleString('fr-FR')} €`;
+
   const fetchErreurDetails = async () => {
     if (!user) return;
     try {
@@ -66,7 +68,7 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
             <span className={`${styles.badge} ${styles[erreur.statut.toLowerCase()] || styles.badge_default}`}>
               STATUT : {erreur.statut.replace('_', ' ')}
             </span>
-            <h2 className={styles.impact}>{erreur.impactEstime} €</h2>
+            <h2 className={styles.impact}>{formatPenalty(erreur.impactEstime)}</h2>
           </div>
         </div>
 
@@ -122,7 +124,7 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
                   {new Date(erreur.dateDetection).toLocaleString('fr-FR')}
                 </div>
                 <strong>Anomalie Détectée (Injection Kyntus)</strong>
-                <p>Impact estimé : <span style={{color: '#ef4444', fontWeight: 'bold'}}>{erreur.impactEstime} €</span></p>
+                <p>Impact estimé : <span style={{color: '#ef4444', fontWeight: 'bold'}}>{formatPenalty(erreur.impactEstime)}</span></p>
               </div>
             </div>
 
@@ -136,7 +138,6 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
                     {new Date(erreur.dateContestation).toLocaleString('fr-FR')}
                   </div>
                   <strong>Contestation Soumise par le Partenaire</strong>
-                  {/* 🛡️ L'FIX HWA HNA: Sécurisation avec ?. et || */}
                   <p style={{ color: '#0f172a', marginBottom: '5px' }}>Motif : {erreur.motifContestation?.replace(/_/g, ' ') || 'Non spécifié'}</p>
                   <p>"{erreur.commentaireContestation || 'Aucun commentaire fourni.'}"</p>
                 </div>
