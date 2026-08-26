@@ -32,11 +32,16 @@ export interface ErreurResponseDTO {
   categorie?: string; 
   aContestation: boolean;
   partenaireNom?: string;
+  // 🛡️ JDID: Champs Timeline
+  dateContestation?: string;
+  motifContestation?: string;
+  commentaireContestation?: string;
+  reponseAdmin?: string;
 }
 
 export interface ContestationResponseDTO {
   id: number;
-  type: string; // 🛡️ JDID: "ERREUR" ou "PENALITE_CQ"
+  type: string; 
   motif: string;
   commentaire: string;
   pieceJointeUrl: string;
@@ -45,7 +50,7 @@ export interface ContestationResponseDTO {
   dossierReference: string;
   partenaireNom: string;
   impactEstime: number;
-  statut: string; // 🛡️ JDID: "EN_ATTENTE", "ACCEPTE", "REFUSE"
+  statut: string; 
   reponseAdmin?: string;
 }
 
@@ -122,6 +127,7 @@ export interface CqPartenaireKpiDTO {
   resultat: number;
   bonus: number;
 }
+
 export interface ArticleDTO {
   id: number;
   titre: string;

@@ -1,5 +1,6 @@
 package com.kyntus.kqualite.service;
 
+import com.kyntus.kqualite.domain.Contestation;
 import com.kyntus.kqualite.domain.Erreur;
 import com.kyntus.kqualite.domain.StatutErreur;
 import com.kyntus.kqualite.dto.ErreurResponseDTO;
@@ -52,13 +53,14 @@ public class ErreurService {
     }
 
     private ErreurResponseDTO mapToDTO(Erreur erreur) {
+        Contestation c = erreur.getContestation(); // 🛡️ JDID: Récupération de la contestation
+
         return ErreurResponseDTO.builder()
                 .id(erreur.getId())
                 .dateDetection(erreur.getDateDetection())
                 .preuveUrl(erreur.getPreuveUrl())
                 .impactEstime(erreur.getImpactEstime())
                 .echeanceContestation(erreur.getEcheanceContestation())
-                // 🛡️ L'FIX HWA HNA: On passe l'Enum directement, sans le .name() !
                 .statut(erreur.getStatut())
                 .dossierReference(erreur.getDossier().getReferenceID())
                 .dossierDateIntervention(erreur.getDossier().getDateIntervention())
@@ -67,8 +69,13 @@ public class ErreurService {
                 .regleCode(erreur.getRegleQualite().getCodeRegle())
                 .regleDescription(erreur.getRegleQualite().getDescription())
                 .categorie(erreur.getRegleQualite().getCategorie())
-                .aContestation(erreur.getContestation() != null)
+                .aContestation(c != null)
                 .partenaireNom(erreur.getDossier().getTechnicien().getPartenaire().getNomEntreprise())
+                // 🛡️ JDID: Mapping des champs de la Timeline
+                .dateContestation(c != null ? c.getDateDepot() : null)
+                .motifContestation(c != null ? c.getMotif() : null)
+                .commentaireContestation(c != null ? c.getCommentaire() : null)
+                .reponseAdmin(c != null ? c.getCommentaireDecision() : null)
                 .build();
     }
 }

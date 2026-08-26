@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { getErreurById } from '@/services/apiService'; // 🛡️ L'FIX HWA HNA
+import { getErreurById, getServerUrl } from '@/services/apiService'; 
 import { ErreurResponseDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import ContestationForm from '../ContestationForm'; 
@@ -21,7 +21,6 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
     if (!user) return;
     try {
       setLoading(true);
-      // 🛡️ L'FIX HWA HNA: Appel direct b l'ID (Rapide w N9i)
       const found = await getErreurById(Number(urlId));
       setErreur(found);
     } catch (error) {
@@ -98,10 +97,68 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
             {erreur.preuveUrl ? (
               <div className={styles.preuveContainer}>
                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={erreur.preuveUrl} alt="Preuve" className={styles.preuveImg} />
+                <img src={erreur.preuveUrl.startsWith('http') ? erreur.preuveUrl : `${getServerUrl()}${erreur.preuveUrl}`} alt="Preuve" className={styles.preuveImg} />
               </div>
             ) : (
               <div className={styles.noPreuve}>Le système n'a attaché aucune preuve visuelle pour ce dossier.</div>
+            )}
+          </div>
+        </div>
+
+        {/* 🚀 TIMELINE DU CYCLE DE VIE */}
+        <div className={styles.timelineCard}>
+          <h3>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Cycle de vie de l'anomalie
+          </h3>
+          
+          <div className={styles.timeline}>
+            {/* Etape 1 : Détection */}
+            <div className={styles.timelineItem}>
+              <div className={`${styles.timelineDot} ${styles.primary}`}>✓</div>
+              <div className={styles.timelineContent}>
+                <div className={styles.timelineDate}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  {new Date(erreur.dateDetection).toLocaleString('fr-FR')}
+                </div>
+                <strong>Anomalie Détectée (Injection Kyntus)</strong>
+                <p>Impact estimé : <span style={{color: '#ef4444', fontWeight: 'bold'}}>{erreur.impactEstime} €</span></p>
+              </div>
+            </div>
+
+            {/* Etape 2 : Contestation */}
+            {erreur.dateContestation && (
+              <div className={styles.timelineItem}>
+                <div className={`${styles.timelineDot} ${styles.warning}`}>!</div>
+                <div className={styles.timelineContent}>
+                  <div className={styles.timelineDate}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    {new Date(erreur.dateContestation).toLocaleString('fr-FR')}
+                  </div>
+                  <strong>Contestation Soumise par le Partenaire</strong>
+                  <p style={{ color: '#0f172a', marginBottom: '5px' }}>Motif : {erreur.motifContestation.replace('_', ' ')}</p>
+                  <p>"{erreur.commentaireContestation}"</p>
+                </div>
+              </div>
+            )}
+
+            {/* Etape 3 : Décision */}
+            {(erreur.statut === 'ANNULE' || erreur.statut === 'CONFIRME') && (
+              <div className={styles.timelineItem}>
+                <div className={`${styles.timelineDot} ${erreur.statut === 'ANNULE' ? styles.success : styles.danger}`}>
+                  {erreur.statut === 'ANNULE' ? '✓' : '✗'}
+                </div>
+                <div className={styles.timelineContent}>
+                  <div className={styles.timelineDate}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    Décision du Centre d'Arbitrage
+                  </div>
+                  <strong style={{ color: erreur.statut === 'ANNULE' ? '#10b981' : '#ef4444' }}>
+                    {erreur.statut === 'ANNULE' ? 'Contestation Acceptée (Pénalité annulée)' : 'Contestation Refusée (Pénalité maintenue)'}
+                  </strong>
+                  {erreur.reponseAdmin ? <p>"{erreur.reponseAdmin}"</p> : <p>Aucun commentaire de l'arbitre.</p>}
+                </div>
+              </div>
             )}
           </div>
         </div>

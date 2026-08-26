@@ -25,8 +25,14 @@ public class ErreurResponseDTO {
     private String technicienNomComplet;
     private String technicienMatricule;
     private String regleCode;
-    private String regleDescription; // Sous Categorie
-    private String categorie; // 🛡️ JDID
+    private String regleDescription;
+    private String categorie;
     private Boolean aContestation;
     private String partenaireNom;
+
+    // 🛡️ JDID: Champs pour la Timeline (Cycle de vie)
+    private LocalDateTime dateContestation;
+    private String motifContestation;
+    private String commentaireContestation;
+    private String reponseAdmin;
 }
