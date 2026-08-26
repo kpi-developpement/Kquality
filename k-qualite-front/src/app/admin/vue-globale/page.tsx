@@ -32,9 +32,6 @@ export default function VueGlobalePage() {
   const [totalCqPenalties, setTotalCqPenalties] = useState<number>(0);
   const [contestationsCount, setContestationsCount] = useState<number>(0);
 
-  // 🛡️ L'FIX HWA HNA: Fonction bach n-forciw l'affichage b Négatif
-  const formatPenalty = (val: number) => val === 0 ? '0 €' : `-${Math.abs(val).toLocaleString('fr-FR')} €`;
-
   useEffect(() => {
     getAdminPartenaires().then(setPartenaires).catch(console.error);
   }, []);
@@ -158,12 +155,13 @@ export default function VueGlobalePage() {
     return a.zone.localeCompare(b.zone);
   });
 
+  // 🚀 Helper pour générer les lignes avec RowSpan (SANS LA COLONNE DOMAINE)
   const generateRowsForDomaine = (domaine: string) => {
     const dRows = mappedData.filter(r => r.domaine === domaine);
     const renderRows: any[] = [];
     
     const categories = Array.from(new Set(dRows.map(r => r.cat)));
-    categories.forEach((cat, catIdx) => {
+    categories.forEach((cat) => {
       const cRows = dRows.filter(r => r.cat === cat);
       const niveaux = Array.from(new Set(cRows.map(r => r.niv)));
       
@@ -177,7 +175,6 @@ export default function VueGlobalePage() {
           iRows.forEach((row, rowIdx) => {
             renderRows.push({
               ...row,
-              domaineSpan: (catIdx === 0 && nivIdx === 0 && indIdx === 0 && rowIdx === 0) ? dRows.length : 0,
               catSpan: (nivIdx === 0 && indIdx === 0 && rowIdx === 0) ? cRows.length : 0,
               nivSpan: (indIdx === 0 && rowIdx === 0) ? nRows.length : 0,
               indSpan: (rowIdx === 0) ? iRows.length : 0,
@@ -191,6 +188,17 @@ export default function VueGlobalePage() {
 
   const raccRows = generateRowsForDomaine('RACC');
   const savRows = generateRowsForDomaine('SAV');
+
+  const getGaugeColor = (resultat: number, isNokIndicator: boolean = false) => {
+    if (isNokIndicator) {
+      if (resultat < 5) return '#10b981';
+      if (resultat < 10) return '#f59e0b';
+      return '#ef4444';
+    }
+    if (resultat >= 90) return '#10b981';
+    if (resultat >= 75) return '#f59e0b';
+    return '#ef4444';
+  };
 
   const IconRacc = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
   const IconSav = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
@@ -249,8 +257,7 @@ export default function VueGlobalePage() {
             <StatCard title="Nombre de Contestations" value={contestationsCount.toString()} icon={IconAlert} colorBg="#fffbeb" colorIcon="#d97706" />
           </InteractiveCard>
           <InteractiveCard delayIndex={4}>
-            {/* 🛡️ L'FIX HWA HNA: Appel de la fonction formatPenalty pour afficher le - */}
-            <StatCard title={`Penalty (Estimatif)`} value={formatPenalty(totalCqPenalties)} icon={IconMoney} colorBg="#eff6ff" colorIcon="#3b82f6" />
+            <StatCard title={`Penalty (Estimatif)`} value={`${totalCqPenalties.toLocaleString('fr-FR')} €`} icon={IconMoney} colorBg="#eff6ff" colorIcon="#3b82f6" />
           </InteractiveCard>
         </div>
 
@@ -269,84 +276,123 @@ export default function VueGlobalePage() {
           </InteractiveCard>
         </div>
 
-        <div className={styles.tableWrapper}>
-          {loading ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des données en temps réel...</div>
-          ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Domaine</th>
-                  <th>Catégorie</th>
-                  <th>Niveau</th>
-                  <th>Indicateur</th>
-                  <th>Zone/Détail</th>
-                  <th>NUM</th>
-                  <th>DENUM</th>
-                  <th>Résultat Brut</th>
-                  <th>Bonus</th>
-                </tr>
-              </thead>
-              <tbody>
-                {raccRows.map((row, index) => (
-                  <tr key={`racc-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.6 + index * 0.02}s` }}>
-                    {row.domaineSpan > 0 && (
-                      <td rowSpan={row.domaineSpan} className={styles.groupCellDomaine}>
-                        <div className={styles.verticalText}>
-                          <span className={styles.badgeRacc}>{row.domaine}</span>
-                        </div>
-                      </td>
-                    )}
-                    {row.catSpan > 0 && (
-                      <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>
-                    )}
-                    {row.nivSpan > 0 && (
-                      <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>
-                    )}
-                    {row.indSpan > 0 && (
-                      <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>
-                    )}
-                    <td><span className={styles.zoneBadge}>{row.zone}</span></td>
-                    <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
-                    <td style={{fontWeight: '900', color: '#0f172a'}}>{row.denum.toLocaleString()}</td>
-                    <td><span className={styles.badgeSuccess}>{row.resultat}%</span></td>
-                    <td><span className={styles.badgeBonus}>{row.bonus > 0 ? '+' : ''}{row.bonus}%</span></td>
-                  </tr>
-                ))}
-                {savRows.map((row, index) => (
-                  <tr key={`sav-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.6 + (raccRows.length + index) * 0.02}s` }}>
-                    {row.domaineSpan > 0 && (
-                      <td rowSpan={row.domaineSpan} className={styles.groupCellDomaine}>
-                        <div className={styles.verticalText}>
-                          <span className={styles.badgeSav}>{row.domaine}</span>
-                        </div>
-                      </td>
-                    )}
-                    {row.catSpan > 0 && (
-                      <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>
-                    )}
-                    {row.nivSpan > 0 && (
-                      <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>
-                    )}
-                    {row.indSpan > 0 && (
-                      <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>
-                    )}
-                    <td><span className={styles.zoneBadge}>{row.zone}</span></td>
-                    <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
-                    <td style={{fontWeight: '900', color: '#0f172a'}}>{row.denum.toLocaleString()}</td>
-                    <td><span className={styles.badgeSuccess}>{row.resultat}%</span></td>
-                    <td><span className={styles.badgeBonus}>{row.bonus > 0 ? '+' : ''}{row.bonus}%</span></td>
-                  </tr>
-                ))}
-                {(raccRows.length === 0 && savRows.length === 0) && (
-                  <tr>
-                    <td colSpan={9} className={styles.empty}>Aucune donnée trouvée pour cette période.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
+        {loading ? (
+          <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Chargement des données en temps réel...</div>
+        ) : (
+          <>
+            {/* 🔴 TABLEAU RACC */}
+            <div className={styles.domainSection}>
+              <div className={`${styles.domainHeader} ${styles.domainHeaderRacc}`}>
+                <div className={`${styles.domainIcon} ${styles.iconRacc}`}>{IconRacc}</div>
+                <h2>RACC - Déploiement & Raccordement</h2>
+              </div>
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={{width: '15%'}}>Catégorie</th>
+                      <th style={{width: '15%'}}>Niveau</th>
+                      <th style={{width: '20%'}}>Indicateur</th>
+                      <th style={{width: '10%'}}>Zone</th>
+                      <th style={{width: '8%'}}>NUM</th>
+                      <th style={{width: '8%'}}>DENUM</th>
+                      <th style={{width: '16%'}}>Résultat Brut</th>
+                      <th style={{width: '8%'}}>Bonus</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {raccRows.map((row, index) => {
+                      const isNok = row.ind.includes('NOK') || row.ind.includes('PLAINTE') || row.ind.includes('INCOHERENCE');
+                      return (
+                        <tr key={`racc-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.1 + index * 0.02}s` }}>
+                          {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
+                          {row.nivSpan > 0 && <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>}
+                          {row.indSpan > 0 && <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>}
+                          <td><span className={styles.zoneBadge}>{row.zone}</span></td>
+                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
+                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.denum.toLocaleString()}</td>
+                          <td>
+                            <div className={styles.gaugeContainer}>
+                              <div className={styles.gaugeTrack}>
+                                <div 
+                                  className={styles.gaugeFill} 
+                                  style={{ width: `${Math.min(row.resultat, 100)}%`, background: getGaugeColor(row.resultat, isNok) }}
+                                />
+                              </div>
+                              <span className={styles.gaugeText} style={{ color: getGaugeColor(row.resultat, isNok) }}>{row.resultat}%</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={row.bonus > 0 ? styles.badgeBonus : styles.badgeBonusZero}>
+                              {row.bonus > 0 ? '+' : ''}{row.bonus}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {raccRows.length === 0 && <tr><td colSpan={8} className={styles.empty}>Aucune donnée RACC trouvée pour cette période.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 🟢 TABLEAU SAV */}
+            <div className={styles.domainSection}>
+              <div className={`${styles.domainHeader} ${styles.domainHeaderSav}`}>
+                <div className={`${styles.domainIcon} ${styles.iconSav}`}>{IconSav}</div>
+                <h2>SAV - Service Après Vente</h2>
+              </div>
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={{width: '15%'}}>Catégorie</th>
+                      <th style={{width: '15%'}}>Niveau</th>
+                      <th style={{width: '20%'}}>Indicateur</th>
+                      <th style={{width: '10%'}}>Zone</th>
+                      <th style={{width: '8%'}}>NUM</th>
+                      <th style={{width: '8%'}}>DENUM</th>
+                      <th style={{width: '16%'}}>Résultat Brut</th>
+                      <th style={{width: '8%'}}>Bonus</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {savRows.map((row, index) => {
+                      const isNok = false;
+                      return (
+                        <tr key={`sav-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.1 + index * 0.02}s` }}>
+                          {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
+                          {row.nivSpan > 0 && <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>}
+                          {row.indSpan > 0 && <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>}
+                          <td><span className={styles.zoneBadge}>{row.zone}</span></td>
+                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
+                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.denum.toLocaleString()}</td>
+                          <td>
+                            <div className={styles.gaugeContainer}>
+                              <div className={styles.gaugeTrack}>
+                                <div 
+                                  className={styles.gaugeFill} 
+                                  style={{ width: `${Math.min(row.resultat, 100)}%`, background: getGaugeColor(row.resultat, isNok) }}
+                                />
+                              </div>
+                              <span className={styles.gaugeText} style={{ color: getGaugeColor(row.resultat, isNok) }}>{row.resultat}%</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={row.bonus > 0 ? styles.badgeBonus : styles.badgeBonusZero}>
+                              {row.bonus > 0 ? '+' : ''}{row.bonus}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {savRows.length === 0 && <tr><td colSpan={8} className={styles.empty}>Aucune donnée SAV trouvée pour cette période.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
     </div>
