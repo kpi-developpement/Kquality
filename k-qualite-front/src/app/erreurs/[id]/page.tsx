@@ -136,8 +136,9 @@ export default function ErreurDetailPage({ params }: { params: Promise<{ id: str
                     {new Date(erreur.dateContestation).toLocaleString('fr-FR')}
                   </div>
                   <strong>Contestation Soumise par le Partenaire</strong>
-                  <p style={{ color: '#0f172a', marginBottom: '5px' }}>Motif : {erreur.motifContestation.replace('_', ' ')}</p>
-                  <p>"{erreur.commentaireContestation}"</p>
+                  {/* 🛡️ L'FIX HWA HNA: Sécurisation avec ?. et || */}
+                  <p style={{ color: '#0f172a', marginBottom: '5px' }}>Motif : {erreur.motifContestation?.replace(/_/g, ' ') || 'Non spécifié'}</p>
+                  <p>"{erreur.commentaireContestation || 'Aucun commentaire fourni.'}"</p>
                 </div>
               </div>
             )}
