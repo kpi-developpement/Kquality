@@ -38,7 +38,6 @@ public class ErreurService {
                 .orElseThrow(() -> new RuntimeException("Erreur introuvable"));
     }
 
-    // 🛡️ JDID: Le partenaire valide l'erreur (accepte la pénalité)
     @Transactional
     public void validerErreurParPartenaire(Long id) {
         Erreur erreur = erreurRepository.findById(id)
@@ -59,7 +58,8 @@ public class ErreurService {
                 .preuveUrl(erreur.getPreuveUrl())
                 .impactEstime(erreur.getImpactEstime())
                 .echeanceContestation(erreur.getEcheanceContestation())
-                .statut(erreur.getStatut().name())
+                // 🛡️ L'FIX HWA HNA: On passe l'Enum directement, sans le .name() !
+                .statut(erreur.getStatut())
                 .dossierReference(erreur.getDossier().getReferenceID())
                 .dossierDateIntervention(erreur.getDossier().getDateIntervention())
                 .technicienNomComplet(erreur.getDossier().getTechnicien().getNomComplet())
