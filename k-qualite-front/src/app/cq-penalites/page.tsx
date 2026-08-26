@@ -5,6 +5,7 @@ import { getErreurs, getCqDataByPartenaire } from '@/services/apiService';
 import { useAuth } from '@/context/AuthContext';
 import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; 
 import CustomSelect from '../admin/vue-globale/components/CustomSelect/CustomSelect'; 
+import * as XLSX from 'xlsx'; // 🚀 L'FIX HWA HNA: Import dyal librairie Excel
 import styles from './CqPenalites.module.css';
 
 interface UnifiedPenalty {
@@ -22,7 +23,6 @@ export default function CqPenalitesPage() {
   const [unifiedData, setUnifiedData] = useState<UnifiedPenalty[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🛡️ JDID: Filtres de période
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
@@ -40,7 +40,6 @@ export default function CqPenalitesPage() {
         getCqDataByPartenaire(pId, "Taux de coupures", month, year)
       ]).then(([errs, cq1, cq2, cq3, cq4]) => {
         
-        // 1. Mapping des Erreurs Classiques
         const mappedErrs: UnifiedPenalty[] = errs.map(e => {
           let st = 'NON_CONTESTE';
           if (e.statut === 'NOUVEAU' || e.statut === 'A_ANALYSER') st = 'NON_CONTESTE';
@@ -59,7 +58,6 @@ export default function CqPenalitesPage() {
           };
         });
 
-        // 2. Mapping des CQ Data
         const mapCq = (data: any[], type: string): UnifiedPenalty[] => data.map(c => {
           let st = c.statutContestation || 'NON_CONTESTE';
           if (st === 'EN_COURS') st = 'EN_ATTENTE';
@@ -83,10 +81,7 @@ export default function CqPenalitesPage() {
           ...mapCq(cq4, 'Taux de coupures')
         ];
 
-        // On ne garde que ce qui a un impact financier > 0
         const penalties = allData.filter(d => d.impact > 0);
-        
-        // Tri par impact décroissant
         penalties.sort((a, b) => b.impact - a.impact);
         
         setUnifiedData(penalties);
@@ -95,6 +90,38 @@ export default function CqPenalitesPage() {
   }, [user, month, year]);
 
   const totalPenalties = unifiedData.reduce((sum, item) => sum + item.impact, 0);
+
+  // 🚀 LOGIQUE D'EXPORT EXCEL DU BILAN
+  const handleExportBilan = () => {
+    if (unifiedData.length === 0) {
+      alert("Aucune pénalité à exporter pour ce mois.");
+      return;
+    }
+
+    const dataToExport = unifiedData.map(item => ({
+      'Type d\'Anomalie': item.type,
+      'Dossier / Référence': item.reference,
+      'Motif / Règle Enfreinte': item.description,
+      'Impact Financier (€)': item.impact,
+      'Statut Actuel': item.statut.replace('_', ' ')
+    }));
+
+    // Ajout d'une ligne de total à la fin
+    dataToExport.push({
+      'Type d\'Anomalie': 'TOTAL',
+      'Dossier / Référence': '',
+      'Motif / Règle Enfreinte': '',
+      'Impact Financier (€)': totalPenalties,
+      'Statut Actuel': ''
+    });
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `Bilan_${month}_${year}`);
+    
+    const partnerName = user?.email.split('@')[0].toUpperCase() || 'PARTENAIRE';
+    XLSX.writeFile(wb, `Bilan_Penalites_${partnerName}_${month}_${year}.xlsx`);
+  };
 
   const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
   const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
@@ -197,7 +224,8 @@ export default function CqPenalitesPage() {
                   <strong style={{ color: '#10b981' }}>0 €</strong>
                 </div>
                 
-                <button className={styles.detailsBtn} onClick={() => alert("Fonction d'export global en cours de développement.")}>
+                {/* 🚀 L'FIX HWA HNA: Appel de la fonction d'export */}
+                <button className={styles.detailsBtn} onClick={handleExportBilan}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                   Télécharger le Bilan (Excel)
                 </button>
