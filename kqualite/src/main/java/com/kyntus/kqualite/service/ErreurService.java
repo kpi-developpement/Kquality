@@ -44,8 +44,8 @@ public class ErreurService {
                 .preuveUrl(erreur.getPreuveUrl())
                 .impactEstime(erreur.getImpactEstime())
                 .echeanceContestation(erreur.getEcheanceContestation())
-                // 🛡️ L'FIX HWA HNA: On convertit l'Enum en String avec .name()
-                .statut(erreur.getStatut().name())
+                // 🛡️ L'FIX HWA HNA: On passe l'Enum directement, sans le .name() !
+                .statut(erreur.getStatut())
                 .dossierReference(erreur.getDossier().getReferenceID())
                 .dossierDateIntervention(erreur.getDossier().getDateIntervention())
                 .technicienNomComplet(erreur.getDossier().getTechnicien().getNomComplet())
