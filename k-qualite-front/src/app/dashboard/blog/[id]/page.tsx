@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { getArticleById, recordArticleView } from '@/services/apiService';
+import { getArticleById, recordArticleView, getServerUrl } from '@/services/apiService';
 import { ArticleDTO } from '@/types/api';
 import Link from 'next/link';
 import styles from './BlogDetail.module.css';
@@ -18,7 +18,6 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
       try {
         const data = await getArticleById(Number(urlId));
         setArticle(data);
-        // 🚀 L'FIX HWA HNA: On enregistre la vue automatiquement (Tracking)
         await recordArticleView(Number(urlId));
       } catch (err) {
         console.error(err);
@@ -36,7 +35,7 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
     <div className={styles.pageWrapper}>
       <div className={styles.container}>
         {article.imageUrl && (
-          <img src={`http://localhost:8256${article.imageUrl}`} alt="Cover" className={styles.cover} />
+          <img src={`${getServerUrl()}${article.imageUrl}`} alt="Cover" className={styles.cover} />
         )}
         <div className={styles.contentBox}>
           <Link href="/dashboard" className={styles.backLink}>← Retour au Dashboard</Link>

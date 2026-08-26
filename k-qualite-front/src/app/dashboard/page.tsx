@@ -1,31 +1,32 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getDashboardData, getArticles } from '@/services/apiService'; // 🛡️ Import getArticles
+import { getDashboardData, getArticles, getServerUrl } from '@/services/apiService'; 
 import { DashboardPartenaireDTO, ArticleDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
-import Link from 'next/link'; // 🛡️ Import Link
+import Link from 'next/link'; 
 import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; 
 import styles from './Dashboard.module.css';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardPartenaireDTO | null>(null);
-  const [articles, setArticles] = useState<ArticleDTO[]>([]); // 🛡️ State Articles
+  const [articles, setArticles] = useState<ArticleDTO[]>([]); 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user?.partenaireId) {
-      Promise.all([
-        getDashboardData(user.partenaireId),
-        getArticles() // 🛡️ Fetch articles
-      ])
-      .then(([dashData, articlesData]) => {
-        setData(dashData);
-        setArticles(articlesData);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      setLoading(true);
+      
+      // 🛡️ L'FIX HWA HNA: On sépare les requêtes pour ne pas bloquer le Dashboard
+      getDashboardData(user.partenaireId)
+        .then(setData)
+        .catch(console.error)
+        .finally(() => setLoading(false));
+
+      getArticles()
+        .then(setArticles)
+        .catch(console.error);
     }
   }, [user]);
 
@@ -102,7 +103,6 @@ export default function DashboardPage() {
           </InteractiveCard>
         </div>
 
-        {/* 🚀 SECTION ACTUALITÉS (BLOG) */}
         {articles.length > 0 && (
           <div className={styles.blogSection}>
             <div className={styles.blogHeader}>
@@ -113,7 +113,7 @@ export default function DashboardPage() {
               {articles.map(a => (
                 <Link href={`/dashboard/blog/${a.id}`} key={a.id} className={styles.blogCard}>
                   {a.imageUrl ? (
-                    <img src={`http://localhost:8256${a.imageUrl}`} alt="Cover" className={styles.blogImg} />
+                    <img src={`${getServerUrl()}${a.imageUrl}`} alt="Cover" className={styles.blogImg} />
                   ) : (
                     <div className={styles.blogImg} style={{display:'flex', alignItems:'center', justifyContent:'center', color:'#94a3b8', fontWeight:'bold'}}>Actualité</div>
                   )}

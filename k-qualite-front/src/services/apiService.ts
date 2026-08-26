@@ -1,4 +1,3 @@
-// 🛡️ L'FIX HWA HNA: Ajout de ArticleDTO et ArticleViewDTO dans les imports
 import { ApiResponse, DashboardPartenaireDTO, ErreurResponseDTO, ContestationResponseDTO, KpiArchiveDTO, AuthResponseDTO, ArticleDTO, ArticleViewDTO } from '../types/api';
 import { PartenaireDTO, UtilisateurDTO } from '../types/api';
 import { CqDataDTO } from '../types/api';
@@ -8,6 +7,11 @@ const isServer = typeof window === 'undefined';
 const BASE_URL = isServer 
   ? 'http://kq_backend:8256/api/v1' 
   : (process.env.NEXT_PUBLIC_API_URL || 'http://10.10.10.25:8256/api/v1');
+
+// 🛡️ JDID: Helper pour récupérer l'URL de base du serveur (sans /api/v1) pour les images
+export const getServerUrl = () => {
+  return BASE_URL.replace('/api/v1', '');
+};
 
 const getAuthHeaders = () => {
   const headers: Record<string, string> = {
@@ -375,4 +379,11 @@ export async function getArticleViews(id: number): Promise<ArticleViewDTO[]> {
   if (!res.ok) throw new Error("Erreur récupération vues");
   const json = await res.json();
   return json.data;
+}
+
+// 🛡️ JDID: Fonction de suppression d'article
+export async function deleteArticle(id: number) {
+  const res = await fetch(`${BASE_URL}/articles/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Erreur suppression article");
+  return await res.json();
 }

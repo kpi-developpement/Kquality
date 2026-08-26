@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
-import { getArticles, createArticle, getArticleViews } from '@/services/apiService';
+import { useEffect, useState } from 'react';
+import { getArticles, createArticle, getArticleViews, deleteArticle, getServerUrl } from '@/services/apiService';
 import { ArticleDTO, ArticleViewDTO } from '@/types/api';
 import styles from './Blog.module.css';
 
@@ -31,6 +31,15 @@ export default function AdminBlogPage() {
     setLoading(false);
   };
 
+  const handleDelete = async (id: number) => {
+    if (confirm("Voulez-vous vraiment supprimer cet article ?")) {
+      try {
+        await deleteArticle(id);
+        fetchArticles();
+      } catch (err) { alert("Erreur lors de la suppression"); }
+    }
+  };
+
   const openViews = async (id: number) => {
     const data = await getArticleViews(id);
     setViews(data);
@@ -52,8 +61,9 @@ export default function AdminBlogPage() {
         <div className={styles.grid}>
           {articles.map(a => (
             <div key={a.id} className={styles.card}>
+              <button className={styles.btnDelete} onClick={() => handleDelete(a.id)} title="Supprimer">✕</button>
               {a.imageUrl ? (
-                <img src={`http://localhost:8256${a.imageUrl}`} alt="Cover" className={styles.cardImg} />
+                <img src={`${getServerUrl()}${a.imageUrl}`} alt="Cover" className={styles.cardImg} />
               ) : (
                 <div className={styles.cardImg} style={{display:'flex', alignItems:'center', justifyContent:'center', color:'#94a3b8', fontWeight:'bold'}}>Sans Image</div>
               )}

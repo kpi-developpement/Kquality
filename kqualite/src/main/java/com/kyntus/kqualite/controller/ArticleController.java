@@ -49,4 +49,11 @@ public class ArticleController {
     public ResponseEntity<ApiResponse<List<ArticleViewDTO>>> getArticleViews(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(articleService.getArticleViews(id), "Vues récupérées"));
     }
+
+    // 🛡️ JDID: Endpoint pour supprimer
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteArticle(@PathVariable Long id) {
+        articleService.deleteArticle(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Article supprimé avec succès"));
+    }
 }

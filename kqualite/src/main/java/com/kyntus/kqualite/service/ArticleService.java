@@ -104,4 +104,15 @@ public class ArticleService {
                 .map(v -> new ArticleViewDTO(v.getPartenaire().getNomEntreprise(), v.getDateVue()))
                 .collect(Collectors.toList());
     }
+
+    // 🛡️ JDID: Fonction de suppression
+    @Transactional
+    public void deleteArticle(Long id) {
+        Article article = articleRepository.findById(id).orElseThrow(() -> new RuntimeException("Article introuvable"));
+        // Supprimer d'abord les vues pour éviter l'erreur de contrainte de clé étrangère
+        List<ArticleView> views = articleViewRepository.findByArticleId(id);
+        articleViewRepository.deleteAll(views);
+        // Supprimer l'article
+        articleRepository.delete(article);
+    }
 }

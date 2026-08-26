@@ -95,7 +95,6 @@ export default function Sidebar() {
             <NavItem href="/admin/cq-partenaire" icon={icons.dashboard} text="Moteur d'Agrégation" isActive={pathname === '/admin/cq-partenaire'} />
             <NavItem href="/admin/erreurs" icon={icons.erreurs} text="Centre de Contrôle" isActive={pathname === '/admin/erreurs'} />
             <NavItem href="/admin" icon={icons.penalites} text="Centre d'Arbitrage" isActive={pathname === '/admin'} />
-            // Cherche la section {/* Menu ADMIN */} et ajoute cette ligne juste avant "IAM - Sécurité" :
             <NavItem href="/admin/blog" icon={icons.dashboard} text="Actualités & Blog" isActive={pathname === '/admin/blog'} />
             <NavItem href="/admin/utilisateurs" icon={icons.users} text="IAM - Sécurité" isActive={pathname === '/admin/utilisateurs'} />
             <NavItem href="/admin/import" icon={icons.import} text="Data Dispatcher" isActive={pathname === '/admin/import'} />
