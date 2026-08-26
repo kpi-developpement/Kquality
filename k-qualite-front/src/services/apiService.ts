@@ -335,3 +335,42 @@ export async function purgeData(target: string, month: number, year: number) {
   }
   return await res.json();
 }
+export async function createArticle(titre: string, contenu: string, file: File | null) {
+  const formData = new FormData();
+  formData.append('titre', titre);
+  formData.append('contenu', contenu);
+  if (file) formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/articles`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('kyntus_token')}` },
+    body: formData
+  });
+  if (!res.ok) throw new Error("Erreur lors de la création de l'article");
+  return await res.json();
+}
+
+export async function getArticles(): Promise<ArticleDTO[]> {
+  const res = await fetch(`${BASE_URL}/articles`, { headers: getAuthHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error("Erreur récupération articles");
+  const json = await res.json();
+  return json.data;
+}
+
+export async function getArticleById(id: number): Promise<ArticleDTO> {
+  const res = await fetch(`${BASE_URL}/articles/${id}`, { headers: getAuthHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error("Erreur récupération article");
+  const json = await res.json();
+  return json.data;
+}
+
+export async function recordArticleView(id: number) {
+  await fetch(`${BASE_URL}/articles/${id}/view`, { method: 'POST', headers: getAuthHeaders() });
+}
+
+export async function getArticleViews(id: number): Promise<ArticleViewDTO[]> {
+  const res = await fetch(`${BASE_URL}/articles/${id}/views`, { headers: getAuthHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error("Erreur récupération vues");
+  const json = await res.json();
+  return json.data;
+}

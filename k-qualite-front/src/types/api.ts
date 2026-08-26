@@ -122,3 +122,16 @@ export interface CqPartenaireKpiDTO {
   resultat: number;
   bonus: number;
 }
+export interface ArticleDTO {
+  id: number;
+  titre: string;
+  contenu: string;
+  imageUrl?: string;
+  dateCreation: string;
+  vuesCount?: number;
+}
+
+export interface ArticleViewDTO {
+  partenaireNom: string;
+  dateVue: string;
+}

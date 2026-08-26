@@ -1,30 +1,37 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getDashboardData } from '@/services/apiService';
-import { DashboardPartenaireDTO } from '@/types/api';
+import { getDashboardData, getArticles } from '@/services/apiService'; // 🛡️ Import getArticles
+import { DashboardPartenaireDTO, ArticleDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
-import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; // L'composant 3D dylna
+import Link from 'next/link'; // 🛡️ Import Link
+import InteractiveCard from '../admin/vue-globale/components/InteractiveCard/InteractiveCard'; 
 import styles from './Dashboard.module.css';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardPartenaireDTO | null>(null);
+  const [articles, setArticles] = useState<ArticleDTO[]>([]); // 🛡️ State Articles
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user?.partenaireId) {
-      getDashboardData(user.partenaireId)
-        .then(setData)
-        .catch(console.error)
-        .finally(() => setLoading(false));
+      Promise.all([
+        getDashboardData(user.partenaireId),
+        getArticles() // 🛡️ Fetch articles
+      ])
+      .then(([dashData, articlesData]) => {
+        setData(dashData);
+        setArticles(articlesData);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
     }
   }, [user]);
 
   if (loading || !data) return <div className={styles.pageWrapper}><div style={{ textAlign: 'center', padding: '100px', fontWeight: 'bold', color: '#64748b' }}>Chargement sécurisé du Dashboard...</div></div>;
 
   const IconTarget = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>;
-  const IconFile = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>;
   const IconAlert = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
 
   return (
@@ -42,17 +49,13 @@ export default function DashboardPage() {
         </header>
 
         <div className={styles.grid}>
-          {/* 🚀 IMPACT VAULT - PENALITES ESTIMEES */}
           <div style={{ gridColumn: 'span 2' }}>
             <InteractiveCard delayIndex={1}>
               <div className={styles.impactVault}>
                 <div className={styles.vaultHeader}>
                   <h3 className={styles.vaultTitle}>Risque Financier (Pénalités Estimées)</h3>
-                  <div className={styles.liveIndicator}>
-                    <div className={styles.dot}></div> LIVE
-                  </div>
+                  <div className={styles.liveIndicator}><div className={styles.dot}></div> LIVE</div>
                 </div>
-
                 <div className={styles.vaultMain}>
                   <div className={styles.radarRing1}></div>
                   <div className={styles.radarRing2}></div>
@@ -97,8 +100,33 @@ export default function DashboardPage() {
               </div>
             </div>
           </InteractiveCard>
-
         </div>
+
+        {/* 🚀 SECTION ACTUALITÉS (BLOG) */}
+        {articles.length > 0 && (
+          <div className={styles.blogSection}>
+            <div className={styles.blogHeader}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path></svg>
+              <h2>Actualités & Mises à jour</h2>
+            </div>
+            <div className={styles.blogGrid}>
+              {articles.map(a => (
+                <Link href={`/dashboard/blog/${a.id}`} key={a.id} className={styles.blogCard}>
+                  {a.imageUrl ? (
+                    <img src={`http://localhost:8256${a.imageUrl}`} alt="Cover" className={styles.blogImg} />
+                  ) : (
+                    <div className={styles.blogImg} style={{display:'flex', alignItems:'center', justifyContent:'center', color:'#94a3b8', fontWeight:'bold'}}>Actualité</div>
+                  )}
+                  <div className={styles.blogBody}>
+                    <div className={styles.blogDate}>{new Date(a.dateCreation).toLocaleDateString()}</div>
+                    <h3 className={styles.blogTitle}>{a.titre}</h3>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
