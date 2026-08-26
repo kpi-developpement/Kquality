@@ -16,7 +16,6 @@ public class ErreurService {
 
     private final ErreurRepository erreurRepository;
 
-    // 🛡️ L'FIX HWA HNA: On ajoute month et year
     @Transactional(readOnly = true)
     public List<ErreurResponseDTO> getErreursByPartenaire(Long partenaireId, int month, int year) {
         return erreurRepository.findByPartenaireIdAndMoisAndAnnee(partenaireId, month, year).stream()
@@ -45,6 +44,7 @@ public class ErreurService {
                 .preuveUrl(erreur.getPreuveUrl())
                 .impactEstime(erreur.getImpactEstime())
                 .echeanceContestation(erreur.getEcheanceContestation())
+                // 🛡️ L'FIX HWA HNA: On convertit l'Enum en String avec .name()
                 .statut(erreur.getStatut().name())
                 .dossierReference(erreur.getDossier().getReferenceID())
                 .dossierDateIntervention(erreur.getDossier().getDateIntervention())
