@@ -1,4 +1,5 @@
-import { ApiResponse, DashboardPartenaireDTO, ErreurResponseDTO, ContestationResponseDTO, KpiArchiveDTO, AuthResponseDTO } from '../types/api';
+// 🛡️ L'FIX HWA HNA: Ajout de ArticleDTO et ArticleViewDTO dans les imports
+import { ApiResponse, DashboardPartenaireDTO, ErreurResponseDTO, ContestationResponseDTO, KpiArchiveDTO, AuthResponseDTO, ArticleDTO, ArticleViewDTO } from '../types/api';
 import { PartenaireDTO, UtilisateurDTO } from '../types/api';
 import { CqDataDTO } from '../types/api';
 import { CqPartenaireKpiDTO } from '../types/api';
@@ -54,7 +55,6 @@ export async function getErreurById(id: number): Promise<ErreurResponseDTO> {
   return json.data;
 }
 
-// 🛡️ L'FIX HWA HNA: Utilisation de FormData pour envoyer le fichier physique
 export async function deposerContestation(erreurId: number, motif: string, commentaire: string, file: File | null) {
   const formData = new FormData();
   formData.append('erreurId', erreurId.toString());
@@ -335,6 +335,8 @@ export async function purgeData(target: string, month: number, year: number) {
   }
   return await res.json();
 }
+
+// 🛡️ JDID: Fonctions pour le Blog
 export async function createArticle(titre: string, contenu: string, file: File | null) {
   const formData = new FormData();
   formData.append('titre', titre);
