@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getDashboardData, getArticles, getServerUrl } from '@/services/apiService'; 
+import { getDashboardData, getArticles, getFullImageUrl } from '@/services/apiService'; 
 import { DashboardPartenaireDTO, ArticleDTO } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link'; 
@@ -18,13 +18,11 @@ export default function DashboardPage() {
     if (user?.partenaireId) {
       setLoading(true);
       
-      // 🛡️ L'FIX: On charge le Dashboard en priorité
       getDashboardData(user.partenaireId)
         .then(setData)
         .catch(console.error)
         .finally(() => setLoading(false));
 
-      // 🛡️ L'FIX: On charge les articles en arrière-plan sans bloquer
       getArticles()
         .then(setArticles)
         .catch(console.error);
@@ -51,7 +49,6 @@ export default function DashboardPage() {
         </header>
 
         <div className={styles.grid}>
-          {/* IMPACT VAULT */}
           <div style={{ gridColumn: 'span 2' }}>
             <InteractiveCard delayIndex={1}>
               <div className={styles.impactVault}>
@@ -105,25 +102,22 @@ export default function DashboardPage() {
           </InteractiveCard>
         </div>
 
-        {/* 🚀 SECTION K-NEWS (ARTICLES) HERRBANA */}
         {articles.length > 0 && (
-          <div className={styles.newsContainer}>
-            {/* L'effet Watermark f l'fond */}
+          <div className={styles.blogSection}>
             <div className={styles.newsWatermark}>ARTICLES</div>
             
-            <div className={styles.newsHeader}>
+            <div className={styles.blogHeader}>
               <div className={styles.newsIcon}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path></svg>
               </div>
               <h2>K-News & Mises à jour</h2>
             </div>
-
             <div className={styles.blogGrid}>
               {articles.map(a => (
                 <Link href={`/dashboard/blog/${a.id}`} key={a.id} className={styles.blogCard}>
                   <div className={styles.blogImgWrapper}>
                     {a.imageUrl ? (
-                      <img src={`${getServerUrl()}${a.imageUrl}`} alt="Cover" className={styles.blogImg} />
+                      <img src={getFullImageUrl(a.imageUrl)} alt="Cover" className={styles.blogImg} />
                     ) : (
                       <div className={styles.blogNoImg}>K-NEWS</div>
                     )}

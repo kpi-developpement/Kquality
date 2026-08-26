@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getArticles, createArticle, getArticleViews, deleteArticle, getServerUrl } from '@/services/apiService';
+import { getArticles, createArticle, getArticleViews, deleteArticle, getFullImageUrl } from '@/services/apiService';
 import { ArticleDTO, ArticleViewDTO } from '@/types/api';
 import styles from './Blog.module.css';
 
@@ -63,7 +63,7 @@ export default function AdminBlogPage() {
             <div key={a.id} className={styles.card}>
               <button className={styles.btnDelete} onClick={() => handleDelete(a.id)} title="Supprimer">✕</button>
               {a.imageUrl ? (
-                <img src={`${getServerUrl()}${a.imageUrl}`} alt="Cover" className={styles.cardImg} />
+                <img src={getFullImageUrl(a.imageUrl)} alt="Cover" className={styles.cardImg} />
               ) : (
                 <div className={styles.cardImg} style={{display:'flex', alignItems:'center', justifyContent:'center', color:'#94a3b8', fontWeight:'bold'}}>Sans Image</div>
               )}

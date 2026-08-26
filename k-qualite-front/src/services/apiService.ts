@@ -8,9 +8,21 @@ const BASE_URL = isServer
   ? 'http://kq_backend:8256/api/v1' 
   : (process.env.NEXT_PUBLIC_API_URL || 'http://10.10.10.25:8256/api/v1');
 
-// 🛡️ JDID: Helper pour récupérer l'URL de base du serveur (sans /api/v1) pour les images
+// 🛡️ L'FIX HWA HNA: Extracteur d'URL blindé
 export const getServerUrl = () => {
-  return BASE_URL.replace('/api/v1', '');
+  try {
+    const url = new URL(BASE_URL);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return 'http://10.10.10.25:8256';
+  }
+};
+
+export const getFullImageUrl = (path: string | undefined) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const baseUrl = getServerUrl();
+  return path.startsWith('/') ? `${baseUrl}${path}` : `${baseUrl}/${path}`;
 };
 
 const getAuthHeaders = () => {
@@ -340,7 +352,6 @@ export async function purgeData(target: string, month: number, year: number) {
   return await res.json();
 }
 
-// 🛡️ JDID: Fonctions pour le Blog
 export async function createArticle(titre: string, contenu: string, file: File | null) {
   const formData = new FormData();
   formData.append('titre', titre);
@@ -381,7 +392,6 @@ export async function getArticleViews(id: number): Promise<ArticleViewDTO[]> {
   return json.data;
 }
 
-// 🛡️ JDID: Fonction de suppression d'article
 export async function deleteArticle(id: number) {
   const res = await fetch(`${BASE_URL}/articles/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
   if (!res.ok) throw new Error("Erreur suppression article");

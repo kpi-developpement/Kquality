@@ -29,14 +29,15 @@ services:
       - SPRING_DATASOURCE_USERNAME=kyntus_user
       - SPRING_DATASOURCE_PASSWORD=kyntus_password
       - SERVER_PORT=8256
-      # 🛡️ L'FIX 1: N-3tiw l Java 3 Giga dyal RAM bach y-9der y-9ra l'Excel
       - JAVA_OPTS=-Xmx3g -Xms1g
+    volumes:
+      # 🛡️ L'FIX HWA HNA: Disque dur externe pour sauvegarder les images à vie
+      - kq_uploads:/app/uploads
     depends_on:
       - kq_db
     deploy:
       resources:
         limits:
-          # 🛡️ L'FIX 2: N-kebbrou l'limite dyal Docker l 4 Giga
           memory: 4G 
     logging:
       driver: "json-file"
@@ -70,6 +71,7 @@ services:
 
 volumes:
   kq_postgres_data:
+  kq_uploads: # 🛡️ Déclaration du volume
 
 networks:
   kq-network:
