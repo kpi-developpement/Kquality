@@ -163,7 +163,7 @@ export default function VueGlobalePage() {
     const renderRows: any[] = [];
     
     const categories = Array.from(new Set(dRows.map(r => r.cat)));
-    categories.forEach((cat) => {
+    categories.forEach((cat, catIdx) => {
       const cRows = dRows.filter(r => r.cat === cat);
       const niveaux = Array.from(new Set(cRows.map(r => r.niv)));
       
@@ -191,8 +191,6 @@ export default function VueGlobalePage() {
 
   const raccRows = generateRowsForDomaine('RACC');
   const savRows = generateRowsForDomaine('SAV');
-
-  const renderRows = [...raccRows, ...savRows];
 
   const IconRacc = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
   const IconSav = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
@@ -290,12 +288,12 @@ export default function VueGlobalePage() {
                 </tr>
               </thead>
               <tbody>
-                {renderRows.map((row: any, index: number) => (
-                  <tr key={`${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.6 + index * 0.02}s` }}>
+                {raccRows.map((row, index) => (
+                  <tr key={`racc-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.6 + index * 0.02}s` }}>
                     {row.domaineSpan > 0 && (
                       <td rowSpan={row.domaineSpan} className={styles.groupCellDomaine}>
                         <div className={styles.verticalText}>
-                          <span className={row.domaine === 'RACC' ? styles.badgeRacc : styles.badgeSav}>{row.domaine}</span>
+                          <span className={styles.badgeRacc}>{row.domaine}</span>
                         </div>
                       </td>
                     )}
@@ -315,7 +313,32 @@ export default function VueGlobalePage() {
                     <td><span className={styles.badgeBonus}>{row.bonus > 0 ? '+' : ''}{row.bonus}%</span></td>
                   </tr>
                 ))}
-                {renderRows.length === 0 && (
+                {savRows.map((row, index) => (
+                  <tr key={`sav-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.6 + (raccRows.length + index) * 0.02}s` }}>
+                    {row.domaineSpan > 0 && (
+                      <td rowSpan={row.domaineSpan} className={styles.groupCellDomaine}>
+                        <div className={styles.verticalText}>
+                          <span className={styles.badgeSav}>{row.domaine}</span>
+                        </div>
+                      </td>
+                    )}
+                    {row.catSpan > 0 && (
+                      <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>
+                    )}
+                    {row.nivSpan > 0 && (
+                      <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>
+                    )}
+                    {row.indSpan > 0 && (
+                      <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>
+                    )}
+                    <td><span className={styles.zoneBadge}>{row.zone}</span></td>
+                    <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
+                    <td style={{fontWeight: '900', color: '#0f172a'}}>{row.denum.toLocaleString()}</td>
+                    <td><span className={styles.badgeSuccess}>{row.resultat}%</span></td>
+                    <td><span className={styles.badgeBonus}>{row.bonus > 0 ? '+' : ''}{row.bonus}%</span></td>
+                  </tr>
+                ))}
+                {(raccRows.length === 0 && savRows.length === 0) && (
                   <tr>
                     <td colSpan={9} className={styles.empty}>Aucune donnée trouvée pour cette période.</td>
                   </tr>
