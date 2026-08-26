@@ -40,6 +40,7 @@ export default function ErreursPage() {
   // 🚀 FILTRES & RECHERCHE
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState("");
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -48,7 +49,7 @@ export default function ErreursPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardQueue, setWizardQueue] = useState<WizardItem[]>([]);
-  const [validateQueue, setValidateQueue] = useState<number[]>([]); // 🛡️ JDID: File d'attente pour les validations
+  const [validateQueue, setValidateQueue] = useState<number[]>([]); 
   const [currentWizardIndex, setCurrentWizardIndex] = useState(0);
   const [batchLoading, setBatchLoading] = useState(false);
   
@@ -60,6 +61,7 @@ export default function ErreursPage() {
   const fetchErreurs = () => {
     if (user?.partenaireId) {
       setLoading(true);
+      // 🛡️ L'API backend gère month=0 et year=0 comme "All Time"
       getErreurs(user.partenaireId, month, year)
         .then(setErreurs)
         .catch(console.error)
@@ -68,18 +70,31 @@ export default function ErreursPage() {
   };
 
   useEffect(() => { fetchErreurs(); }, [user, month, year]);
-  useEffect(() => { setCurrentPage(1); }, [month, year, searchQuery]);
+  useEffect(() => { setCurrentPage(1); }, [month, year, searchQuery, statusFilter]);
 
-  // 🚀 LOGIQUE RECHERCHE MULTI-EPS
+  // 🚀 LOGIQUE RECHERCHE MULTI-EPS ET FILTRE STATUT
   const filteredErreurs = useMemo(() => {
-    if (!searchQuery.trim()) return erreurs;
-    const searchTerms = searchQuery.toLowerCase().split(/[\s,]+/).filter(Boolean);
-    return erreurs.filter(row => {
-      if (!row.dossierReference) return false;
-      const ref = row.dossierReference.toLowerCase();
-      return searchTerms.some(term => ref.includes(term));
-    });
-  }, [erreurs, searchQuery]);
+    let result = erreurs;
+
+    if (searchQuery.trim()) {
+      const searchTerms = searchQuery.toLowerCase().split(/[\s,]+/).filter(Boolean);
+      result = result.filter(row => {
+        if (!row.dossierReference) return false;
+        const ref = row.dossierReference.toLowerCase();
+        return searchTerms.some(term => ref.includes(term));
+      });
+    }
+
+    if (statusFilter !== 'ALL') {
+      result = result.filter(row => {
+        if (statusFilter === 'A_TRAITER') return row.statut === 'NOUVEAU' || row.statut === 'A_ANALYSER';
+        if (statusFilter === 'VALIDE') return row.statut === 'CONFIRME'; // Validé par le partenaire
+        return row.statut === statusFilter;
+      });
+    }
+
+    return result;
+  }, [erreurs, searchQuery, statusFilter]);
 
   const handleExport = () => {
     const dataToExport = filteredErreurs.map(err => {
@@ -92,7 +107,6 @@ export default function ErreursPage() {
       if (selectedCols.includes('impactEstime')) row['Impact (€)'] = err.impactEstime;
       if (selectedCols.includes('statut')) row['Statut'] = err.statut;
       
-      // 🛡️ JDID: Colonne Décision explicite pour aider le partenaire
       row['Décision (CONTESTER / VALIDER)'] = '';
       row['Analyse (Votre réponse)'] = '';
       row['Preuve Photo (Mettre X)'] = ''; 
@@ -103,11 +117,10 @@ export default function ErreursPage() {
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Contestations");
-    XLSX.writeFile(wb, `Export_Erreurs_${month}_${year}.xlsx`);
+    XLSX.writeFile(wb, `Export_Erreurs_${month === 0 ? 'ALL' : month}_${year === 0 ? 'ALL' : year}.xlsx`);
     setIsExportModalOpen(false);
   };
 
-  // 🚀 MOTEUR D'IMPORTATION INTELLIGENT (SMART MATCHER)
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -133,7 +146,6 @@ export default function ErreursPage() {
           const decisionStr = decisionKey ? String(row[decisionKey]).toLowerCase() : '';
           const analyseStr = analyseKey ? String(row[analyseKey]).toLowerCase() : '';
           
-          // 🛡️ SMART INTENT DETECTION
           let intent = 'UNKNOWN';
           if (/(conteste|contester|ko|non|faux|refus|injustifi|rejet|erreur)/i.test(decisionStr)) intent = 'CONTEST';
           else if (/(valide|valider|ok|oui|vrai|accepte|justifi|confirm)/i.test(decisionStr)) intent = 'VALIDATE';
@@ -225,7 +237,6 @@ export default function ErreursPage() {
     let successContest = 0, failedContest = 0;
     let successValidate = 0, failedValidate = 0;
 
-    // 1. Process Validations
     for (const id of validateQ) {
       try {
         await validerErreur(id);
@@ -233,7 +244,6 @@ export default function ErreursPage() {
       } catch (err) { failedValidate++; }
     }
 
-    // 2. Process Contestations
     for (const item of contestQ) {
       try {
         await deposerContestation(item.erreurId, "AUTRE", item.analyse, item.photoFile);
@@ -260,8 +270,23 @@ export default function ErreursPage() {
   const IconMoney = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>;
   const IconClock = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
 
-  const monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }));
-  const yearOptions = [2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }));
+  // 🚀 OPTIONS DE FILTRES
+  const monthOptions = [
+    { value: 0, label: 'Tous les mois' }, // 🛡️ JDID
+    ...[1,2,3,4,5,6,7,8,9,10,11,12].map(m => ({ value: m, label: `Mois ${m}` }))
+  ];
+  const yearOptions = [
+    { value: 0, label: 'Toutes les années' }, // 🛡️ JDID
+    ...[2024, 2025, 2026, 2027].map(y => ({ value: y, label: y.toString() }))
+  ];
+  const statusOptions = [
+    { value: 'ALL', label: 'Tous les statuts' },
+    { value: 'A_TRAITER', label: 'À Traiter (Nouveau)' },
+    { value: 'CONTESTE', label: 'En cours d\'arbitrage' },
+    { value: 'VALIDE', label: 'Validé par vos soins' },
+    { value: 'ACCEPTE', label: 'Contestation Acceptée' },
+    { value: 'REFUSE', label: 'Contestation Refusée' }
+  ];
 
   if (loading) return <div className={styles.pageWrapper}><div style={{ textAlign: 'center', padding: '100px', fontWeight: 'bold', color: '#64748b' }}>Chargement sécurisé...</div></div>;
 
@@ -316,9 +341,10 @@ export default function ErreursPage() {
           </div>
 
           <div className={styles.filtersWrapper}>
-            <div className={styles.filterLabel}>Période</div>
-            <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="120px" />
-            <CustomSelect value={year} options={yearOptions} onChange={setYear} width="100px" />
+            <div className={styles.filterLabel}>Filtres</div>
+            <CustomSelect value={statusFilter} options={statusOptions} onChange={setStatusFilter} width="200px" />
+            <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="140px" />
+            <CustomSelect value={year} options={yearOptions} onChange={setYear} width="140px" />
           </div>
         </div>
 
@@ -327,7 +353,7 @@ export default function ErreursPage() {
             <div className={styles.kpiCard}>
               <div className={styles.kpiHeader}>
                 <div className={styles.kpiIcon} style={{ background: '#eff6ff', color: '#3b82f6' }}>{IconAlert}</div>
-                <h3 className={styles.kpiTitle}>Total Erreurs</h3>
+                <h3 className={styles.kpiTitle}>Total Erreurs (Filtre)</h3>
               </div>
               <p className={styles.kpiValue}>{totalErreurs.toLocaleString('fr-FR')}</p>
             </div>
@@ -337,7 +363,7 @@ export default function ErreursPage() {
             <div className={styles.kpiCard}>
               <div className={styles.kpiHeader}>
                 <div className={styles.kpiIcon} style={{ background: '#fef2f2', color: '#ef4444' }}>{IconMoney}</div>
-                <h3 className={styles.kpiTitle}>Impact Financier Global</h3>
+                <h3 className={styles.kpiTitle}>Impact Financier</h3>
               </div>
               <p className={`${styles.kpiValue} ${styles.valueRed}`}>{impactGlobal.toLocaleString('fr-FR')} €</p>
             </div>
@@ -347,7 +373,7 @@ export default function ErreursPage() {
             <div className={styles.kpiCard}>
               <div className={styles.kpiHeader}>
                 <div className={styles.kpiIcon} style={{ background: '#fffbeb', color: '#f59e0b' }}>{IconClock}</div>
-                <h3 className={styles.kpiTitle}>À Contester (Urgent)</h3>
+                <h3 className={styles.kpiTitle}>À Traiter (Urgent)</h3>
               </div>
               <p className={styles.kpiValue} style={{ color: '#f59e0b' }}>{contestables}</p>
             </div>
