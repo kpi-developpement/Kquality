@@ -1,3 +1,5 @@
+// src/app/admin/cq-partenaire/page.tsx
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -26,21 +28,33 @@ export default function AdminCqPartenairePage() {
       .finally(() => setLoading(false));
   }, [month, year, selectedPartenaire]);
 
-  // 🛡️ Agrégation Globale & Enrichissement TAUX_PLAINTE[cite: 7]
+  // 🛡️ L'FIX HWA HNA: Agrégation Globale & Recalcul du Résultat
   let displayData = data;
   if (selectedPartenaire === "ALL" && data.length > 0) {
     const aggregated: Record<string, CqPartenaireKpiDTO> = {};
     data.forEach(row => {
       const key = `${row.indicateur}-${row.zone}`;
       if (!aggregated[key]) {
-        aggregated[key] = { ...row, id: Math.random(), partenaireNom: "VUE GLOBALE (TOUS)", num: 0, denum: 0 };
+        aggregated[key] = { ...row, id: Math.random(), partenaireNom: "VUE GLOBALE (TOUS)", num: 0, denum: 0, resultat: 0 };
       }
       aggregated[key].num += row.num;
       aggregated[key].denum += row.denum;
     });
-    displayData = Object.values(aggregated);
+    
+    // Recalculer le résultat après l'addition des num/denum
+    displayData = Object.values(aggregated).map(row => ({
+      ...row,
+      resultat: row.denum > 0 ? Number(((row.num / row.denum) * 100).toFixed(2)) : 0
+    }));
+  } else {
+    // Si c'est un partenaire spécifique, on s'assure quand même que le calcul est exact
+    displayData = displayData.map(row => ({
+      ...row,
+      resultat: row.denum > 0 ? Number(((row.num / row.denum) * 100).toFixed(2)) : 0
+    }));
   }
 
+  // 🛡️ Logique Spéciale pour TAUX_PLAINTE
   displayData = displayData.map(row => {
     if (row.indicateur === 'TAUX_PLAINTE') {
       const f2Denum = displayData
@@ -52,33 +66,80 @@ export default function AdminCqPartenairePage() {
     return row;
   });
 
-  // 🚀 GROUPEMENT DES DONNÉES (L'ARBRE)
-  const groupedData = useMemo(() => {
-    const groups = {
-      RANG_1: [] as CqPartenaireKpiDTO[],
-      RANG_2: [] as CqPartenaireKpiDTO[],
-      QUALITE: [] as CqPartenaireKpiDTO[],
-      CONFORMITE: [] as CqPartenaireKpiDTO[],
-      AUTRES: [] as CqPartenaireKpiDTO[]
-    };
+  // 🚀 MAPPING DES PROCESSUS (Comme dans VueGlobale)
+  function mapProcessus(ind: string) {
+    const i = ind.toUpperCase();
+    if (['PLP', 'HOTLINE', 'CONSTRUCTION'].includes(i)) return { domaine: 'RACC', cat: 'PERF', niv: 'RANG 1', ind: i };
+    if (i === 'RANG_2') return { domaine: 'RACC', cat: 'PERF', niv: 'RANG 2', ind: 'RANG 2' };
+    if (i === 'TNH') return { domaine: 'RACC', cat: 'PERF', niv: 'TNH', ind: 'TNH' };
+    
+    if (['SACLI', 'SARCLI', 'TAUX_PLAINTE'].includes(i)) return { domaine: 'RACC', cat: 'QUALITE', niv: 'GLOBAL', ind: i.replace('_', ' ') };
+    if (['GEM_NOK', 'INCOHERENCE_PTO', 'CADRAGE'].includes(i)) return { domaine: 'RACC', cat: 'CONFORMITE', niv: 'GLOBAL', ind: i.replace('_', ' ') };
+    
+    if (['SATCLI_SAV', 'CCR'].includes(i)) return { domaine: 'SAV', cat: 'QUALITE', niv: 'GLOBAL', ind: i.replace('_', ' ') };
+    if (['SECURISATION', 'TNH_SAV', 'SAV_PERF'].includes(i)) return { domaine: 'SAV', cat: 'PERF', niv: 'GLOBAL', ind: i.replace('_', ' ') };
 
-    displayData.forEach(row => {
-      const ind = row.indicateur.toUpperCase();
-      if (['PLP', 'HOTLINE', 'CONSTRUCTION'].includes(ind) || ind.includes('RANG_1')) {
-        groups.RANG_1.push(row);
-      } else if (ind.includes('RANG_2')) {
-        groups.RANG_2.push(row);
-      } else if (['TAUX_PLAINTE', 'SACLI_OK', 'SARCLI_NOK'].includes(ind)) {
-        groups.QUALITE.push(row);
-      } else if (['GEM_NOK', 'CADRAGE', 'INCOHERENCE_PTO'].includes(ind)) {
-        groups.CONFORMITE.push(row);
-      } else {
-        groups.AUTRES.push(row);
-      }
+    return { domaine: 'AUTRES', cat: 'AUTRES', niv: 'GLOBAL', ind: i };
+  }
+
+  const mappedData = displayData.map(item => ({ ...item, ...mapProcessus(item.indicateur) }));
+
+  const catOrder = ['PERF', 'QUALITE', 'CONFORMITE', 'AUTRES'];
+  const nivOrder = ['RANG 1', 'RANG 2', 'TNH', 'GLOBAL'];
+  const indOrder = ['PLP', 'HOTLINE', 'CONSTRUCTION', 'RANG 2', 'TNH', 'SACLI', 'SARCLI', 'TAUX PLAINTE', 'GEM NOK', 'INCOHERENCE PTO', 'CADRAGE', 'SATCLI SAV', 'SECURISATION', 'TNH SAV', 'CCR', 'SAV PERF'];
+  
+  mappedData.sort((a, b) => {
+    if (a.domaine !== b.domaine) return a.domaine === 'RACC' ? -1 : 1;
+    if (a.cat !== b.cat) return catOrder.indexOf(a.cat) - catOrder.indexOf(b.cat);
+    if (a.niv !== b.niv) return nivOrder.indexOf(a.niv) - nivOrder.indexOf(b.niv);
+    if (a.ind !== b.ind) return indOrder.indexOf(a.ind) - indOrder.indexOf(b.ind);
+    return a.zone.localeCompare(b.zone);
+  });
+
+  // 🚀 Helper pour générer les lignes avec RowSpan
+  const generateRowsForDomaine = (domaine: string) => {
+    const dRows = mappedData.filter(r => r.domaine === domaine);
+    const renderRows: any[] = [];
+    
+    const categories = Array.from(new Set(dRows.map(r => r.cat)));
+    categories.forEach((cat) => {
+      const cRows = dRows.filter(r => r.cat === cat);
+      const niveaux = Array.from(new Set(cRows.map(r => r.niv)));
+      
+      niveaux.forEach((niv, nivIdx) => {
+        const nRows = cRows.filter(r => r.niv === niv);
+        const indicateurs = Array.from(new Set(nRows.map(r => r.ind)));
+        
+        indicateurs.forEach((ind, indIdx) => {
+          const iRows = nRows.filter(r => r.ind === ind);
+          
+          iRows.forEach((row, rowIdx) => {
+            renderRows.push({
+              ...row,
+              catSpan: (nivIdx === 0 && indIdx === 0 && rowIdx === 0) ? cRows.length : 0,
+              nivSpan: (indIdx === 0 && rowIdx === 0) ? nRows.length : 0,
+              indSpan: (rowIdx === 0) ? iRows.length : 0,
+            });
+          });
+        });
+      });
     });
+    return renderRows;
+  };
 
-    return groups;
-  }, [displayData]);
+  const raccRows = generateRowsForDomaine('RACC');
+  const savRows = generateRowsForDomaine('SAV');
+
+  const getGaugeColor = (resultat: number, isNokIndicator: boolean = false) => {
+    if (isNokIndicator) {
+      if (resultat < 5) return '#10b981';
+      if (resultat < 10) return '#f59e0b';
+      return '#ef4444';
+    }
+    if (resultat >= 90) return '#10b981';
+    if (resultat >= 75) return '#f59e0b';
+    return '#ef4444';
+  };
 
   // KPIs
   const totalLignes = displayData.length;
@@ -94,36 +155,8 @@ export default function AdminCqPartenairePage() {
   const IconChart = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
   const IconData = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>;
   const IconTarget = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>;
-
-  // Fonction Helper pour dessiner une ligne du tableau
-  const renderRow = (row: any, index: number) => (
-    <tr key={`${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${index * 0.05}s` }}>
-      <td className={styles.partenaireName}>
-        {row.partenaireNom.includes("GLOBALE") ? (
-           <span className={styles.partenaireDot} style={{ background: '#ef4444', boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)' }}></span>
-        ) : (
-           <span className={styles.partenaireDot}></span>
-        )}
-        <span style={{ color: row.partenaireNom.includes("GLOBALE") ? '#ef4444' : '#0f172a' }}>
-          {row.partenaireNom}
-        </span>
-      </td>
-      <td><span className={styles.badgeIndicator}>{row.indicateur.replace(/_/g, ' ')}</span></td>
-      <td style={{ fontWeight: '800', color: '#64748b' }}>{row.zone === 'GLOBAL' ? 'National (Global)' : `ZONE ${row.zone}`}</td>
-      <td style={{ fontWeight: '900', fontSize: '15px' }}>{row.num.toLocaleString('fr-FR')}</td>
-      <td>
-        {row.isLocked 
-          ? <span title="Nécessite l'import du Fichier 2 (PLP...)" style={{ filter: 'grayscale(1)', opacity: 0.6 }}>🔒 Bloqué</span> 
-          : <span style={{ fontWeight: '900', fontSize: '15px' }}>{row.denum.toLocaleString('fr-FR')}</span>
-        }
-      </td>
-      <td>
-        {row.isLocked 
-          ? <span className={styles.badgeLocked}>En attente F2</span> 
-          : <span className={styles.badgeSuccess}>{row.resultat}%</span>}
-      </td>
-    </tr>
-  );
+  const IconRacc = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
+  const IconSav = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
 
   return (
     <div className={styles.pageWrapper}>
@@ -141,7 +174,7 @@ export default function AdminCqPartenairePage() {
           
           <div className={styles.filtersWrapper}>
             <div className={styles.filterLabel}>
-              <svg viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
               Filtrer l'Analyse
             </div>
             <CustomSelect value={month} options={monthOptions} onChange={setMonth} width="140px" />
@@ -185,119 +218,142 @@ export default function AdminCqPartenairePage() {
         </div>
 
         {/* 🚀 SCORECARD ARBORESCENTE */}
-        <div className={styles.tableWrapper}>
-          {loading ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Agrégation mathématique en cours...</div>
-          ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Partenaire</th>
-                  <th>Indicateur Métrique</th>
-                  <th>Zone / Département</th>
-                  <th>Numérateur (NUM)</th>
-                  <th>Dénominateur (DENUM)</th>
-                  <th>Taux de Réussite</th>
-                </tr>
-              </thead>
-              <tbody>
-                
-                {/* 🚀 SECTION 1 : PERFORMANCE GLOBALE */}
-                {(groupedData.RANG_1.length > 0 || groupedData.RANG_2.length > 0) && (
-                  <tr className={styles.mainCategoryRow}>
-                    <td colSpan={6}>
-                      <div className={styles.mainCategoryTitle}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                        Performance Opérationnelle (RACC & SAV)
-                      </div>
-                    </td>
-                  </tr>
-                )}
-                
-                {/* SOUS-SECTION: RANG 1 */}
-                {groupedData.RANG_1.length > 0 && (
-                  <>
-                    <tr className={styles.subCategoryRow}>
-                      <td colSpan={6}>
-                        <div className={styles.subCategoryTitle}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                          Niveau : Rang 1 (PLP, Hotline, Construction)
-                        </div>
-                      </td>
+        {loading ? (
+          <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 'bold' }}>Agrégation mathématique en cours...</div>
+        ) : (
+          <>
+            {/* 🔴 TABLEAU RACC */}
+            <div className={styles.domainSection}>
+              <div className={`${styles.domainHeader} ${styles.domainHeaderRacc}`}>
+                <div className={`${styles.domainIcon} ${styles.iconRacc}`}>{IconRacc}</div>
+                <h2>RACC - Déploiement & Raccordement</h2>
+              </div>
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={{width: '12%'}}>Catégorie</th>
+                      <th style={{width: '12%'}}>Niveau</th>
+                      <th style={{width: '15%'}}>Indicateur</th>
+                      <th style={{width: '10%'}}>Zone</th>
+                      <th style={{width: '15%'}}>Partenaire</th>
+                      <th style={{width: '8%'}}>NUM</th>
+                      <th style={{width: '8%'}}>DENUM</th>
+                      <th style={{width: '20%'}}>Résultat Brut</th>
                     </tr>
-                    {groupedData.RANG_1.map((row, i) => renderRow(row, i))}
-                  </>
-                )}
+                  </thead>
+                  <tbody>
+                    {raccRows.map((row, index) => {
+                      const isNok = ['SARCLI', 'TAUX PLAINTE', 'GEM NOK', 'INCOHERENCE PTO'].includes(row.ind);
+                      return (
+                        <tr key={`racc-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.1 + index * 0.02}s` }}>
+                          {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
+                          {row.nivSpan > 0 && <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>}
+                          {row.indSpan > 0 && <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>}
+                          <td><span className={styles.zoneBadge}>{row.zone}</span></td>
+                          <td className={styles.partenaireName}>
+                            {row.partenaireNom.includes("GLOBALE") ? (
+                               <span className={styles.partenaireDot} style={{ background: '#ef4444', boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)' }}></span>
+                            ) : (
+                               <span className={styles.partenaireDot}></span>
+                            )}
+                            <span style={{ color: row.partenaireNom.includes("GLOBALE") ? '#ef4444' : '#0f172a' }}>
+                              {row.partenaireNom}
+                            </span>
+                          </td>
+                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
+                          <td>
+                            {row.isLocked 
+                              ? <span title="Nécessite l'import du Fichier 2" style={{ filter: 'grayscale(1)', opacity: 0.6 }}>🔒</span> 
+                              : <span style={{ fontWeight: '900', color: '#0f172a' }}>{row.denum.toLocaleString()}</span>
+                            }
+                          </td>
+                          <td>
+                            {row.isLocked ? (
+                              <span className={styles.badgeLocked}>En attente F2</span>
+                            ) : (
+                              <div className={styles.gaugeContainer}>
+                                <div className={styles.gaugeTrack}>
+                                  <div 
+                                    className={styles.gaugeFill} 
+                                    style={{ width: `${Math.min(row.resultat, 100)}%`, background: getGaugeColor(row.resultat, isNok) }}
+                                  />
+                                </div>
+                                <span className={styles.gaugeText} style={{ color: getGaugeColor(row.resultat, isNok) }}>{row.resultat}%</span>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {raccRows.length === 0 && <tr><td colSpan={8} className={styles.empty}>Aucune donnée RACC trouvée pour cette période.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-                {/* SOUS-SECTION: RANG 2 */}
-                {groupedData.RANG_2.length > 0 && (
-                  <>
-                    <tr className={styles.subCategoryRow}>
-                      <td colSpan={6}>
-                        <div className={styles.subCategoryTitle}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                          Niveau : Rang 2
-                        </div>
-                      </td>
+            {/* 🟢 TABLEAU SAV */}
+            <div className={styles.domainSection}>
+              <div className={`${styles.domainHeader} ${styles.domainHeaderSav}`}>
+                <div className={`${styles.domainIcon} ${styles.iconSav}`}>{IconSav}</div>
+                <h2>SAV - Service Après Vente</h2>
+              </div>
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={{width: '12%'}}>Catégorie</th>
+                      <th style={{width: '12%'}}>Niveau</th>
+                      <th style={{width: '15%'}}>Indicateur</th>
+                      <th style={{width: '10%'}}>Zone</th>
+                      <th style={{width: '15%'}}>Partenaire</th>
+                      <th style={{width: '8%'}}>NUM</th>
+                      <th style={{width: '8%'}}>DENUM</th>
+                      <th style={{width: '20%'}}>Résultat Brut</th>
                     </tr>
-                    {groupedData.RANG_2.map((row, i) => renderRow(row, i))}
-                  </>
-                )}
-
-                {/* 🚀 SECTION 2 : QUALITÉ CLIENT */}
-                {groupedData.QUALITE.length > 0 && (
-                  <>
-                    <tr className={styles.mainCategoryRow}>
-                      <td colSpan={6}>
-                        <div className={styles.mainCategoryTitle}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                          Qualité & Satisfaction Client
-                        </div>
-                      </td>
-                    </tr>
-                    {groupedData.QUALITE.map((row, i) => renderRow(row, i))}
-                  </>
-                )}
-
-                {/* 🚀 SECTION 3 : CONFORMITÉ */}
-                {groupedData.CONFORMITE.length > 0 && (
-                  <>
-                    <tr className={styles.mainCategoryRow}>
-                      <td colSpan={6}>
-                        <div className={styles.mainCategoryTitle}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                          Conformité & Contrôles
-                        </div>
-                      </td>
-                    </tr>
-                    {groupedData.CONFORMITE.map((row, i) => renderRow(row, i))}
-                  </>
-                )}
-
-                {/* 🚀 SECTION 4 : AUTRES */}
-                {groupedData.AUTRES.length > 0 && (
-                  <>
-                    <tr className={styles.mainCategoryRow}>
-                      <td colSpan={6}>
-                        <div className={styles.mainCategoryTitle}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                          Autres Indicateurs
-                        </div>
-                      </td>
-                    </tr>
-                    {groupedData.AUTRES.map((row, i) => renderRow(row, i))}
-                  </>
-                )}
-
-                {displayData.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className={styles.empty}>Aucune donnée calculée pour cette période.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
+                  </thead>
+                  <tbody>
+                    {savRows.map((row, index) => {
+                      const isNok = false;
+                      return (
+                        <tr key={`sav-${row.id}-${index}`} className={styles.tableRow} style={{ animationDelay: `${0.1 + index * 0.02}s` }}>
+                          {row.catSpan > 0 && <td rowSpan={row.catSpan} className={styles.groupCellCat}>{row.cat}</td>}
+                          {row.nivSpan > 0 && <td rowSpan={row.nivSpan} className={styles.groupCellNiv}>{row.niv}</td>}
+                          {row.indSpan > 0 && <td rowSpan={row.indSpan} className={styles.groupCellInd}>{row.ind}</td>}
+                          <td><span className={styles.zoneBadge}>{row.zone}</span></td>
+                          <td className={styles.partenaireName}>
+                            {row.partenaireNom.includes("GLOBALE") ? (
+                               <span className={styles.partenaireDot} style={{ background: '#ef4444', boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)' }}></span>
+                            ) : (
+                               <span className={styles.partenaireDot}></span>
+                            )}
+                            <span style={{ color: row.partenaireNom.includes("GLOBALE") ? '#ef4444' : '#0f172a' }}>
+                              {row.partenaireNom}
+                            </span>
+                          </td>
+                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.num.toLocaleString()}</td>
+                          <td style={{fontWeight: '900', color: '#0f172a'}}>{row.denum.toLocaleString()}</td>
+                          <td>
+                            <div className={styles.gaugeContainer}>
+                              <div className={styles.gaugeTrack}>
+                                <div 
+                                  className={styles.gaugeFill} 
+                                  style={{ width: `${Math.min(row.resultat, 100)}%`, background: getGaugeColor(row.resultat, isNok) }}
+                                />
+                              </div>
+                              <span className={styles.gaugeText} style={{ color: getGaugeColor(row.resultat, isNok) }}>{row.resultat}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {savRows.length === 0 && <tr><td colSpan={8} className={styles.empty}>Aucune donnée SAV trouvée pour cette période.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
     </div>

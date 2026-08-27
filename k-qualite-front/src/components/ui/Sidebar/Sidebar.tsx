@@ -75,9 +75,9 @@ export default function Sidebar() {
         {!user?.mustChangePassword && user?.role === 'PARTENAIRE' && (
           <>
             <NavItem href="/dashboard" icon={icons.dashboard} text="Vue d'ensemble" isActive={pathname === '/dashboard'} />
-            <NavItem href="/erreurs" icon={icons.erreurs} text="Registre Erreurs" isActive={pathname.startsWith('/erreurs')} />
+            <NavItem href="/erreurs" icon={icons.erreurs} text="Anomalie" isActive={pathname.startsWith('/erreurs')} />
             <NavItem href="/cq-penalites" icon={icons.penalites} text="CQ & Pénalités" isActive={pathname === '/cq-penalites'} />
-            <NavItem href="/cq-details" icon={icons.excel} text="Détails CQ (Excel)" isActive={pathname === '/cq-details'} />
+            <NavItem href="/cq-details" icon={icons.excel} text="Penality" isActive={pathname === '/cq-details'} />
             <NavItem href="/cq-partenaire" icon={icons.kpi} text="Indicateurs CQ" isActive={pathname === '/cq-partenaire'} />
           </>
         )}
@@ -91,12 +91,12 @@ export default function Sidebar() {
         {!user?.mustChangePassword && user?.role === 'ADMIN' && (
           <>
             <NavItem href="/admin/vue-globale" icon={icons.kpi} text="Supervision Globale" isActive={pathname === '/admin/vue-globale'} />
-            <NavItem href="/admin/cq-data" icon={icons.excel} text="Données CQ" isActive={pathname === '/admin/cq-data'} />
-            <NavItem href="/admin/cq-partenaire" icon={icons.dashboard} text="Moteur d'Agrégation" isActive={pathname === '/admin/cq-partenaire'} />
-            <NavItem href="/admin/erreurs" icon={icons.erreurs} text="Centre de Contrôle" isActive={pathname === '/admin/erreurs'} />
-            <NavItem href="/admin" icon={icons.penalites} text="Centre d'Arbitrage" isActive={pathname === '/admin'} />
+            <NavItem href="/admin/cq-data" icon={icons.excel} text="Penality" isActive={pathname === '/admin/cq-data'} />
+            <NavItem href="/admin/cq-partenaire" icon={icons.dashboard} text="ContratQuality Partenaire" isActive={pathname === '/admin/cq-partenaire'} />
+            <NavItem href="/admin/erreurs" icon={icons.erreurs} text="Anomalie" isActive={pathname === '/admin/erreurs'} />
+            <NavItem href="/admin" icon={icons.penalites} text="Contestation" isActive={pathname === '/admin'} />
             <NavItem href="/admin/blog" icon={icons.dashboard} text="Actualités & Blog" isActive={pathname === '/admin/blog'} />
-            <NavItem href="/admin/utilisateurs" icon={icons.users} text="IAM - Sécurité" isActive={pathname === '/admin/utilisateurs'} />
+            <NavItem href="/admin/utilisateurs" icon={icons.users} text="Contrôle des Accès" isActive={pathname === '/admin/utilisateurs'} />
             <NavItem href="/admin/import" icon={icons.import} text="Data Dispatcher" isActive={pathname === '/admin/import'} />
           </>
         )}
