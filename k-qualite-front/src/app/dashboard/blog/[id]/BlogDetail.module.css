@@ -1,10 +1,34 @@
 .pageWrapper { position: relative; min-height: 100vh; background-color: #f1f5f9; padding: 40px; font-family: system-ui, -apple-system, sans-serif; }
-.container { max-width: 800px; margin: 0 auto; background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05); animation: fadeInUp 0.6s ease-out; }
-.cover { width: 100%; height: 350px; object-fit: cover; background: #e2e8f0; }
+.container { max-width: 900px; margin: 0 auto; background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05); animation: fadeInUp 0.6s ease-out; }
+
 .contentBox { padding: 40px; }
 .backLink { display: inline-flex; align-items: center; gap: 8px; color: #3b82f6; font-weight: 800; font-size: 13px; text-transform: uppercase; text-decoration: none; margin-bottom: 20px; }
 .backLink:hover { text-decoration: underline; }
 .date { font-size: 13px; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 10px; }
-.title { font-size: 32px; font-weight: 900; color: #0f172a; margin: 0 0 30px 0; line-height: 1.2; letter-spacing: -1px; }
-.body { font-size: 16px; color: #334155; line-height: 1.8; white-space: pre-wrap; }
+.title { font-size: 36px; font-weight: 900; color: #0f172a; margin: 0 0 30px 0; line-height: 1.2; letter-spacing: -1px; }
+.body { font-size: 16px; color: #334155; line-height: 1.8; white-space: pre-wrap; margin-bottom: 40px; }
+
+/* 🚀 GALERIE MULTIMEDIA (DESIGN MEJNOUN) */
+.mediaGallery { display: flex; flex-direction: column; gap: 30px; margin-bottom: 40px; }
+
+/* Images avec Blur Background pour éviter le Crop */
+.imageWrapper { position: relative; width: 100%; height: 450px; background: #0f172a; border-radius: 20px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+.imageBlurBg { position: absolute; inset: -30px; background-size: cover; background-position: center; filter: blur(25px); opacity: 0.6; z-index: 0; }
+.imageActual { position: relative; z-index: 1; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+
+/* Vidéos */
+.videoWrapper { width: 100%; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+.videoPlayer { width: 100%; max-height: 500px; display: block; outline: none; }
+
+/* Fichiers (PDF, Excel, etc.) */
+.documentsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+.downloadBox { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 15px; transition: all 0.3s; }
+.downloadBox:hover { border-color: #3b82f6; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.1); transform: translateY(-3px); }
+.downloadInfo { display: flex; align-items: center; gap: 15px; }
+.downloadIcon { width: 48px; height: 48px; background: #eff6ff; color: #3b82f6; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.downloadText h4 { margin: 0 0 5px 0; font-size: 14px; font-weight: 900; color: #0f172a; word-break: break-all; }
+.downloadText p { margin: 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+.btnDownload { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; text-decoration: none; padding: 10px; border-radius: 10px; font-weight: 900; font-size: 13px; text-align: center; transition: all 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.btnDownload:hover { box-shadow: 0 8px 15px rgba(59, 130, 246, 0.3); }
+
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }

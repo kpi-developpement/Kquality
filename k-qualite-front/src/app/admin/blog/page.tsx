@@ -13,26 +13,36 @@ export default function AdminBlogPage() {
   
   const [titre, setTitre] = useState("");
   const [contenu, setContenu] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]); // 🛡️ JDID: Tableau de fichiers
   const [loading, setLoading] = useState(false);
 
   const fetchArticles = () => getArticles().then(setArticles).catch(console.error);
   useEffect(() => { fetchArticles(); }, []);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index));
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await createArticle(titre, contenu, file);
+      await createArticle(titre, contenu, files);
       setIsCreateModalOpen(false);
-      setTitre(""); setContenu(""); setFile(null);
+      setTitre(""); setContenu(""); setFiles([]);
       fetchArticles();
-    } catch (err) { alert("Erreur"); }
+    } catch (err) { alert("Erreur lors de la publication"); }
     setLoading(false);
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm("Voulez-vous vraiment supprimer cet article ?")) {
+    if (confirm("Voulez-vous vraiment supprimer cet article et tous ses médias ?")) {
       try {
         await deleteArticle(id);
         fetchArticles();
@@ -46,6 +56,43 @@ export default function AdminBlogPage() {
     setIsViewsModalOpen(true);
   };
 
+  // 🛡️ Helper pour la carte (affiche le premier média comme cover)
+  const renderMediaPreview = (article: ArticleDTO) => {
+    if (!article.medias || article.medias.length === 0) {
+      return <div className={styles.mediaPlaceholder}><span>Sans Pièce Jointe</span></div>;
+    }
+    
+    const firstMedia = article.medias[0];
+    const type = firstMedia.type || '';
+    const url = getFullImageUrl(firstMedia.url);
+    const extraCount = article.medias.length - 1;
+
+    if (type.startsWith('image/')) {
+      return (
+        <div className={styles.mediaWrapper}>
+          <div className={styles.mediaBlurBg} style={{ backgroundImage: `url(${url})` }}></div>
+          <img src={url} alt="Cover" className={styles.mediaContent} />
+          {extraCount > 0 && <div className={styles.mediaCountBadge}>+{extraCount} média{extraCount > 1 ? 's' : ''}</div>}
+        </div>
+      );
+    }
+    if (type.startsWith('video/')) {
+      return (
+        <div className={styles.mediaWrapper}>
+          <video src={url} className={styles.mediaContent} muted />
+          <div className={styles.mediaCountBadge}>Vidéo {extraCount > 0 ? `+${extraCount}` : ''}</div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className={styles.mediaPlaceholder}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>{article.medias.length} Fichier(s) Joint(s)</span>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.container}>
@@ -53,20 +100,18 @@ export default function AdminBlogPage() {
           <div>
             <div className={styles.adminBadge}>COMMUNICATION</div>
             <h1>Actualités & Blog</h1>
-            <p>Publiez des mises à jour et suivez les lectures des partenaires.</p>
+            <p>Publiez des mises à jour avec plusieurs images, vidéos ou documents.</p>
           </div>
-          <button className={styles.btnAdd} onClick={() => setIsCreateModalOpen(true)}>+ Nouvel Article</button>
+          <button className={styles.btnAdd} onClick={() => setIsCreateModalOpen(true)}>+ Nouvelle Publication</button>
         </header>
 
         <div className={styles.grid}>
           {articles.map(a => (
             <div key={a.id} className={styles.card}>
               <button className={styles.btnDelete} onClick={() => handleDelete(a.id)} title="Supprimer">✕</button>
-              {a.imageUrl ? (
-                <img src={getFullImageUrl(a.imageUrl)} alt="Cover" className={styles.cardImg} />
-              ) : (
-                <div className={styles.cardImg} style={{display:'flex', alignItems:'center', justifyContent:'center', color:'#94a3b8', fontWeight:'bold'}}>Sans Image</div>
-              )}
+              
+              {renderMediaPreview(a)}
+
               <div className={styles.cardBody}>
                 <div className={styles.cardDate}>{new Date(a.dateCreation).toLocaleDateString()}</div>
                 <h3 className={styles.cardTitle}>{a.titre}</h3>
@@ -82,19 +127,29 @@ export default function AdminBlogPage() {
         {isCreateModalOpen && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
-              <h2>Rédiger un Article</h2>
+              <h2>Rédiger une Publication</h2>
               <form onSubmit={handleCreate}>
                 <div className={styles.formGroup}>
-                  <label>Titre</label>
+                  <label>Titre de la publication</label>
                   <input required value={titre} onChange={e => setTitre(e.target.value)} />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Contenu</label>
+                  <label>Contenu / Description</label>
                   <textarea required rows={6} value={contenu} onChange={e => setContenu(e.target.value)} />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Image de couverture</label>
-                  <input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] || null)} />
+                  <label>Pièces Jointes (Sélectionnez plusieurs fichiers)</label>
+                  <input type="file" multiple accept="*/*" onChange={handleFileChange} />
+                  
+                  {files.length > 0 && (
+                    <div className={styles.filesPreview}>
+                      {files.map((f, i) => (
+                        <div key={i} className={styles.fileBadge}>
+                          {f.name} <button type="button" onClick={() => removeFile(i)}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className={styles.modalActions}>
                   <button type="button" className={styles.btnCancel} onClick={() => setIsCreateModalOpen(false)}>Annuler</button>

@@ -24,9 +24,9 @@ public class ArticleController {
     public ResponseEntity<ApiResponse<Void>> createArticle(
             @RequestParam("titre") String titre,
             @RequestParam("contenu") String contenu,
-            @RequestPart(value = "file", required = false) MultipartFile file) {
-        articleService.createArticle(titre, contenu, file);
-        return ResponseEntity.ok(ApiResponse.success(null, "Article publié"));
+            @RequestPart(value = "files", required = false) MultipartFile[] files) { // 🛡️ JDID: Tableau de fichiers
+        articleService.createArticle(titre, contenu, files);
+        return ResponseEntity.ok(ApiResponse.success(null, "Article publié avec ses médias"));
     }
 
     @GetMapping
@@ -50,7 +50,6 @@ public class ArticleController {
         return ResponseEntity.ok(ApiResponse.success(articleService.getArticleViews(id), "Vues récupérées"));
     }
 
-    // 🛡️ JDID: Endpoint pour supprimer
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteArticle(@PathVariable Long id) {
         articleService.deleteArticle(id);

@@ -6,19 +6,28 @@
 .header h1 { color: #0f172a; font-size: 2.6rem; font-weight: 900; margin: 0 0 10px 0; letter-spacing: -1px; }
 .btnAdd { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-.card { background: rgba(255, 255, 255, 0.9); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; border: 1px solid #e2e8f0; position: relative; }
-.card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(59, 130, 246, 0.15); }
-.cardImg { width: 100%; height: 180px; object-fit: cover; background: #e2e8f0; }
-.cardBody { padding: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; }
+.card { background: rgba(255, 255, 255, 0.9); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; border: 1px solid #e2e8f0; position: relative; display: flex; flex-direction: column; }
+.card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(59, 130, 246, 0.15); border-color: #3b82f6; }
+
+/* 🚀 DESIGN MEJNOUN L'TSAWER (Pas de crop, blur background) */
+.mediaWrapper { position: relative; width: 100%; height: 200px; background: #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid #e2e8f0; }
+.mediaBlurBg { position: absolute; inset: -20px; background-size: cover; background-position: center; filter: blur(15px); opacity: 0.5; z-index: 0; }
+.mediaContent { position: relative; z-index: 1; max-width: 100%; max-height: 100%; object-fit: contain; }
+.mediaCountBadge { position: absolute; bottom: 10px; right: 10px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); color: white; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 900; z-index: 2; border: 1px solid rgba(255,255,255,0.2); }
+
+.mediaPlaceholder { width: 100%; height: 200px; background: linear-gradient(135deg, #f8fafc, #f1f5f9); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+.mediaPlaceholder svg { width: 40px; height: 40px; stroke: #3b82f6; }
+.mediaPlaceholder span { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+
+.cardBody { padding: 20px; flex: 1; display: flex; flex-direction: column; }
 .cardDate { font-size: 11px; color: #64748b; font-weight: 800; text-transform: uppercase; }
-.cardTitle { font-size: 18px; font-weight: 900; color: #0f172a; margin: 8px 0; }
-.cardStats { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; }
+.cardTitle { font-size: 18px; font-weight: 900; color: #0f172a; margin: 8px 0; line-height: 1.3; }
+.cardStats { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; border-top: 1px solid #f1f5f9; }
 .views { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 800; color: #3b82f6; }
 .btnStats { background: #f1f5f9; color: #475569; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer; }
 .btnStats:hover { background: #e2e8f0; color: #0f172a; }
 
-/* 🛡️ JDID: Bouton Supprimer */
 .btnDelete { position: absolute; top: 10px; right: 10px; background: rgba(239, 68, 68, 0.9); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); z-index: 10; }
 .btnDelete:hover { transform: scale(1.1); background: #dc2626; }
 
@@ -28,6 +37,12 @@
 .formGroup label { font-size: 12px; font-weight: 900; color: #475569; text-transform: uppercase; }
 .formGroup input, .formGroup textarea { padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; font-family: inherit; font-size: 14px; outline: none; }
 .formGroup input:focus, .formGroup textarea:focus { border-color: #3b82f6; }
+
+/* Files Preview in Modal */
+.filesPreview { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.fileBadge { background: #eff6ff; color: #2563eb; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 8px; }
+.fileBadge button { background: none; border: none; color: #ef4444; cursor: pointer; font-weight: bold; }
+
 .modalActions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; }
 .btnCancel { background: #f1f5f9; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 800; cursor: pointer; }
 .btnSave { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 800; cursor: pointer; }

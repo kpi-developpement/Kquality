@@ -32,7 +32,6 @@ export interface ErreurResponseDTO {
   categorie?: string; 
   aContestation: boolean;
   partenaireNom?: string;
-  // 🛡️ JDID: Champs Timeline
   dateContestation?: string;
   motifContestation?: string;
   commentaireContestation?: string;
@@ -128,11 +127,17 @@ export interface CqPartenaireKpiDTO {
   bonus: number;
 }
 
+export interface MediaDTO {
+  id: number;
+  url: string;
+  type: string;
+}
+
 export interface ArticleDTO {
   id: number;
   titre: string;
   contenu: string;
-  imageUrl?: string;
+  medias: MediaDTO[];
   dateCreation: string;
   vuesCount?: number;
 }

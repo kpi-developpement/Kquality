@@ -8,7 +8,6 @@ const BASE_URL = isServer
   ? 'http://kq_backend:8256/api/v1' 
   : (process.env.NEXT_PUBLIC_API_URL || 'http://10.10.10.25:8256/api/v1');
 
-// 🛡️ L'FIX HWA HNA: Extracteur d'URL blindé
 export const getServerUrl = () => {
   try {
     const url = new URL(BASE_URL);
@@ -56,8 +55,6 @@ export async function getDashboardData(partenaireId: number = 1): Promise<Dashbo
   const json: ApiResponse<DashboardPartenaireDTO> = await res.json();
   return json.data;
 }
-
-
 
 export async function getErreurs(partenaireId: number, month: number, year: number): Promise<ErreurResponseDTO[]> {
   const res = await fetch(`${BASE_URL}/erreurs/partenaire/${partenaireId}?month=${month}&year=${year}`, { headers: getAuthHeaders(), cache: 'no-store' });
@@ -232,6 +229,7 @@ export async function importSingleCqExcel(file: File, month: number, year: numbe
   }
   return await res.json();
 }
+
 export async function getCqDataByPartenaire(partenaireId: number, typeFeuille: string, month: number, year: number): Promise<CqDataDTO[]> {
   const res = await fetch(`${BASE_URL}/cq-data/partenaire/${partenaireId}?type=${encodeURIComponent(typeFeuille)}&month=${month}&year=${year}`, { 
     headers: getAuthHeaders(), cache: 'no-store' 
@@ -372,11 +370,16 @@ export async function purgeData(target: string, month: number, year: number) {
   return await res.json();
 }
 
-export async function createArticle(titre: string, contenu: string, file: File | null) {
+export async function createArticle(titre: string, contenu: string, files: File[]) {
   const formData = new FormData();
   formData.append('titre', titre);
   formData.append('contenu', contenu);
-  if (file) formData.append('file', file);
+  
+  if (files && files.length > 0) {
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+  }
 
   const res = await fetch(`${BASE_URL}/articles`, {
     method: 'POST',
